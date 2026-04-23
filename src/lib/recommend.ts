@@ -8,9 +8,8 @@ export function getBestStatRecommendation(
   leftSet: GearSet | undefined,
   rightSet: GearSet | undefined,
   build: BuildInput,
-  scenarios: { label: string; defense: number }[],
 ) {
-  const current = calculateBuild(hero, leftSet, rightSet, build, scenarios)
+  const current = calculateBuild(hero, leftSet, rightSet, build)
 
   if (current.critAlert) {
     return {
@@ -23,9 +22,9 @@ export function getBestStatRecommendation(
   const cdBuild = { ...build, critDmg: build.critDmg + 25 }
   const aspdBuild = { ...build, attackSpeed: build.attackSpeed + Math.max(build.attackSpeed < 0 ? 0 : 20, current.neededAspd ?? 20) }
 
-  const atkGain = calculateBuild(hero, leftSet, rightSet, atkBuild, scenarios).avgDps - current.avgDps
-  const cdGain = calculateBuild(hero, leftSet, rightSet, cdBuild, scenarios).avgDps - current.avgDps
-  const aspdGain = calculateBuild(hero, leftSet, rightSet, aspdBuild, scenarios).avgDps - current.avgDps
+  const atkGain = calculateBuild(hero, leftSet, rightSet, atkBuild).defenseIgnoreDps10s - current.defenseIgnoreDps10s
+  const cdGain = calculateBuild(hero, leftSet, rightSet, cdBuild).defenseIgnoreDps10s - current.defenseIgnoreDps10s
+  const aspdGain = calculateBuild(hero, leftSet, rightSet, aspdBuild).defenseIgnoreDps10s - current.defenseIgnoreDps10s
 
   const ranking = [
     { key: '공격력', gain: atkGain },

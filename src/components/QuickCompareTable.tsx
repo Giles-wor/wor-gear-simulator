@@ -14,9 +14,10 @@ function valueClass(left: number, right: number, invert = false) {
 
 export function QuickCompareTable({ resultA, resultB }: QuickCompareTableProps) {
   const rows = [
-    { label: '스탯 DPS', a: resultA.statAvgDps, b: resultB.statAvgDps },
-    { label: '아이템 DPS', a: resultA.itemAvgDps, b: resultB.itemAvgDps },
-    { label: '평균 DPS', a: resultA.avgDps, b: resultB.avgDps },
+    { label: '스탯 DPS(10s)', a: resultA.statDps10s, b: resultB.statDps10s },
+    { label: '아이템 DPS(최대적용)', a: resultA.itemDps10s, b: resultB.itemDps10s },
+    { label: 'DPS(10s)', a: resultA.defenseIgnoreDps10s, b: resultB.defenseIgnoreDps10s },
+    { label: '최종 1회 피해', a: resultA.finalHitDamage, b: resultB.finalHitDamage },
     { label: '최종 공격력', a: resultA.finalAtk, b: resultB.finalAtk },
     { label: '최종 치피', a: resultA.finalCritDmg, b: resultB.finalCritDmg, suffix: '%' },
     { label: '총 공속', a: resultA.totalAspd, b: resultB.totalAspd },
