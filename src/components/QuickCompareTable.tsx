@@ -27,7 +27,10 @@ export function QuickCompareTable({ resultA, resultB }: QuickCompareTableProps) 
     { label: '아이템 적용 최대 데미지 (방어 무시)', a: resultA.itemMaxDamageIgnoreDefense, b: resultB.itemMaxDamageIgnoreDefense },
     { label: '스탯 기반 데미지 (중 방어)', a: resultA.statDamageMidDefense, b: resultB.statDamageMidDefense },
     { label: '아이템 적용 최대 데미지 (중 방어)', a: resultA.itemMaxDamageMidDefense, b: resultB.itemMaxDamageMidDefense },
-    { label: '아이템 적용 최대 상태 DPS(10s)', a: resultA.itemMaxDps10s, b: resultB.itemMaxDps10s },
+    { label: '일반 공격 최대 데미지', a: resultA.basicAttackItemMaxDamage, b: resultB.basicAttackItemMaxDamage },
+    { label: '궁극기 공격 최대 데미지', a: resultA.ultimateAttackItemMaxDamage, b: resultB.ultimateAttackItemMaxDamage },
+    { label: '아이템 적용 최대 10초 누적', a: resultA.itemMaxCumulative10s, b: resultB.itemMaxCumulative10s },
+    { label: '아이템 적용 최대 DPS(10s)', a: resultA.itemMaxDps10s, b: resultB.itemMaxDps10s },
     { label: '공격 간격', a: resultA.interval, b: resultB.interval, suffix: '초', invert: true, digits: 2 },
   ]
 

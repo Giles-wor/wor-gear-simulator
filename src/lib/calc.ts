@@ -28,11 +28,15 @@ export type DamageResult = {
   neededAspd: number | null
   normalDamageBonus: number
   totalDamageBonus: number
+  basicAttackItemMaxDamage: number
+  ultimateAttackItemMaxDamage: number
   statDamageIgnoreDefense: number
   itemMaxDamageIgnoreDefense: number
   statDamageMidDefense: number
   itemMaxDamageMidDefense: number
+  itemMaxCumulative10s: number
   itemMaxDps10s: number
+  timeline10s: { second: number; cumulativeDamage: number }[]
   rightSetSummary: {
     name: string
     summary: string
@@ -99,6 +103,118 @@ function calculateDamageMetrics(
   }
 }
 
+function getMaxSetBonus(rightSet: GearSet | undefined) {
+  if (!rightSet) return { damageBonus: 0, critDmgBonus: 0 }
+
+  if (rightSet.id === 'infernal_roar') {
+    return { damageBonus: 0.4, critDmgBonus: 0 }
+  }
+
+  if (rightSet.id === 'cataclysm') {
+    return { damageBonus: 0.5, critDmgBonus: 0 }
+  }
+
+  if (rightSet.id === 'soulbound_arcana') {
+    return { damageBonus: 0.5, critDmgBonus: 0 }
+  }
+
+  if (rightSet.id === 'hells_lament') {
+    return { damageBonus: 0.2, critDmgBonus: 30 }
+  }
+
+  return { damageBonus: rightSet.damagePct ?? 0, critDmgBonus: rightSet.critDmg ?? 0 }
+}
+
+function getAttackTypeDamageBonus(rightSet: GearSet | undefined, type: 'basic' | 'ultimate', mode: 'current' | 'max') {
+  if (!rightSet) return { damageBonus: 0, critDmgBonus: 0 }
+
+  if (rightSet.id === 'infernal_roar') {
+    return {
+      damageBonus: type === 'basic' ? 0.4 : 0,
+      critDmgBonus: 0,
+    }
+  }
+
+  if (rightSet.id === 'cataclysm') {
+    return {
+      damageBonus: mode === 'max' ? 0.5 : 0.3,
+      critDmgBonus: 0,
+    }
+  }
+
+  if (rightSet.id === 'soulbound_arcana') {
+    return {
+      damageBonus: mode === 'max' ? 0.5 : 0.5,
+      critDmgBonus: 0,
+    }
+  }
+
+  if (rightSet.id === 'hells_lament') {
+    return {
+      damageBonus: 0.2,
+      critDmgBonus: 30,
+    }
+  }
+
+  return {
+    damageBonus: mode === 'max' ? (rightSet.damagePct ?? 0) : (rightSet.damagePct ?? 0),
+    critDmgBonus: mode === 'max' ? (rightSet.critDmg ?? 0) : (rightSet.critDmg ?? 0),
+  }
+}
+
+function buildTimeline10s(
+  rightSet: GearSet | undefined,
+  finalAtk: number,
+  finalCritDmg: number,
+  critRateRatio: number,
+  interval: number,
+  baseDamageBonus: number,
+  midDefense: number,
+) {
+  const hitTimes: number[] = []
+  let currentTime = 0
+  while (currentTime <= 10 + 1e-9) {
+    hitTimes.push(Number(currentTime.toFixed(4)))
+    currentTime += interval
+  }
+
+  const points: { second: number; cumulativeDamage: number }[] = []
+  let cumulativeDamage = 0
+  let hitCount = 0
+  let processedHits = 0
+
+  for (let second = 0; second <= 10; second += 1) {
+    while (processedHits < hitTimes.length && hitTimes[processedHits] <= second + 1e-9) {
+      let rightSetDamageBonus = 0
+      let rightSetCritBonus = 0
+
+      if (rightSet?.id === 'infernal_roar') {
+        rightSetDamageBonus = 0.4
+      } else if (rightSet?.id === 'cataclysm') {
+        rightSetDamageBonus = Math.min(hitCount * 0.1, 0.5)
+      } else if (rightSet?.id === 'soulbound_arcana') {
+        rightSetDamageBonus = 0.5
+      } else if (rightSet?.id === 'hells_lament') {
+        rightSetDamageBonus = 0.2
+        rightSetCritBonus = 30
+      }
+
+      const critMultiplier = 1 + critRateRatio * ((finalCritDmg + rightSetCritBonus) / 100 - 1)
+      const metrics = calculateDamageMetrics(finalAtk, critMultiplier, interval, baseDamageBonus + rightSetDamageBonus, midDefense)
+      cumulativeDamage += metrics.damage
+      hitCount += 1
+      processedHits += 1
+    }
+
+    points.push({
+      second,
+      cumulativeDamage: Math.round(cumulativeDamage),
+    })
+  }
+
+  return points
+}
+
 function formatPercent(value: number) {
   return `${Math.round(value * 100)}%`
 }
@@ -139,7 +255,7 @@ function getRightSetSummary(rightSet: GearSet | undefined) {
       summary: display.summary,
       details: [
         `스킬 1회 사용: 피해증가 ${formatPercent(0.1)}`,
-        `스킬 5회 사용: 피해증가 ${formatPercent(0.5)}`
+        `스킬 5회 사용 완료: 피해증가 ${formatPercent(0.5)}`
       ]
     }
   }
@@ -149,8 +265,8 @@ function getRightSetSummary(rightSet: GearSet | undefined) {
       name: rightSet.name,
       summary: display.summary,
       details: [
-        `치명타 1회: 피해증가 ${formatPercent(0.1)}`,
-        `치명타 5회: 피해증가 ${formatPercent(0.5)}`
+        `첫 타: 피해증가 ${formatPercent(0)}`,
+        `다음 타부터 치명타 1회당 피해증가 ${formatPercent(0.1)} 누적, 최대 ${formatPercent(0.5)}`
       ]
     }
   }
@@ -184,7 +300,7 @@ export function calculateBuild(
   const pantheonAspdBonus = build.pantheonAspdOn ? 40 : 0
   const leftSetDamagePct = leftSet?.damagePct ?? 0
   const { normalDamageBonus, totalDamageBonus, bonusCritDmg } = damageMultiplier(rightSet, build.setUptime)
-  const maxConditional = damageMultiplier(rightSet, 1)
+  const maxSetBonus = getMaxSetBonus(rightSet)
 
   const finalAtk = Math.round(build.totalAtk + awakeningBonus)
   const finalCritRate = build.critRate
@@ -199,9 +315,18 @@ export function calculateBuild(
   const draculaBurstBonus = hero.burstAtkBonusPer100Aspd ? (totalAspd / 100) * hero.burstAtkBonusPer100Aspd : 0
 
   const statIgnoreDefenseMetrics = calculateDamageMetrics(finalAtk, critMultiplier, bp.interval, leftSetDamagePct + draculaBurstBonus, 0)
-  const itemIgnoreDefenseMetrics = calculateDamageMetrics(finalAtk, critMultiplier, bp.interval, (maxConditional.normalDamageBonus ?? 0) + leftSetDamagePct + (maxConditional.totalDamageBonus ?? 0) + draculaBurstBonus, 0)
+  const maxCritMultiplier = 1 + critRateRatio * ((finalCritDmg + maxSetBonus.critDmgBonus) / 100 - 1)
+  const itemIgnoreDefenseMetrics = calculateDamageMetrics(finalAtk, maxCritMultiplier, bp.interval, maxSetBonus.damageBonus + leftSetDamagePct + draculaBurstBonus, 0)
   const statMidDefenseMetrics = calculateDamageMetrics(finalAtk, critMultiplier, bp.interval, leftSetDamagePct + draculaBurstBonus, midDefense)
-  const itemMidDefenseMetrics = calculateDamageMetrics(finalAtk, critMultiplier, bp.interval, (maxConditional.normalDamageBonus ?? 0) + leftSetDamagePct + (maxConditional.totalDamageBonus ?? 0) + draculaBurstBonus, midDefense)
+  const itemMidDefenseMetrics = calculateDamageMetrics(finalAtk, maxCritMultiplier, bp.interval, maxSetBonus.damageBonus + leftSetDamagePct + draculaBurstBonus, midDefense)
+  const basicAttackMax = getAttackTypeDamageBonus(rightSet, 'basic', 'max')
+  const ultimateAttackMax = getAttackTypeDamageBonus(rightSet, 'ultimate', 'max')
+  const basicCritMultiplier = 1 + critRateRatio * ((finalCritDmg + basicAttackMax.critDmgBonus) / 100 - 1)
+  const ultimateCritMultiplier = 1 + critRateRatio * ((finalCritDmg + ultimateAttackMax.critDmgBonus) / 100 - 1)
+  const basicAttackItemMaxDamage = calculateDamageMetrics(finalAtk, basicCritMultiplier, bp.interval, leftSetDamagePct + draculaBurstBonus + basicAttackMax.damageBonus, 0).damage
+  const ultimateAttackItemMaxDamage = calculateDamageMetrics(finalAtk, ultimateCritMultiplier, bp.interval, leftSetDamagePct + draculaBurstBonus + ultimateAttackMax.damageBonus, 0).damage
+  const timeline10s = buildTimeline10s(rightSet, finalAtk, finalCritDmg, critRateRatio, bp.interval, leftSetDamagePct + draculaBurstBonus, midDefense)
+  const itemMaxCumulative10s = timeline10s[timeline10s.length - 1]?.cumulativeDamage ?? 0
 
   return {
     finalAtk,
@@ -217,11 +342,15 @@ export function calculateBuild(
     neededAspd: bp.neededAspd,
     normalDamageBonus,
     totalDamageBonus: leftSetDamagePct + totalDamageBonus + draculaBurstBonus,
+    basicAttackItemMaxDamage,
+    ultimateAttackItemMaxDamage,
     statDamageIgnoreDefense: statIgnoreDefenseMetrics.damage,
     itemMaxDamageIgnoreDefense: itemIgnoreDefenseMetrics.damage,
     statDamageMidDefense: statMidDefenseMetrics.damage,
     itemMaxDamageMidDefense: itemMidDefenseMetrics.damage,
-    itemMaxDps10s: itemMidDefenseMetrics.dps10s,
+    itemMaxCumulative10s,
+    itemMaxDps10s: Math.round(itemMaxCumulative10s / 10),
+    timeline10s,
     rightSetSummary: getRightSetSummary(rightSet),
     critAlert: finalCritRate < 100
   }
