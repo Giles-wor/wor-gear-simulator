@@ -52,6 +52,16 @@ body, input, select, button, textarea { font: inherit; }
   color: #fff8f0;
   padding: 12px;
 }
+.field select,
+.compareFormGrid select {
+  appearance: none;
+  -webkit-appearance: none;
+}
+.field select option,
+.compareFormGrid select option {
+  background: #221b16;
+  color: #fff8f0;
+}
 .heroBanner {
   align-items: flex-end;
 }
