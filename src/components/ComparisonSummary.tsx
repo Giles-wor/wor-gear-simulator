@@ -6,9 +6,9 @@ type ComparisonSummaryProps = {
 }
 
 export function ComparisonSummary({ resultA, resultB }: ComparisonSummaryProps) {
-  const diff = resultA.defenseIgnoreDps10s - resultB.defenseIgnoreDps10s
+  const diff = resultA.itemMaxDps10s - resultB.itemMaxDps10s
   const winner = diff === 0 ? '동률' : diff > 0 ? '세팅 A 우세' : '세팅 B 우세'
-  const percentGap = Math.abs(diff) / Math.max(Math.min(resultA.defenseIgnoreDps10s, resultB.defenseIgnoreDps10s), 1)
+  const percentGap = Math.abs(diff) / Math.max(Math.min(resultA.itemMaxDps10s, resultB.itemMaxDps10s), 1)
 
   return (
     <section className="card comparisonCard">
@@ -24,8 +24,8 @@ export function ComparisonSummary({ resultA, resultB }: ComparisonSummaryProps) 
 
       <div className="summaryGrid comparisonGrid">
         <div><span>격차 비율</span><strong>{(percentGap * 100).toFixed(1)}%</strong></div>
-        <div><span>A DPS(10s)</span><strong>{resultA.defenseIgnoreDps10s.toLocaleString()}</strong></div>
-        <div><span>B DPS(10s)</span><strong>{resultB.defenseIgnoreDps10s.toLocaleString()}</strong></div>
+        <div><span>A 아이템 최대 DPS(10s)</span><strong>{resultA.itemMaxDps10s.toLocaleString()}</strong></div>
+        <div><span>B 아이템 최대 DPS(10s)</span><strong>{resultB.itemMaxDps10s.toLocaleString()}</strong></div>
       </div>
     </section>
   )

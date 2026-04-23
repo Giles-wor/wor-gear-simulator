@@ -30,6 +30,7 @@ export type Hero = {
   rrBasicAtk: number
   rrAttacked: number
   awakeningAtkBonus: number
+  attackSpeedProfileBaseIntervalOverride?: number
   burstAtkBonusPer100Aspd?: number
 }
 
@@ -50,6 +51,9 @@ const heroOverrides: Partial<Record<string, Partial<Hero>>> = {
   hex: {
     description: '치명타/공격력 비교 테스트에 자주 쓰이는 영웅.',
     awakeningAtkBonus: 300,
+  },
+  lady_alexandra: {
+    attackSpeedProfileBaseIntervalOverride: 2.0,
   },
 }
 

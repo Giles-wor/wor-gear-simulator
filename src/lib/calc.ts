@@ -28,10 +28,11 @@ export type DamageResult = {
   neededAspd: number | null
   normalDamageBonus: number
   totalDamageBonus: number
-  finalHitDamage: number
-  statDps10s: number
-  itemDps10s: number
-  defenseIgnoreDps10s: number
+  statDamageIgnoreDefense: number
+  itemMaxDamageIgnoreDefense: number
+  statDamageMidDefense: number
+  itemMaxDamageMidDefense: number
+  itemMaxDps10s: number
   rightSetSummary: {
     name: string
     summary: string
@@ -86,13 +87,14 @@ function calculateDamageMetrics(
   critMultiplier: number,
   interval: number,
   damageBonus: number,
+  defense: number,
 ) {
-  const rawDamage = finalAtk
+  const rawDamage = Math.max(finalAtk - defense, finalAtk * 0.05)
   const critAppliedDamage = rawDamage * critMultiplier
   const hitDamage = critAppliedDamage * (1 + damageBonus)
 
   return {
-    finalHitDamage: Math.round(hitDamage),
+    damage: Math.round(hitDamage),
     dps10s: Math.round((hitDamage / interval) * 10),
   }
 }
@@ -177,6 +179,7 @@ export function calculateBuild(
   rightSet: GearSet | undefined,
   build: BuildInput,
 ): DamageResult {
+  const midDefense = 5000
   const awakeningBonus = build.awakeningOn ? hero.awakeningAtkBonus : 0
   const pantheonAspdBonus = build.pantheonAspdOn ? 40 : 0
   const leftSetDamagePct = leftSet?.damagePct ?? 0
@@ -188,22 +191,24 @@ export function calculateBuild(
   const finalCritDmg = build.critDmg + bonusCritDmg
   const totalAspd = build.attackSpeed
   const finalAspd = totalAspd + pantheonAspdBonus
-  const bp = getBreakpointInfo(hero.baseInterval, finalAspd)
+  const attackSpeedProfileBaseInterval = hero.attackSpeedProfileBaseIntervalOverride ?? hero.baseInterval
+  const bp = getBreakpointInfo(attackSpeedProfileBaseInterval, finalAspd)
 
   const critRateRatio = Math.min(finalCritRate, 100) / 100
   const critMultiplier = 1 + critRateRatio * (finalCritDmg / 100 - 1)
   const draculaBurstBonus = hero.burstAtkBonusPer100Aspd ? (totalAspd / 100) * hero.burstAtkBonusPer100Aspd : 0
 
-  const statMetrics = calculateDamageMetrics(finalAtk, critMultiplier, bp.interval, leftSetDamagePct + draculaBurstBonus)
-  const liveMetrics = calculateDamageMetrics(finalAtk, critMultiplier, bp.interval, normalDamageBonus + leftSetDamagePct + totalDamageBonus + draculaBurstBonus)
-  const maxItemMetrics = calculateDamageMetrics(finalAtk, critMultiplier, bp.interval, (maxConditional.normalDamageBonus ?? 0) + leftSetDamagePct + (maxConditional.totalDamageBonus ?? 0) + draculaBurstBonus)
+  const statIgnoreDefenseMetrics = calculateDamageMetrics(finalAtk, critMultiplier, bp.interval, leftSetDamagePct + draculaBurstBonus, 0)
+  const itemIgnoreDefenseMetrics = calculateDamageMetrics(finalAtk, critMultiplier, bp.interval, (maxConditional.normalDamageBonus ?? 0) + leftSetDamagePct + (maxConditional.totalDamageBonus ?? 0) + draculaBurstBonus, 0)
+  const statMidDefenseMetrics = calculateDamageMetrics(finalAtk, critMultiplier, bp.interval, leftSetDamagePct + draculaBurstBonus, midDefense)
+  const itemMidDefenseMetrics = calculateDamageMetrics(finalAtk, critMultiplier, bp.interval, (maxConditional.normalDamageBonus ?? 0) + leftSetDamagePct + (maxConditional.totalDamageBonus ?? 0) + draculaBurstBonus, midDefense)
 
   return {
     finalAtk,
     finalCritRate,
     finalCritDmg,
     awakeningAtkBonusApplied: awakeningBonus,
-    attackSpeedProfileBaseInterval: bp.profileBaseInterval,
+    attackSpeedProfileBaseInterval,
     pantheonAspdBonus,
     totalAspd,
     finalAspd,
@@ -212,10 +217,11 @@ export function calculateBuild(
     neededAspd: bp.neededAspd,
     normalDamageBonus,
     totalDamageBonus: leftSetDamagePct + totalDamageBonus + draculaBurstBonus,
-    finalHitDamage: liveMetrics.finalHitDamage,
-    statDps10s: statMetrics.dps10s,
-    itemDps10s: maxItemMetrics.dps10s,
-    defenseIgnoreDps10s: liveMetrics.dps10s,
+    statDamageIgnoreDefense: statIgnoreDefenseMetrics.damage,
+    itemMaxDamageIgnoreDefense: itemIgnoreDefenseMetrics.damage,
+    statDamageMidDefense: statMidDefenseMetrics.damage,
+    itemMaxDamageMidDefense: itemMidDefenseMetrics.damage,
+    itemMaxDps10s: itemMidDefenseMetrics.dps10s,
     rightSetSummary: getRightSetSummary(rightSet),
     critAlert: finalCritRate < 100
   }
