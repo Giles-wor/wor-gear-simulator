@@ -6,6 +6,15 @@ type QuickCompareTableProps = {
   resultB: DamageResult
 }
 
+type CompareRow = {
+  label: string
+  a: number
+  b: number
+  invert?: boolean
+  digits?: number
+  suffix?: string
+}
+
 function valueClass(left: number, right: number, invert = false) {
   if (left === right) return 'same'
   if (!invert) return left > right ? 'better' : 'worse'
@@ -13,16 +22,12 @@ function valueClass(left: number, right: number, invert = false) {
 }
 
 export function QuickCompareTable({ resultA, resultB }: QuickCompareTableProps) {
-  const rows = [
-    { label: '스탯 DPS(10s)', a: resultA.statDps10s, b: resultB.statDps10s },
-    { label: '아이템 DPS(최대적용)', a: resultA.itemDps10s, b: resultB.itemDps10s },
-    { label: 'DPS(10s)', a: resultA.defenseIgnoreDps10s, b: resultB.defenseIgnoreDps10s },
-    { label: '최종 1회 피해', a: resultA.finalHitDamage, b: resultB.finalHitDamage },
-    { label: '최종 공격력', a: resultA.finalAtk, b: resultB.finalAtk },
-    { label: '최종 치피', a: resultA.finalCritDmg, b: resultB.finalCritDmg, suffix: '%' },
-    { label: '총 공속', a: resultA.totalAspd, b: resultB.totalAspd },
-    { label: '최종 공속', a: resultA.finalAspd, b: resultB.finalAspd },
-    { label: '공격 간격', a: resultA.interval, b: resultB.interval, suffix: '초', invert: true, digits: 2 },
+  const rows: CompareRow[] = [
+    { label: '스탯 기반 데미지 (방어 무시)', a: resultA.statDamageIgnoreDefense, b: resultB.statDamageIgnoreDefense },
+    { label: '아이템 적용 최대 데미지 (방어 무시)', a: resultA.itemMaxDamageIgnoreDefense, b: resultB.itemMaxDamageIgnoreDefense },
+    { label: '스탯 기반 데미지 (중 방어)', a: resultA.statDamageMidDefense, b: resultB.statDamageMidDefense },
+    { label: '아이템 적용 최대 데미지 (중 방어)', a: resultA.itemMaxDamageMidDefense, b: resultB.itemMaxDamageMidDefense },
+    { label: '아이템 적용 최대 상태 DPS(10s)', a: resultA.itemMaxDps10s, b: resultB.itemMaxDps10s },
   ]
 
   return (

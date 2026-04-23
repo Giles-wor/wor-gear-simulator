@@ -22,9 +22,9 @@ export function getBestStatRecommendation(
   const cdBuild = { ...build, critDmg: build.critDmg + 25 }
   const aspdBuild = { ...build, attackSpeed: build.attackSpeed + Math.max(build.attackSpeed < 0 ? 0 : 20, current.neededAspd ?? 20) }
 
-  const atkGain = calculateBuild(hero, leftSet, rightSet, atkBuild).defenseIgnoreDps10s - current.defenseIgnoreDps10s
-  const cdGain = calculateBuild(hero, leftSet, rightSet, cdBuild).defenseIgnoreDps10s - current.defenseIgnoreDps10s
-  const aspdGain = calculateBuild(hero, leftSet, rightSet, aspdBuild).defenseIgnoreDps10s - current.defenseIgnoreDps10s
+  const atkGain = calculateBuild(hero, leftSet, rightSet, atkBuild).itemMaxDps10s - current.itemMaxDps10s
+  const cdGain = calculateBuild(hero, leftSet, rightSet, cdBuild).itemMaxDps10s - current.itemMaxDps10s
+  const aspdGain = calculateBuild(hero, leftSet, rightSet, aspdBuild).itemMaxDps10s - current.itemMaxDps10s
 
   const ranking = [
     { key: '공격력', gain: atkGain },
