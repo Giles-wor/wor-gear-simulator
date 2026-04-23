@@ -18,6 +18,8 @@ export type DamageResult = {
   finalAtk: number
   finalCritRate: number
   finalCritDmg: number
+  awakeningAtkBonusApplied: number
+  attackSpeedProfileBaseInterval: number
   pantheonAspdBonus: number
   totalAspd: number
   finalAspd: number
@@ -26,15 +28,15 @@ export type DamageResult = {
   neededAspd: number | null
   normalDamageBonus: number
   totalDamageBonus: number
-  statAvgDps: number
-  itemAvgDps: number
+  finalHitDamage: number
+  statDps10s: number
+  itemDps10s: number
+  defenseIgnoreDps10s: number
   rightSetSummary: {
     name: string
     summary: string
     details: string[]
   }
-  scenarioDps: { label: string; defense: number; dps: number }[]
-  avgDps: number
   critAlert: boolean
 }
 
@@ -57,6 +59,7 @@ export function getBreakpointInfo(baseInterval: number, finalAspd: number) {
   }
 
   return {
+    profileBaseInterval: profile.baseInterval,
     interval: current.interval,
     nextThreshold: next?.requiredTotalAspd ?? null,
     neededAspd: next ? Math.max(0, next.requiredTotalAspd - finalAspd) : null
@@ -78,24 +81,20 @@ function damageMultiplier(rightSet: GearSet | undefined, uptime: number) {
   }
 }
 
-function buildScenarioDps(
+function calculateDamageMetrics(
   finalAtk: number,
   critMultiplier: number,
   interval: number,
-  scenarios: { label: string; defense: number }[],
   damageBonus: number,
 ) {
-  return scenarios.map((scenario) => {
-    const rawDamage = Math.max(finalAtk - scenario.defense, finalAtk * 0.05)
-    const critAppliedDamage = rawDamage * critMultiplier
-    const hitDamage = critAppliedDamage * (1 + damageBonus)
-    const dps = hitDamage / interval
-    return {
-      label: scenario.label,
-      defense: scenario.defense,
-      dps: Math.round(dps)
-    }
-  })
+  const rawDamage = finalAtk
+  const critAppliedDamage = rawDamage * critMultiplier
+  const hitDamage = critAppliedDamage * (1 + damageBonus)
+
+  return {
+    finalHitDamage: Math.round(hitDamage),
+    dps10s: Math.round((hitDamage / interval) * 10),
+  }
 }
 
 function formatPercent(value: number) {
@@ -177,7 +176,6 @@ export function calculateBuild(
   leftSet: GearSet | undefined,
   rightSet: GearSet | undefined,
   build: BuildInput,
-  scenarios: { label: string; defense: number }[],
 ): DamageResult {
   const awakeningBonus = build.awakeningOn ? hero.awakeningAtkBonus : 0
   const pantheonAspdBonus = build.pantheonAspdOn ? 40 : 0
@@ -196,18 +194,16 @@ export function calculateBuild(
   const critMultiplier = 1 + critRateRatio * (finalCritDmg / 100 - 1)
   const draculaBurstBonus = hero.burstAtkBonusPer100Aspd ? (totalAspd / 100) * hero.burstAtkBonusPer100Aspd : 0
 
-  const statScenarioDps = buildScenarioDps(finalAtk, critMultiplier, bp.interval, scenarios, leftSetDamagePct + draculaBurstBonus)
-  const scenarioDps = buildScenarioDps(finalAtk, critMultiplier, bp.interval, scenarios, normalDamageBonus + leftSetDamagePct + totalDamageBonus + draculaBurstBonus)
-  const maxItemScenarioDps = buildScenarioDps(finalAtk, critMultiplier, bp.interval, scenarios, (maxConditional.normalDamageBonus ?? 0) + leftSetDamagePct + (maxConditional.totalDamageBonus ?? 0) + draculaBurstBonus)
-
-  const statAvgDps = Math.round(statScenarioDps.reduce((sum, item) => sum + item.dps, 0) / statScenarioDps.length)
-  const avgDps = Math.round(scenarioDps.reduce((sum, item) => sum + item.dps, 0) / scenarioDps.length)
-  const itemAvgDps = Math.round(maxItemScenarioDps.reduce((sum, item) => sum + item.dps, 0) / maxItemScenarioDps.length)
+  const statMetrics = calculateDamageMetrics(finalAtk, critMultiplier, bp.interval, leftSetDamagePct + draculaBurstBonus)
+  const liveMetrics = calculateDamageMetrics(finalAtk, critMultiplier, bp.interval, normalDamageBonus + leftSetDamagePct + totalDamageBonus + draculaBurstBonus)
+  const maxItemMetrics = calculateDamageMetrics(finalAtk, critMultiplier, bp.interval, (maxConditional.normalDamageBonus ?? 0) + leftSetDamagePct + (maxConditional.totalDamageBonus ?? 0) + draculaBurstBonus)
 
   return {
     finalAtk,
     finalCritRate,
     finalCritDmg,
+    awakeningAtkBonusApplied: awakeningBonus,
+    attackSpeedProfileBaseInterval: bp.profileBaseInterval,
     pantheonAspdBonus,
     totalAspd,
     finalAspd,
@@ -216,11 +212,11 @@ export function calculateBuild(
     neededAspd: bp.neededAspd,
     normalDamageBonus,
     totalDamageBonus: leftSetDamagePct + totalDamageBonus + draculaBurstBonus,
-    statAvgDps,
-    itemAvgDps,
+    finalHitDamage: liveMetrics.finalHitDamage,
+    statDps10s: statMetrics.dps10s,
+    itemDps10s: maxItemMetrics.dps10s,
+    defenseIgnoreDps10s: liveMetrics.dps10s,
     rightSetSummary: getRightSetSummary(rightSet),
-    scenarioDps,
-    avgDps,
     critAlert: finalCritRate < 100
   }
 }
