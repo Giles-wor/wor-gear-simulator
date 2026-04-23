@@ -14,8 +14,6 @@ function getDefaultUptime(setId: string) {
 
 export function BuildForm({ title, build, onChange }: BuildFormProps) {
   const selectedRight = rightSets.find((set) => set.id === build.rightSetId)
-  const uptimeLabel = selectedRight?.conditionLabel ?? '조건부 세트 유지율'
-  const showUptime = selectedRight?.defaultUptime !== undefined
 
   return (
     <section className="card buildCard">
@@ -54,24 +52,13 @@ export function BuildForm({ title, build, onChange }: BuildFormProps) {
           options={rightSets}
           onChange={(value) => onChange({ ...build, rightSetId: value, setUptime: getDefaultUptime(value) })}
         />
-        {showUptime ? (
-          <NumberField
-            label={uptimeLabel}
-            value={build.setUptime}
-            min={0}
-            max={1}
-            step={0.05}
-            suffix="0~1"
-            onChange={(value) => onChange({ ...build, setUptime: value })}
-          />
-        ) : null}
       </div>
 
       <div className="muted detailNote">
         <strong>세트 설명:</strong> {selectedRight?.notes ?? '선택된 세트 설명 없음'}
       </div>
       <p className="muted helperText">
-        입력값 기준: 인게임 총 속성 합산치 기준으로 넣습니다. 장비, 아티팩트, 세트의 상시 스탯은 이미 포함된 것으로 보고 판테온 공속과 조건부 세트 효과만 별도로 계산합니다.
+        입력값 기준: 인게임 총 속성 합산치 기준으로 넣습니다. 장비, 아티팩트, 세트의 상시 스탯은 이미 포함된 것으로 보고 판테온 공속과 우측 3세트 조건부 효과만 결과에서 별도로 설명합니다.
       </p>
     </section>
   )

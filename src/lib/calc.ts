@@ -26,6 +26,11 @@ export type DamageResult = {
   neededAspd: number | null
   normalDamageBonus: number
   totalDamageBonus: number
+  rightSetSummary: {
+    name: string
+    summary: string
+    details: string[]
+  }
   scenarioDps: { label: string; defense: number; dps: number }[]
   avgDps: number
   critAlert: boolean
@@ -68,6 +73,80 @@ function damageMultiplier(rightSet: GearSet | undefined, uptime: number) {
     normalDamageBonus: (rightSet.normalDamage ?? 0) * appliedUptime,
     totalDamageBonus: (rightSet.damagePct ?? 0) * appliedUptime,
     bonusCritDmg: (rightSet.critDmg ?? 0) * appliedUptime
+  }
+}
+
+function formatPercent(value: number) {
+  return `${Math.round(value * 100)}%`
+}
+
+function getRightSetSummary(rightSet: GearSet | undefined) {
+  if (!rightSet) {
+    return {
+      name: '없음',
+      summary: '우측 3세트 조건부 효과 없음',
+      details: ['조건부 효과를 따로 계산하지 않습니다.']
+    }
+  }
+
+  const display = rightSet.conditionalDisplay
+
+  if (!display || display.type === 'none') {
+    return {
+      name: rightSet.name,
+      summary: '조건부 효과 없음',
+      details: ['입력 총 스탯에 상시 효과가 이미 포함되어 있다고 가정합니다.']
+    }
+  }
+
+  if (display.type === 'infernal_roar') {
+    return {
+      name: rightSet.name,
+      summary: display.summary,
+      details: [
+        '일반 공격 피해: +40%',
+        '스킬 공격 피해: 추가 피해증가 없음'
+      ]
+    }
+  }
+
+  if (display.type === 'soulbound_arcana') {
+    return {
+      name: rightSet.name,
+      summary: display.summary,
+      details: [
+        `스킬 1회 사용: 피해증가 ${formatPercent(0.1)}`,
+        `스킬 5회 사용: 피해증가 ${formatPercent(0.5)}`
+      ]
+    }
+  }
+
+  if (display.type === 'cataclysm') {
+    return {
+      name: rightSet.name,
+      summary: display.summary,
+      details: [
+        `치명타 1회: 피해증가 ${formatPercent(0.1)}`,
+        `치명타 5회: 피해증가 ${formatPercent(0.5)}`
+      ]
+    }
+  }
+
+  if (display.type === 'hells_lament') {
+    return {
+      name: rightSet.name,
+      summary: display.summary,
+      details: [
+        '궁극기 미사용: 추가 조건부 효과 없음',
+        `궁극기 사용: 피해증가 ${formatPercent(rightSet.damagePct ?? 0)} / 치명타 피해 +${rightSet.critDmg ?? 0}%`
+      ]
+    }
+  }
+
+  return {
+    name: rightSet.name,
+    summary: rightSet.notes,
+    details: [rightSet.notes]
   }
 }
 
@@ -120,6 +199,7 @@ export function calculateBuild(
     neededAspd: bp.neededAspd,
     normalDamageBonus,
     totalDamageBonus: leftSetDamagePct + totalDamageBonus + draculaBurstBonus,
+    rightSetSummary: getRightSetSummary(rightSet),
     scenarioDps,
     avgDps,
     critAlert: finalCritRate < 100

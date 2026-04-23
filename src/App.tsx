@@ -8,6 +8,7 @@ import { HeroHeader } from './components/HeroHeader'
 import { BuildForm } from './components/BuildForm'
 import { BuildResultCard } from './components/BuildResultCard'
 import { ComparisonSummary } from './components/ComparisonSummary'
+import { QuickCompareTable } from './components/QuickCompareTable'
 
 const defaultBuild: BuildInput = {
   totalAtk: 12000,
@@ -44,6 +45,7 @@ export default function App() {
       <HeroHeader hero={hero} heroOptions={heroes} heroId={heroId} onHeroChange={setHeroId} />
 
       <ComparisonSummary resultA={resultA} resultB={resultB} />
+      <QuickCompareTable resultA={resultA} resultB={resultB} />
 
       <main className="columns">
         <BuildForm title="세팅 A" build={buildA} onChange={setBuildA} />
@@ -51,16 +53,17 @@ export default function App() {
       </main>
 
       <section className="resultsGrid">
-        <BuildResultCard title="세팅 A 결과" result={resultA} recommendation={recA} />
-        <BuildResultCard title="세팅 B 결과" result={resultB} recommendation={recB} />
+        <BuildResultCard title="세팅 A 결과" result={resultA} compareAgainst={resultB} recommendation={recA} />
+        <BuildResultCard title="세팅 B 결과" result={resultB} compareAgainst={resultA} recommendation={recB} />
       </section>
 
       <section className="card footerNote">
         <h3>현재 버전 메모</h3>
         <ul>
           <li>공속 breakpoint는 기본 공격 간격 그룹 기준으로 관리하며, 총 공속은 기본 100 포함 기준으로 계산합니다.</li>
+          <li>입력 총 공속과 판테온 공속을 합쳐 최종 공속을 만들고, 공격 간격은 최종 공속 기준으로 판정합니다.</li>
           <li>입력 총 스탯에는 장비/아티팩트/세트의 상시 수치가 이미 포함된 것으로 보고, 조건부 효과만 별도 반영합니다.</li>
-          <li>조건부 세트는 유지율(0~1)로 평균 DPS에 반영합니다.</li>
+          <li>우측 3세트 조건부 효과는 사용자 입력 없이 결과 카드에서 발동 구조를 설명합니다.</li>
           <li>데이터와 계산 로직은 분리되어 있어 GitHub Pages 같은 정적 배포에 그대로 맞출 수 있습니다.</li>
         </ul>
       </section>
