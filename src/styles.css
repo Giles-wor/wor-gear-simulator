@@ -1,0 +1,76 @@
+:root {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #f5f7fb;
+  background: #0f1320;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: linear-gradient(180deg, #0f1320, #1b2238); }
+input, select { font: inherit; }
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.card {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+}
+
+.heroBanner, .rowSpace { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.columns, .resultsGrid { display: grid; gap: 16px; margin-top: 16px; }
+.columns { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.resultsGrid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.summaryCard, .footerNote { margin-top: 16px; }
+.summaryGrid, .grid, .statList, .scenarioBox { display: grid; gap: 12px; }
+.summaryGrid { grid-template-columns: repeat(3, 1fr); margin-top: 12px; }
+.grid { grid-template-columns: repeat(2, 1fr); }
+.statList { grid-template-columns: repeat(2, 1fr); margin-top: 12px; }
+.scenarioBox { margin-top: 12px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field span, .muted, .eyebrow { color: #cfd6e6; }
+.field input, .field select {
+  width: 100%;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.08);
+  color: white;
+  padding: 12px;
+}
+.checkboxField { justify-content: flex-end; }
+.checkboxField input { width: 24px; height: 24px; }
+.bigNumber { font-size: 2rem; }
+.alert {
+  background: rgba(255, 87, 87, 0.16);
+  color: #ffd0d0;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.recommendBox {
+  margin-top: 14px;
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 14px;
+  padding: 12px;
+}
+.statList > div, .scenarioBox > div, .summaryGrid > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+}
+ul { padding-left: 20px; }
+
+@media (max-width: 720px) {
+  .heroBanner, .rowSpace { flex-direction: column; align-items: stretch; }
+  .grid, .statList, .summaryGrid { grid-template-columns: 1fr; }
+  .bigNumber { font-size: 1.75rem; }
+}
