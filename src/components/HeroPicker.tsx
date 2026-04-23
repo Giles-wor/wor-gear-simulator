@@ -2,15 +2,18 @@ import { useDeferredValue, useMemo, useState } from 'react'
 import type { Hero } from '../data/heroes'
 
 type HeroPickerProps = {
-  heroId: string
+  selectedHeroId: string
+  appliedHeroId: string
   heroes: Hero[]
   onChange: (heroId: string) => void
+  onApply: () => void
 }
 
-export function HeroPicker({ heroId, heroes, onChange }: HeroPickerProps) {
+export function HeroPicker({ selectedHeroId, appliedHeroId, heroes, onChange, onApply }: HeroPickerProps) {
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
-  const currentHero = heroes.find((hero) => hero.id === heroId) ?? heroes[0]
+  const currentHero = heroes.find((hero) => hero.id === selectedHeroId) ?? heroes[0]
+  const appliedHero = heroes.find((hero) => hero.id === appliedHeroId) ?? heroes[0]
 
   const filteredHeroes = useMemo(() => {
     const normalizedQuery = deferredQuery.trim().toLowerCase()
@@ -45,7 +48,7 @@ export function HeroPicker({ heroId, heroes, onChange }: HeroPickerProps) {
 
       <label className="field heroSelect">
         <span>영웅 선택</span>
-        <select value={heroId} onChange={(event) => onChange(event.target.value)}>
+        <select value={selectedHeroId} onChange={(event) => onChange(event.target.value)}>
           {filteredHeroes.length > 0 ? (
             filteredHeroes.map((hero) => (
               <option key={hero.id} value={hero.id}>
@@ -60,8 +63,14 @@ export function HeroPicker({ heroId, heroes, onChange }: HeroPickerProps) {
         </select>
       </label>
 
+      <button type="button" className="applyButton" onClick={onApply}>
+        영웅 적용
+      </button>
+
       <p className="muted heroPickerMeta">
         검색 결과 {filteredHeroes.length}명 / 전체 {heroes.length}명
+        {' · '}
+        현재 적용: {appliedHero.name}
       </p>
     </div>
   )

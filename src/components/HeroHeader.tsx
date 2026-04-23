@@ -4,11 +4,13 @@ import { HeroPicker } from './HeroPicker'
 type HeroHeaderProps = {
   hero: Hero
   heroOptions: Hero[]
-  heroId: string
+  selectedHeroId: string
+  appliedHeroId: string
   onHeroChange: (heroId: string) => void
+  onHeroApply: () => void
 }
 
-export function HeroHeader({ hero, heroOptions, heroId, onHeroChange }: HeroHeaderProps) {
+export function HeroHeader({ hero, heroOptions, selectedHeroId, appliedHeroId, onHeroChange, onHeroApply }: HeroHeaderProps) {
   return (
     <>
       <header className="heroBanner card">
@@ -17,7 +19,13 @@ export function HeroHeader({ hero, heroOptions, heroId, onHeroChange }: HeroHead
           <h1>모바일 DPS 시뮬레이터</h1>
           <p className="muted">정교한 전투 재현보다, 어떤 스탯과 세트가 더 좋은지 빠르게 판단하는 데 초점을 둔 버전입니다.</p>
         </div>
-        <HeroPicker heroId={heroId} heroes={heroOptions} onChange={onHeroChange} />
+        <HeroPicker
+          selectedHeroId={selectedHeroId}
+          appliedHeroId={appliedHeroId}
+          heroes={heroOptions}
+          onChange={onHeroChange}
+          onApply={onHeroApply}
+        />
       </header>
 
       <section className="card summaryCard">
