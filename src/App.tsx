@@ -10,12 +10,12 @@ import { BuildResultCard } from './components/BuildResultCard'
 import { ComparisonSummary } from './components/ComparisonSummary'
 
 const defaultBuild: BuildInput = {
-  flatAtk: 5000,
-  atkPct: 0,
+  totalAtk: 12000,
   critRate: 100,
   critDmg: 250,
   attackSpeed: 120,
   awakeningOn: true,
+  pantheonAspdOn: true,
   leftSetId: 'warlord',
   rightSetId: 'infernal_roar',
   setUptime: 1
@@ -58,7 +58,8 @@ export default function App() {
       <section className="card footerNote">
         <h3>현재 버전 메모</h3>
         <ul>
-          <li>공속 breakpoint와 영웅 스탯은 시드 데이터입니다. 실제 커뮤니티 검증값으로 교체하면 바로 반영됩니다.</li>
+          <li>공속 breakpoint는 기본 공격 간격 그룹 기준으로 관리하며, 총 공속은 기본 100 포함 기준으로 계산합니다.</li>
+          <li>입력 총 스탯에는 장비/아티팩트/세트의 상시 수치가 이미 포함된 것으로 보고, 조건부 효과만 별도 반영합니다.</li>
           <li>조건부 세트는 유지율(0~1)로 평균 DPS에 반영합니다.</li>
           <li>데이터와 계산 로직은 분리되어 있어 GitHub Pages 같은 정적 배포에 그대로 맞출 수 있습니다.</li>
         </ul>

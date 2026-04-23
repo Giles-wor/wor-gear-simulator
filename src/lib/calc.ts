@@ -1,14 +1,14 @@
 import type { Hero } from '../data/heroes'
 import type { GearSet } from '../data/gearSets'
-import { attackSpeedTable } from '../data/attackSpeed'
+import { getAttackSpeedProfile } from '../data/attackSpeed'
 
 export type BuildInput = {
-  flatAtk: number
-  atkPct: number
+  totalAtk: number
   critRate: number
   critDmg: number
   attackSpeed: number
   awakeningOn: boolean
+  pantheonAspdOn: boolean
   leftSetId: string
   rightSetId: string
   setUptime: number
@@ -18,6 +18,8 @@ export type DamageResult = {
   finalAtk: number
   finalCritRate: number
   finalCritDmg: number
+  pantheonAspdBonus: number
+  bonusAspd: number
   totalAspd: number
   interval: number
   nextThreshold: number | null
@@ -34,13 +36,14 @@ function clampUptime(value: number) {
   return Math.min(1, Math.max(0, value))
 }
 
-export function getBreakpointInfo(heroId: string, aspd: number) {
-  const table = attackSpeedTable[heroId] ?? [{ threshold: 0, interval: 3 }]
+export function getBreakpointInfo(baseInterval: number, totalAspd: number) {
+  const profile = getAttackSpeedProfile(baseInterval)
+  const table = profile.breakpoints
   let current = table[0]
   let next: typeof current | null = null
 
   for (let i = 0; i < table.length; i += 1) {
-    if (aspd >= table[i].threshold) {
+    if (totalAspd >= table[i].requiredTotalAspd) {
       current = table[i]
       next = table[i + 1] ?? null
     }
@@ -48,8 +51,8 @@ export function getBreakpointInfo(heroId: string, aspd: number) {
 
   return {
     interval: current.interval,
-    nextThreshold: next?.threshold ?? null,
-    neededAspd: next ? Math.max(0, next.threshold - aspd) : null
+    nextThreshold: next?.requiredTotalAspd ?? null,
+    neededAspd: next ? Math.max(0, next.requiredTotalAspd - totalAspd) : null
   }
 }
 
@@ -76,24 +79,25 @@ export function calculateBuild(
   scenarios: { label: string; defense: number }[],
 ): DamageResult {
   const awakeningBonus = build.awakeningOn ? hero.awakeningAtkBonus : 0
-  const setAtkPct = (leftSet?.atkPct ?? 0) + (rightSet?.atkPct ?? 0)
-  const setAspd = (leftSet?.attackSpeed ?? 0) + (rightSet?.attackSpeed ?? 0)
+  const pantheonAspdBonus = build.pantheonAspdOn ? 40 : 0
   const leftSetDamagePct = leftSet?.damagePct ?? 0
   const { normalDamageBonus, totalDamageBonus, bonusCritDmg } = damageMultiplier(rightSet, build.setUptime)
 
-  const baseAtk = hero.baseAtk + awakeningBonus
-  const finalAtk = Math.round((baseAtk + build.flatAtk) * (1 + build.atkPct / 100 + setAtkPct))
+  const finalAtk = Math.round(build.totalAtk + awakeningBonus)
   const finalCritRate = build.critRate
-  const finalCritDmg = build.critDmg + (leftSet?.critDmg ?? 0) + bonusCritDmg
-  const totalAspd = build.attackSpeed + setAspd
-  const bp = getBreakpointInfo(hero.id, totalAspd)
+  const finalCritDmg = build.critDmg + bonusCritDmg
+  const bonusAspd = build.attackSpeed + pantheonAspdBonus
+  const totalAspd = 100 + bonusAspd
+  const bp = getBreakpointInfo(hero.baseInterval, totalAspd)
 
-  const critMultiplier = 1 + Math.min(finalCritRate, 100) / 100 * (finalCritDmg / 100)
-  const draculaBurstBonus = hero.burstAtkBonusPer100Aspd ? (totalAspd / 100) * hero.burstAtkBonusPer100Aspd : 0
+  const critRateRatio = Math.min(finalCritRate, 100) / 100
+  const critMultiplier = 1 + critRateRatio * (finalCritDmg / 100 - 1)
+  const draculaBurstBonus = hero.burstAtkBonusPer100Aspd ? (bonusAspd / 100) * hero.burstAtkBonusPer100Aspd : 0
 
   const scenarioDps = scenarios.map((scenario) => {
     const rawDamage = Math.max(finalAtk - scenario.defense, finalAtk * 0.05)
-    const hitDamage = rawDamage * (1 + normalDamageBonus + leftSetDamagePct + totalDamageBonus + draculaBurstBonus) * critMultiplier
+    const critAppliedDamage = rawDamage * critMultiplier
+    const hitDamage = critAppliedDamage * (1 + normalDamageBonus + leftSetDamagePct + totalDamageBonus + draculaBurstBonus)
     const dps = hitDamage / bp.interval
     return {
       label: scenario.label,
@@ -108,6 +112,8 @@ export function calculateBuild(
     finalAtk,
     finalCritRate,
     finalCritDmg,
+    pantheonAspdBonus,
+    bonusAspd,
     totalAspd,
     interval: bp.interval,
     nextThreshold: bp.nextThreshold,

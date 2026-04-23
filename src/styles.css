@@ -80,6 +80,15 @@ h3 {
 .heroSelect {
   min-width: 220px;
 }
+.heroPicker {
+  display: grid;
+  gap: 10px;
+  min-width: 280px;
+}
+.heroPickerMeta {
+  margin: 0;
+  font-size: 0.9rem;
+}
 .inputShell {
   position: relative;
 }
@@ -144,6 +153,27 @@ h3 {
 }
 .detailNote {
   margin-top: 14px;
+}
+.helperText {
+  margin: 12px 0 0;
+  font-size: 0.92rem;
+}
+.detailGrid {
+  margin-top: 12px;
+}
+.compactHeading {
+  gap: 8px;
+}
+.compactHeroName {
+  font-size: 1.05rem;
+}
+.compactHeroMeta {
+  margin-top: 4px;
+  font-size: 0.92rem;
+}
+.compactSummaryGrid {
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 10px;
 }
 ul { padding-left: 20px; }
 
