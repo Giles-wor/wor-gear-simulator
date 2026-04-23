@@ -28,7 +28,7 @@ export function BuildForm({ title, build, onChange }: BuildFormProps) {
         <NumberField label="총 공격력" value={build.totalAtk} min={0} onChange={(value) => onChange({ ...build, totalAtk: value })} />
         <NumberField label="치명타 확률" value={build.critRate} min={0} max={100} suffix="%" onChange={(value) => onChange({ ...build, critRate: value })} />
         <NumberField label="총 치명타 피해" value={build.critDmg} min={0} suffix="%" onChange={(value) => onChange({ ...build, critDmg: value })} />
-        <NumberField label="총 추가 공속" value={build.attackSpeed} onChange={(value) => onChange({ ...build, attackSpeed: value })} />
+        <NumberField label="총 공속" value={build.attackSpeed} onChange={(value) => onChange({ ...build, attackSpeed: value })} />
         <label className="field checkboxField">
           <span>각성 반영</span>
           <input

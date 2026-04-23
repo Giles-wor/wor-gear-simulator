@@ -91,7 +91,7 @@ export const rightSets: GearSet[] = [
     id: 'cataclysm',
     name: 'Cataclysm',
     slotType: '우측 3세트',
-    damagePct: 0.30,
+    damagePct: 0.50,
     conditionLabel: '치명타 중첩 유지율',
     defaultUptime: 0.75,
     conditionalDisplay: {
