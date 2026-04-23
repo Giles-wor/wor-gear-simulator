@@ -14,11 +14,13 @@ function valueClass(left: number, right: number, invert = false) {
 
 export function QuickCompareTable({ resultA, resultB }: QuickCompareTableProps) {
   const rows = [
+    { label: '스탯 DPS', a: resultA.statAvgDps, b: resultB.statAvgDps },
+    { label: '아이템 DPS', a: resultA.itemAvgDps, b: resultB.itemAvgDps },
     { label: '평균 DPS', a: resultA.avgDps, b: resultB.avgDps },
     { label: '최종 공격력', a: resultA.finalAtk, b: resultB.finalAtk },
     { label: '최종 치피', a: resultA.finalCritDmg, b: resultB.finalCritDmg, suffix: '%' },
-    { label: '총 공속', a: resultA.bonusAspd - resultA.pantheonAspdBonus, b: resultB.bonusAspd - resultB.pantheonAspdBonus },
-    { label: '최종 공속', a: resultA.totalAspd, b: resultB.totalAspd },
+    { label: '총 공속', a: resultA.totalAspd, b: resultB.totalAspd },
+    { label: '최종 공속', a: resultA.finalAspd, b: resultB.finalAspd },
     { label: '공격 간격', a: resultA.interval, b: resultB.interval, suffix: '초', invert: true, digits: 2 },
   ]
 

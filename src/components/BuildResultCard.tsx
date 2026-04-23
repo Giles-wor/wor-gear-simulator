@@ -34,9 +34,9 @@ export function BuildResultCard({ title, result, recommendation, compareAgainst 
       <div className="statList">
         <div><span>최종 공격력</span><strong className={compareClass(result.finalAtk, compareAgainst.finalAtk)}>{result.finalAtk.toLocaleString()}</strong></div>
         <div><span>최종 치피</span><strong className={compareClass(result.finalCritDmg, compareAgainst.finalCritDmg)}>{result.finalCritDmg}%</strong></div>
-        <div><span>총 공속</span><strong className={compareClass(result.bonusAspd - result.pantheonAspdBonus, compareAgainst.bonusAspd - compareAgainst.pantheonAspdBonus)}>{result.bonusAspd - result.pantheonAspdBonus}</strong></div>
+        <div><span>총 공속</span><strong className={compareClass(result.totalAspd, compareAgainst.totalAspd)}>{result.totalAspd}</strong></div>
         <div><span>판테온 공속</span><strong>{result.pantheonAspdBonus}</strong></div>
-        <div><span>최종 공속</span><strong className={compareClass(result.totalAspd, compareAgainst.totalAspd)}>{result.totalAspd}</strong></div>
+        <div><span>최종 공속</span><strong className={compareClass(result.finalAspd, compareAgainst.finalAspd)}>{result.finalAspd}</strong></div>
         <div><span>현재 공격 간격</span><strong className={compareClass(compareAgainst.interval, result.interval)}>{result.interval.toFixed(2)}초</strong></div>
         <div><span>다음 공속 구간</span><strong>{result.nextThreshold ?? '-'}</strong></div>
         <div><span>추가 필요 공속</span><strong>{result.neededAspd ?? '-'}</strong></div>
