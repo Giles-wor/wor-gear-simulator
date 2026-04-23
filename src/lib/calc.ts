@@ -29,6 +29,11 @@ export type DamageResult = {
   critAlert: boolean
 }
 
+function clampUptime(value: number) {
+  if (Number.isNaN(value)) return 0
+  return Math.min(1, Math.max(0, value))
+}
+
 export function getBreakpointInfo(heroId: string, aspd: number) {
   const table = attackSpeedTable[heroId] ?? [{ threshold: 0, interval: 3 }]
   let current = table[0]
@@ -54,7 +59,8 @@ export function findSetById(id: string, sets: GearSet[]) {
 
 function damageMultiplier(rightSet: GearSet | undefined, uptime: number) {
   if (!rightSet) return { normalDamageBonus: 0, totalDamageBonus: 0, bonusCritDmg: 0 }
-  const appliedUptime = rightSet.defaultUptime === undefined ? 1 : uptime
+  const fallbackUptime = rightSet.defaultUptime ?? 1
+  const appliedUptime = rightSet.defaultUptime === undefined ? 1 : clampUptime(Number.isFinite(uptime) ? uptime : fallbackUptime)
   return {
     normalDamageBonus: (rightSet.normalDamage ?? 0) * appliedUptime,
     totalDamageBonus: (rightSet.damagePct ?? 0) * appliedUptime,
@@ -72,6 +78,7 @@ export function calculateBuild(
   const awakeningBonus = build.awakeningOn ? hero.awakeningAtkBonus : 0
   const setAtkPct = (leftSet?.atkPct ?? 0) + (rightSet?.atkPct ?? 0)
   const setAspd = (leftSet?.attackSpeed ?? 0) + (rightSet?.attackSpeed ?? 0)
+  const leftSetDamagePct = leftSet?.damagePct ?? 0
   const { normalDamageBonus, totalDamageBonus, bonusCritDmg } = damageMultiplier(rightSet, build.setUptime)
 
   const baseAtk = hero.baseAtk + awakeningBonus
@@ -86,7 +93,7 @@ export function calculateBuild(
 
   const scenarioDps = scenarios.map((scenario) => {
     const rawDamage = Math.max(finalAtk - scenario.defense, finalAtk * 0.05)
-    const hitDamage = rawDamage * (1 + normalDamageBonus + totalDamageBonus + draculaBurstBonus) * critMultiplier
+    const hitDamage = rawDamage * (1 + normalDamageBonus + leftSetDamagePct + totalDamageBonus + draculaBurstBonus) * critMultiplier
     const dps = hitDamage / bp.interval
     return {
       label: scenario.label,
@@ -106,7 +113,7 @@ export function calculateBuild(
     nextThreshold: bp.nextThreshold,
     neededAspd: bp.neededAspd,
     normalDamageBonus,
-    totalDamageBonus: totalDamageBonus + draculaBurstBonus,
+    totalDamageBonus: leftSetDamagePct + totalDamageBonus + draculaBurstBonus,
     scenarioDps,
     avgDps,
     critAlert: finalCritRate < 100
