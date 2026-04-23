@@ -39,6 +39,28 @@ button {
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.22);
 }
 
+.pageTabs {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.tabButton,
+.pickButton {
+  border: 1px solid rgba(255, 213, 165, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 248, 240, 0.05);
+  color: #fff7ee;
+  padding: 10px 14px;
+}
+
+.tabButton.active,
+.activePick {
+  background: #efb16c;
+  color: #1f1713;
+  font-weight: 700;
+}
+
 .inputPanel,
 .rankPanel,
 .notesPanel,
@@ -182,6 +204,21 @@ h2 {
   gap: 10px;
 }
 
+.rankTableExtended {
+  grid-template-columns: 90px 1fr 1fr 1fr 1fr 1fr 1fr 120px 108px 108px;
+}
+
+.compareCards {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.comparisonCandidates small {
+  color: #cfbca8;
+}
+
 .conditionGrid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -221,11 +258,17 @@ h2 {
   .heroMetaGrid,
   .inputGrid,
   .summaryStrip,
-  .rankTable {
+  .rankTable,
+  .rankTableExtended,
+  .compareCards {
     grid-template-columns: 1fr;
   }
 
   .rankTable {
     gap: 8px;
+  }
+
+  .pageTabs {
+    flex-direction: column;
   }
 }

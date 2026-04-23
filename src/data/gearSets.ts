@@ -38,20 +38,6 @@ export const leftSets: GearSet[] = [
     atkPct: 0.10,
     critDmg: 40,
     notes: '공격력 +10%, 치명타 피해 +40'
-  },
-  {
-    id: 'annihilating_might',
-    name: 'Annihilating Might',
-    slotType: '좌측 2세트',
-    atkPct: 0.15,
-    notes: '공격력 +15%'
-  },
-  {
-    id: 'calamity',
-    name: 'Calamity',
-    slotType: '좌측 2세트',
-    damagePct: 0.10,
-    notes: '피해량 +10%'
   }
 ]
 
