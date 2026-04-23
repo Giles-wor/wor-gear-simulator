@@ -9,8 +9,11 @@
   "scripts": {
     "sync:heroes": "node scripts/sync-heroes.mjs",
     "typecheck": "tsc --noEmit",
+    "typecheck:v1": "tsc --noEmit -p v1/tsconfig.json",
     "dev": "vite",
+    "dev:v1": "vite --config v1/vite.config.ts",
     "build": "npm run typecheck && vite build",
+    "build:v1": "npm run typecheck:v1 && vite build --config v1/vite.config.ts",
     "preview": "vite preview"
   },
   "dependencies": {

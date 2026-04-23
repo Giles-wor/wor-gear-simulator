@@ -1,0 +1,231 @@
+:root {
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  color: #f7f2eb;
+  background:
+    radial-gradient(circle at top left, rgba(221, 141, 60, 0.18), transparent 30%),
+    linear-gradient(180deg, #16120f 0%, #211914 50%, #100d0a 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+body,
+input,
+select,
+button {
+  font: inherit;
+}
+
+.appShell {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.heroPanel,
+.inputPanel,
+.rankPanel,
+.notesPanel {
+  background: rgba(34, 25, 20, 0.8);
+  border: 1px solid rgba(255, 213, 165, 0.16);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.22);
+}
+
+.inputPanel,
+.rankPanel,
+.notesPanel,
+.summaryStrip {
+  margin-top: 18px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #d8c6b2;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+}
+
+h1,
+h2,
+h3,
+p,
+ul {
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 0.95;
+}
+
+h2 {
+  font-size: 1.35rem;
+}
+
+.subtle {
+  margin-top: 10px;
+  color: #cbb9a8;
+  max-width: 760px;
+  line-height: 1.5;
+}
+
+.heroMetaGrid,
+.inputGrid,
+.summaryStrip {
+  display: grid;
+  gap: 12px;
+}
+
+.heroMetaGrid {
+  grid-template-columns: minmax(260px, 1.3fr) repeat(3, minmax(0, 1fr));
+  margin-top: 16px;
+}
+
+.inputGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) repeat(2, auto);
+  margin-top: 16px;
+  align-items: end;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field span {
+  color: #dbcab8;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  border: 1px solid rgba(255, 213, 165, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 248, 240, 0.05);
+  color: #fff7ee;
+  padding: 12px 14px;
+}
+
+.field select option {
+  background: #211914;
+  color: #fff7ee;
+}
+
+.checkField {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 248, 240, 0.05);
+}
+
+.checkField input {
+  width: 18px;
+  height: 18px;
+  accent-color: #efb16c;
+}
+
+.pill,
+.summaryCard,
+.tableCell,
+.tableHead {
+  border-radius: 16px;
+  background: rgba(255, 248, 240, 0.05);
+}
+
+.pill {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  color: #f4e7d8;
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.summaryStrip {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.summaryCard {
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.summaryCard span {
+  color: #cfbca8;
+}
+
+.summaryCard strong {
+  font-size: 1.3rem;
+}
+
+.rankTable {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 90px 1fr 1fr 1fr 1fr 1fr 1fr 120px;
+  gap: 10px;
+}
+
+.conditionGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.tableHead,
+.tableCell {
+  padding: 12px 14px;
+}
+
+.tableHead {
+  color: #f1dbc1;
+  font-weight: 700;
+}
+
+.tableCell {
+  color: #f8efe6;
+}
+
+.rankIndex {
+  color: #efb16c;
+  font-weight: 700;
+}
+
+.strongCell {
+  color: #9ff1b9;
+  font-weight: 700;
+}
+
+.notesPanel ul {
+  margin-top: 12px;
+  padding-left: 18px;
+  color: #d8c7b5;
+  line-height: 1.6;
+}
+
+@media (max-width: 960px) {
+  .heroMetaGrid,
+  .inputGrid,
+  .summaryStrip,
+  .rankTable {
+    grid-template-columns: 1fr;
+  }
+
+  .rankTable {
+    gap: 8px;
+  }
+}
