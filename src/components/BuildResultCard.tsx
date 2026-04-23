@@ -27,6 +27,9 @@ export function BuildResultCard({ title, result, recommendation }: BuildResultCa
       <div className="statList">
         <div><span>최종 공격력</span><strong>{result.finalAtk.toLocaleString()}</strong></div>
         <div><span>최종 치피</span><strong>{result.finalCritDmg}%</strong></div>
+        <div><span>입력 공속 기준</span><strong>{result.bonusAspd - result.pantheonAspdBonus}</strong></div>
+        <div><span>판테온 공속</span><strong>{result.pantheonAspdBonus}</strong></div>
+        <div><span>총 추가 공속</span><strong>{result.bonusAspd}</strong></div>
         <div><span>총 공속</span><strong>{result.totalAspd}</strong></div>
         <div><span>현재 공격 간격</span><strong>{result.interval.toFixed(2)}초</strong></div>
         <div><span>다음 공속 구간</span><strong>{result.nextThreshold ?? '-'}</strong></div>

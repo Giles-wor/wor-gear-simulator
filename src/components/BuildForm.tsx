@@ -27,17 +27,24 @@ export function BuildForm({ title, build, onChange }: BuildFormProps) {
       </div>
 
       <div className="grid">
-        <NumberField label="추가 공격력" value={build.flatAtk} min={0} onChange={(value) => onChange({ ...build, flatAtk: value })} />
-        <NumberField label="공격력%" value={build.atkPct} min={0} onChange={(value) => onChange({ ...build, atkPct: value })} />
+        <NumberField label="총 공격력" value={build.totalAtk} min={0} onChange={(value) => onChange({ ...build, totalAtk: value })} />
         <NumberField label="치명타 확률" value={build.critRate} min={0} max={100} suffix="%" onChange={(value) => onChange({ ...build, critRate: value })} />
-        <NumberField label="치명타 피해" value={build.critDmg} min={0} suffix="%" onChange={(value) => onChange({ ...build, critDmg: value })} />
-        <NumberField label="공격 속도" value={build.attackSpeed} onChange={(value) => onChange({ ...build, attackSpeed: value })} />
+        <NumberField label="총 치명타 피해" value={build.critDmg} min={0} suffix="%" onChange={(value) => onChange({ ...build, critDmg: value })} />
+        <NumberField label="총 추가 공속" value={build.attackSpeed} onChange={(value) => onChange({ ...build, attackSpeed: value })} />
         <label className="field checkboxField">
           <span>각성 반영</span>
           <input
             type="checkbox"
             checked={build.awakeningOn}
             onChange={(event) => onChange({ ...build, awakeningOn: event.target.checked })}
+          />
+        </label>
+        <label className="field checkboxField">
+          <span>판테온 공속 +40</span>
+          <input
+            type="checkbox"
+            checked={build.pantheonAspdOn}
+            onChange={(event) => onChange({ ...build, pantheonAspdOn: event.target.checked })}
           />
         </label>
         <SelectField label="좌측 2세트" value={build.leftSetId} options={leftSets} onChange={(value) => onChange({ ...build, leftSetId: value })} />
@@ -63,6 +70,9 @@ export function BuildForm({ title, build, onChange }: BuildFormProps) {
       <div className="muted detailNote">
         <strong>세트 설명:</strong> {selectedRight?.notes ?? '선택된 세트 설명 없음'}
       </div>
+      <p className="muted helperText">
+        입력값 기준: 인게임 총 속성 합산치 기준으로 넣습니다. 장비, 아티팩트, 세트의 상시 스탯은 이미 포함된 것으로 보고 판테온 공속과 조건부 세트 효과만 별도로 계산합니다.
+      </p>
     </section>
   )
 }

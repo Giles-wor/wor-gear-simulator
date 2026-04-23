@@ -19,7 +19,7 @@ export function getBestStatRecommendation(
     }
   }
 
-  const atkBuild = { ...build, flatAtk: build.flatAtk + 1000 }
+  const atkBuild = { ...build, totalAtk: build.totalAtk + 1000 }
   const cdBuild = { ...build, critDmg: build.critDmg + 25 }
   const aspdBuild = { ...build, attackSpeed: build.attackSpeed + Math.max(build.attackSpeed < 0 ? 0 : 20, current.neededAspd ?? 20) }
 
