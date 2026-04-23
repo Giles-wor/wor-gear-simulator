@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/data/attackSpeed.ts","./src/data/defenseScenarios.ts","./src/data/gearSets.ts","./src/data/heroes.ts","./src/lib/calc.ts","./src/lib/recommend.ts"],"version":"5.9.3"}
