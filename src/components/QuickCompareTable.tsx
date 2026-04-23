@@ -28,6 +28,7 @@ export function QuickCompareTable({ resultA, resultB }: QuickCompareTableProps) 
     { label: '스탯 기반 데미지 (중 방어)', a: resultA.statDamageMidDefense, b: resultB.statDamageMidDefense },
     { label: '아이템 적용 최대 데미지 (중 방어)', a: resultA.itemMaxDamageMidDefense, b: resultB.itemMaxDamageMidDefense },
     { label: '아이템 적용 최대 상태 DPS(10s)', a: resultA.itemMaxDps10s, b: resultB.itemMaxDps10s },
+    { label: '공격 간격', a: resultA.interval, b: resultB.interval, suffix: '초', invert: true, digits: 2 },
   ]
 
   return (

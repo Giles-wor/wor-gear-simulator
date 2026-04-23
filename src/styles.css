@@ -89,6 +89,14 @@ h3 {
   margin: 0;
   font-size: 0.9rem;
 }
+.applyButton {
+  border: 0;
+  border-radius: 12px;
+  background: #e7a65f;
+  color: #221610;
+  padding: 12px 14px;
+  font-weight: 700;
+}
 .inputShell {
   position: relative;
 }

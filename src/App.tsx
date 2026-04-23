@@ -22,11 +22,12 @@ const defaultBuild: BuildInput = {
 }
 
 export default function App() {
-  const [heroId, setHeroId] = useState(heroes[0].id)
+  const [selectedHeroId, setSelectedHeroId] = useState(heroes[0].id)
+  const [appliedHeroId, setAppliedHeroId] = useState(heroes[0].id)
   const [buildA, setBuildA] = useState<BuildInput>(defaultBuild)
   const [buildB, setBuildB] = useState<BuildInput>({ ...defaultBuild, critDmg: 300, attackSpeed: 80, rightSetId: 'cataclysm', setUptime: 0.75 })
 
-  const hero = heroes.find((item) => item.id === heroId) ?? heroes[0]
+  const hero = heroes.find((item) => item.id === appliedHeroId) ?? heroes[0]
 
   const leftA = useMemo(() => findSetById(buildA.leftSetId, leftSets), [buildA.leftSetId])
   const rightA = useMemo(() => findSetById(buildA.rightSetId, rightSets), [buildA.rightSetId])
@@ -41,7 +42,14 @@ export default function App() {
 
   return (
     <div className="app">
-      <HeroHeader hero={hero} heroOptions={heroes} heroId={heroId} onHeroChange={setHeroId} />
+      <HeroHeader
+        hero={hero}
+        heroOptions={heroes}
+        selectedHeroId={selectedHeroId}
+        appliedHeroId={appliedHeroId}
+        onHeroChange={setSelectedHeroId}
+        onHeroApply={() => setAppliedHeroId(selectedHeroId)}
+      />
 
       <ComparisonSummary resultA={resultA} resultB={resultB} />
       <QuickCompareTable resultA={resultA} resultB={resultB} />
