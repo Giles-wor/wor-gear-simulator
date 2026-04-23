@@ -4,10 +4,11 @@ import { leftSets, rightSets } from './data/gearSets'
 import { calculateBuild, findSetById, type BuildInput } from './lib/calc'
 import { getBestStatRecommendation } from './lib/recommend'
 import { HeroHeader } from './components/HeroHeader'
-import { BuildForm } from './components/BuildForm'
+import { CompareBuildForm } from './components/CompareBuildForm'
 import { BuildResultCard } from './components/BuildResultCard'
 import { ComparisonSummary } from './components/ComparisonSummary'
 import { QuickCompareTable } from './components/QuickCompareTable'
+import { DamageTimelineChart } from './components/DamageTimelineChart'
 
 const defaultBuild: BuildInput = {
   totalAtk: 12000,
@@ -53,11 +54,9 @@ export default function App() {
 
       <ComparisonSummary resultA={resultA} resultB={resultB} />
       <QuickCompareTable resultA={resultA} resultB={resultB} />
+      <DamageTimelineChart resultA={resultA} resultB={resultB} />
 
-      <main className="columns">
-        <BuildForm title="세팅 A" build={buildA} onChange={setBuildA} />
-        <BuildForm title="세팅 B" build={buildB} onChange={setBuildB} />
-      </main>
+      <CompareBuildForm buildA={buildA} buildB={buildB} onChangeA={setBuildA} onChangeB={setBuildB} />
 
       <section className="resultsGrid">
         <BuildResultCard title="세팅 A 결과" result={resultA} compareAgainst={resultB} recommendation={recA} />

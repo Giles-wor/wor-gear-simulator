@@ -165,6 +165,75 @@ h3 {
   border-radius: 12px;
   background: rgba(255, 248, 240, 0.05);
 }
+.compareFormCard {
+  margin-top: 16px;
+}
+.compareFormGrid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+.compareFormHeader,
+.compareFormLabel,
+.compareFormGrid input,
+.compareFormGrid select {
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+.compareFormHeader,
+.compareFormLabel {
+  background: rgba(255, 248, 240, 0.05);
+}
+.compareFormGrid input,
+.compareFormGrid select {
+  width: 100%;
+  border: 1px solid rgba(255, 214, 170, 0.18);
+  background: rgba(255, 248, 240, 0.06);
+  color: #fff8f0;
+}
+.compareFormRow {
+  display: contents;
+}
+.chartCard {
+  margin-top: 16px;
+}
+.timelineChart {
+  width: 100%;
+  height: auto;
+  margin-top: 16px;
+  overflow: visible;
+}
+.chartGrid {
+  stroke: rgba(255, 248, 240, 0.08);
+  stroke-width: 1;
+}
+.chartTickLabel {
+  fill: #d9cabb;
+  font-size: 10px;
+}
+.chartLegend {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.chartNote {
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+.legendSwatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  margin-right: 8px;
+}
+.legendA {
+  background: #9ff1b9;
+}
+.legendB {
+  background: #ff9f9f;
+}
 .compareHeader {
   color: #f2dcc2;
   font-weight: 700;
@@ -250,9 +319,17 @@ ul { padding-left: 20px; }
     grid-template-columns: 1.1fr 1fr 1fr;
     gap: 8px;
   }
+  .compareFormGrid {
+    grid-template-columns: 1.1fr 1fr 1fr;
+    gap: 8px;
+  }
   .compareHeader,
+  .compareFormHeader,
+  .compareFormLabel,
   .compareLabel,
-  .compareValue {
+  .compareValue,
+  .compareFormGrid input,
+  .compareFormGrid select {
     padding: 9px 10px;
     font-size: 0.92rem;
   }

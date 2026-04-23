@@ -22,9 +22,9 @@ export function getBestStatRecommendation(
   const cdBuild = { ...build, critDmg: build.critDmg + 25 }
   const aspdBuild = { ...build, attackSpeed: build.attackSpeed + Math.max(build.attackSpeed < 0 ? 0 : 20, current.neededAspd ?? 20) }
 
-  const atkGain = calculateBuild(hero, leftSet, rightSet, atkBuild).itemMaxDps10s - current.itemMaxDps10s
-  const cdGain = calculateBuild(hero, leftSet, rightSet, cdBuild).itemMaxDps10s - current.itemMaxDps10s
-  const aspdGain = calculateBuild(hero, leftSet, rightSet, aspdBuild).itemMaxDps10s - current.itemMaxDps10s
+  const atkGain = calculateBuild(hero, leftSet, rightSet, atkBuild).itemMaxCumulative10s - current.itemMaxCumulative10s
+  const cdGain = calculateBuild(hero, leftSet, rightSet, cdBuild).itemMaxCumulative10s - current.itemMaxCumulative10s
+  const aspdGain = calculateBuild(hero, leftSet, rightSet, aspdBuild).itemMaxCumulative10s - current.itemMaxCumulative10s
 
   const ranking = [
     { key: '공격력', gain: atkGain },
@@ -34,6 +34,6 @@ export function getBestStatRecommendation(
 
   return {
     title: `${ranking[0].key} 우선`,
-    reason: `현재 기준 기대 DPS 상승폭은 ${ranking[0].key} > ${ranking[1].key} > ${ranking[2].key} 순입니다.`
+    reason: `현재 기준 10초 누적 상승폭은 ${ranking[0].key} > ${ranking[1].key} > ${ranking[2].key} 순입니다.`
   }
 }
