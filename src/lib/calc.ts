@@ -34,9 +34,9 @@ export type DamageResult = {
   itemMaxDamageIgnoreDefense: number
   statDamageMidDefense: number
   itemMaxDamageMidDefense: number
-  itemMaxCumulative10s: number
-  itemMaxDps10s: number
-  timeline10s: { second: number; cumulativeDamage: number }[]
+  itemMaxCumulative30s: number
+  itemMaxDps30s: number
+  timeline30s: { second: number; cumulativeDamage: number }[]
   rightSetSummary: {
     name: string
     summary: string
@@ -99,7 +99,7 @@ function calculateDamageMetrics(
 
   return {
     damage: Math.round(hitDamage),
-    dps10s: Math.round((hitDamage / interval) * 10),
+    dps30s: Math.round((hitDamage / interval) * 30),
   }
 }
 
@@ -162,7 +162,7 @@ function getAttackTypeDamageBonus(rightSet: GearSet | undefined, type: 'basic' |
   }
 }
 
-function buildTimeline10s(
+function buildTimeline30s(
   rightSet: GearSet | undefined,
   finalAtk: number,
   finalCritDmg: number,
@@ -173,7 +173,7 @@ function buildTimeline10s(
 ) {
   const hitTimes: number[] = []
   let currentTime = 0
-  while (currentTime <= 10 + 1e-9) {
+  while (currentTime <= 30 + 1e-9) {
     hitTimes.push(Number(currentTime.toFixed(4)))
     currentTime += interval
   }
@@ -183,7 +183,7 @@ function buildTimeline10s(
   let hitCount = 0
   let processedHits = 0
 
-  for (let second = 0; second <= 10; second += 1) {
+  for (let second = 0; second <= 30; second += 1) {
     while (processedHits < hitTimes.length && hitTimes[processedHits] <= second + 1e-9) {
       let rightSetDamageBonus = 0
       let rightSetCritBonus = 0
@@ -325,8 +325,8 @@ export function calculateBuild(
   const ultimateCritMultiplier = 1 + critRateRatio * ((finalCritDmg + ultimateAttackMax.critDmgBonus) / 100 - 1)
   const basicAttackItemMaxDamage = calculateDamageMetrics(finalAtk, basicCritMultiplier, bp.interval, leftSetDamagePct + draculaBurstBonus + basicAttackMax.damageBonus, 0).damage
   const ultimateAttackItemMaxDamage = calculateDamageMetrics(finalAtk, ultimateCritMultiplier, bp.interval, leftSetDamagePct + draculaBurstBonus + ultimateAttackMax.damageBonus, 0).damage
-  const timeline10s = buildTimeline10s(rightSet, finalAtk, finalCritDmg, critRateRatio, bp.interval, leftSetDamagePct + draculaBurstBonus, midDefense)
-  const itemMaxCumulative10s = timeline10s[timeline10s.length - 1]?.cumulativeDamage ?? 0
+  const timeline30s = buildTimeline30s(rightSet, finalAtk, finalCritDmg, critRateRatio, bp.interval, leftSetDamagePct + draculaBurstBonus, midDefense)
+  const itemMaxCumulative30s = timeline30s[timeline30s.length - 1]?.cumulativeDamage ?? 0
 
   return {
     finalAtk,
@@ -348,9 +348,9 @@ export function calculateBuild(
     itemMaxDamageIgnoreDefense: itemIgnoreDefenseMetrics.damage,
     statDamageMidDefense: statMidDefenseMetrics.damage,
     itemMaxDamageMidDefense: itemMidDefenseMetrics.damage,
-    itemMaxCumulative10s,
-    itemMaxDps10s: Math.round(itemMaxCumulative10s / 10),
-    timeline10s,
+    itemMaxCumulative30s,
+    itemMaxDps30s: Math.round(itemMaxCumulative30s / 30),
+    timeline30s,
     rightSetSummary: getRightSetSummary(rightSet),
     critAlert: finalCritRate < 100
   }
