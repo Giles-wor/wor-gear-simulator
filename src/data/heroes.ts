@@ -53,6 +53,7 @@ const heroOverrides: Partial<Record<string, Partial<Hero>>> = {
     awakeningAtkBonus: 300,
   },
   lady_alexandra: {
+    awakeningAtkBonus: 300,
     attackSpeedProfileBaseIntervalOverride: 2.0,
   },
 }
