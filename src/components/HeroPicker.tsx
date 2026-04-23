@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import type { Hero } from '../data/heroes'
 
 type HeroPickerProps = {
@@ -33,6 +33,14 @@ export function HeroPicker({ selectedHeroId, appliedHeroId, heroes, onChange, on
       return haystack.includes(normalizedQuery)
     })
   }, [deferredQuery, heroes])
+
+  useEffect(() => {
+    if (filteredHeroes.length === 0) return
+    const hasSelectedHero = filteredHeroes.some((hero) => hero.id === selectedHeroId)
+    if (!hasSelectedHero) {
+      onChange(filteredHeroes[0].id)
+    }
+  }, [filteredHeroes, onChange, selectedHeroId])
 
   return (
     <div className="heroPicker">
