@@ -48,6 +48,7 @@ export type DamageResult = {
     critMultiplier: number
     statDamageBonus: number
     itemDamageBonus: number
+    itemDamageBonusParts: { label: string; value: number }[]
     itemCritDmgBonus: number
     hitCount30s: number
     factionAccessoryName: string | null
@@ -362,6 +363,14 @@ export function calculateBuild(
   const ultimateAttackItemMaxDamage = calculateDamageMetrics(finalAtk, ultimateCritMultiplier, bp.interval, statDamageBonus + ultimateAttackMax.damageBonus, 0).damage
   const timeline30s = buildTimeline30s(rightSet, finalAtk, baseFinalCritDmg, critRateRatio, bp.interval, statDamageBonus + lordBasicDamageBonus, effectiveMidDefense)
   const itemMaxCumulative30s = timeline30s[timeline30s.length - 1]?.cumulativeDamage ?? 0
+  const itemDamageBonusParts = [
+    { label: leftSet?.name ? `좌측 ${leftSet.name}` : '좌측 세트', value: leftSetDamagePct },
+    { label: rightSet?.name ? `우측 ${rightSet.name}` : '우측 세트', value: maxSetBonus.damageBonus },
+    { label: hero.name, value: automaticHeroDamageBonus },
+    { label: factionAccessory?.sourceName ?? '진영 악세서리', value: factionDamageBonus },
+    { label: lordEffect?.sourceName ?? '영주 피해', value: lordDamageBonus },
+    { label: lordEffect ? `${lordEffect.name} 기본 공격` : '영주 기본 공격', value: lordBasicDamageBonus },
+  ].filter((part) => Math.abs(part.value) > 1e-9)
   const appliedEffects = [
     ...(hero.burstAtkBonusPer100Aspd ? [`${hero.name}: 공속 100당 피해 +${Math.round(hero.burstAtkBonusPer100Aspd * 100)}% 자동 적용`] : []),
     ...(factionAccessory ? [`${factionAccessory.sourceName}: ${factionAccessory.summary}`] : []),
@@ -398,6 +407,7 @@ export function calculateBuild(
       critMultiplier: Number(maxCritMultiplier.toFixed(4)),
       statDamageBonus,
       itemDamageBonus: itemDamageBonus + lordBasicDamageBonus,
+      itemDamageBonusParts,
       itemCritDmgBonus: maxSetBonus.critDmgBonus,
       hitCount30s: timeline30s.length > 0 ? Math.max(0, Math.round(30 / bp.interval) + 1) : 0,
       factionAccessoryName: factionAccessory?.sourceName ?? null,

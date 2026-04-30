@@ -12,6 +12,14 @@ import { DamageTimelineChart } from './components/DamageTimelineChart'
 import { getFactionAccessoryOptions } from './data/factionAccessories'
 import { getLordOptionsForFactions } from './data/lordEffects'
 
+function formatDamageBonusParts(parts: { label: string; value: number }[], total: number) {
+  const expression = parts.length > 0
+    ? parts.map((part) => `${part.label}(${Math.round(part.value * 100)}%)`).join(' + ')
+    : '추가 피해 증가 없음(0%)'
+
+  return `(${expression}) = ${Math.round(total * 100)}%`
+}
+
 const defaultBuild: BuildInput = {
   totalAtk: 12000,
   critRate: 100,
@@ -144,6 +152,9 @@ export default function App() {
               <div className="formulaLine">
                 <span>피해 증가</span>
                 <strong>{Math.round(result.formula.itemDamageBonus * 100)}%</strong>
+                <small className="formulaBreakdown">
+                  {formatDamageBonusParts(result.formula.itemDamageBonusParts, result.formula.itemDamageBonus)}
+                </small>
               </div>
               <div className="formulaExpression">
                 1타 최대값 = 기본 피해 x 치명 보정 x (1 + 피해 증가)
