@@ -90,14 +90,14 @@ export const rightSets: GearSet[] = [
     id: 'hells_lament',
     name: "Hell's Lament",
     slotType: '우측 3세트',
-    critDmg: 30,
-    damagePct: 0.20,
+    critDmg: 50,
+    damagePct: 0.35,
     conditionLabel: '궁 버프 유지율',
     defaultUptime: 0.5,
     conditionalDisplay: {
       type: 'hells_lament',
       summary: '궁극기 사용 여부에 따라 피해량/치피 보정이 달라짐'
     },
-    notes: '궁 사용 후 일정 시간 피해량/치피 증가'
+    notes: '궁 사용 후 20초 동안 피해량 +35%, 치명타 피해 +50%'
   }
 ]

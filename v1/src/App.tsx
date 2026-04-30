@@ -3,6 +3,7 @@ import { heroes } from '../../src/data/heroes'
 import { leftSets, rightSets } from '../../src/data/gearSets'
 import { calculateBuild, findSetById, type BuildInput } from '../../src/lib/calc'
 import { getBestStatRecommendation } from '../../src/lib/recommend'
+import { CompareBuildForm } from '../../src/components/CompareBuildForm'
 import { ComparisonSummary } from '../../src/components/ComparisonSummary'
 import { QuickCompareTable } from '../../src/components/QuickCompareTable'
 import { DamageTimelineChart } from '../../src/components/DamageTimelineChart'
@@ -14,8 +15,6 @@ import { simulateHeroLoadout, type SimulationConditions } from './lib/simulator'
 
 type RankedCombination = {
   key: string
-  leftSetId: string
-  leftSetName: string
   rightSetId: string
   rightSetName: string
   artifactId: string
@@ -46,45 +45,50 @@ const defaultBuild: V1BuildInput = {
   pantheonAspdOn: true,
 }
 
+function effectIsActive(condition: string | undefined, conditions: SimulationConditions) {
+  if (!condition || condition === 'none') return true
+  if (condition === 'antiAir') return conditions.antiAir
+  if (condition === 'ultimate') return conditions.ultimateFromStart
+  if (condition === 'belowHalfHp') return conditions.targetBelowHalfHp
+  return true
+}
+
 function buildRankings(heroId: string, build: V1BuildInput, conditions: SimulationConditions, useFactionExclusive: boolean, useHeroExclusive: boolean) {
   const hero = heroes.find((item) => item.id === heroId) ?? heroes[0]
   const ranked: RankedCombination[] = []
+  const noLeftSet = leftSets.find((set) => set.id === 'none_left')
   const factionExclusive = hero.factions.map((faction) => factionExclusiveEffects[faction.toLowerCase().replace(/[^a-z0-9]+/g, '_')]).find(Boolean)
   const heroExclusive = heroExclusiveEffects[hero.id]
 
-  for (const leftSet of leftSets) {
-    for (const rightSet of rightSets) {
-      for (const artifact of artifacts) {
-        const result = simulateHeroLoadout({
-          hero,
-          leftSet,
-          rightSet,
-          artifact,
-          factionExclusive: useFactionExclusive ? factionExclusive : undefined,
-          heroExclusive: useHeroExclusive ? heroExclusive : undefined,
-          totalAtk: build.totalAtk,
-          critRate: build.critRate,
-          critDmg: build.critDmg,
-          totalAspd: build.attackSpeed,
-          awakeningOn: build.awakeningOn,
-          pantheonOn: build.pantheonAspdOn,
-          conditions,
-        })
+  for (const rightSet of rightSets) {
+    for (const artifact of artifacts) {
+      const result = simulateHeroLoadout({
+        hero,
+        leftSet: noLeftSet,
+        rightSet,
+        artifact,
+        factionExclusive: useFactionExclusive ? factionExclusive : undefined,
+        heroExclusive: useHeroExclusive ? heroExclusive : undefined,
+        totalAtk: build.totalAtk,
+        critRate: build.critRate,
+        critDmg: build.critDmg,
+        totalAspd: build.attackSpeed,
+        awakeningOn: build.awakeningOn,
+        pantheonOn: build.pantheonAspdOn,
+        conditions,
+      })
 
-        ranked.push({
-          key: `${leftSet.id}__${rightSet.id}__${artifact.id}`,
-          leftSetId: leftSet.id,
-          leftSetName: leftSet.name,
-          rightSetId: rightSet.id,
-          rightSetName: rightSet.name,
-          artifactId: artifact.id,
-          artifactName: artifact.name,
-          score: result.cumulative30s,
-          interval: result.interval,
-          basicDamage: result.basicHit,
-          ultimateDamage: result.ultimateHit,
-        })
-      }
+      ranked.push({
+        key: `${rightSet.id}__${artifact.id}`,
+        rightSetId: rightSet.id,
+        rightSetName: rightSet.name,
+        artifactId: artifact.id,
+        artifactName: artifact.name,
+        score: result.cumulative30s,
+        interval: result.interval,
+        basicDamage: result.basicHit,
+        ultimateDamage: result.ultimateHit,
+      })
     }
   }
 
@@ -108,10 +112,38 @@ export default function App() {
   })
   const [selectedKeyA, setSelectedKeyA] = useState<string | null>(null)
   const [selectedKeyB, setSelectedKeyB] = useState<string | null>(null)
+  const [compareBuildA, setCompareBuildA] = useState<BuildInput>({
+    totalAtk: defaultBuild.totalAtk,
+    critRate: defaultBuild.critRate,
+    critDmg: defaultBuild.critDmg,
+    attackSpeed: defaultBuild.attackSpeed,
+    awakeningOn: defaultBuild.awakeningOn,
+    pantheonAspdOn: defaultBuild.pantheonAspdOn,
+    factionAccessoryId: 'none',
+    lordEffectId: 'none',
+    leftSetId: 'none_left',
+    rightSetId: rightSets[0].id,
+    setUptime: 1,
+  })
+  const [compareBuildB, setCompareBuildB] = useState<BuildInput>({
+    totalAtk: defaultBuild.totalAtk,
+    critRate: defaultBuild.critRate,
+    critDmg: defaultBuild.critDmg,
+    attackSpeed: defaultBuild.attackSpeed,
+    awakeningOn: defaultBuild.awakeningOn,
+    pantheonAspdOn: defaultBuild.pantheonAspdOn,
+    factionAccessoryId: 'none',
+    lordEffectId: 'none',
+    leftSetId: 'none_left',
+    rightSetId: rightSets[0].id,
+    setUptime: 1,
+  })
   const hero = heroes.find((item) => item.id === heroId) ?? heroes[0]
   const profile = heroProfiles[hero.id]
   const factionExclusive = hero.factions.map((faction) => factionExclusiveEffects[faction.toLowerCase().replace(/[^a-z0-9]+/g, '_')]).find(Boolean)
   const heroExclusive = heroExclusiveEffects[hero.id]
+  const factionExclusiveActive = factionExclusive ? effectIsActive(factionExclusive.condition, conditions) && useFactionExclusive : false
+  const heroExclusiveActive = heroExclusive ? effectIsActive(heroExclusive.condition, conditions) && useHeroExclusive : false
 
   const rankings = useMemo(
     () => buildRankings(hero.id, build, conditions, useFactionExclusive, useHeroExclusive),
@@ -132,29 +164,39 @@ export default function App() {
     }
   }, [rankings, selectedKeyA, selectedKeyB, topTen])
 
-  const compareBuildA: BuildInput = {
-    totalAtk: build.totalAtk,
-    critRate: build.critRate,
-    critDmg: build.critDmg,
-    attackSpeed: build.attackSpeed,
-    awakeningOn: build.awakeningOn,
-    pantheonAspdOn: build.pantheonAspdOn,
-    leftSetId: selectedA?.leftSetId ?? leftSets[0].id,
-    rightSetId: selectedA?.rightSetId ?? rightSets[0].id,
-    setUptime: 1,
-  }
+  useEffect(() => {
+    if (!selectedA || !selectedB) return
 
-  const compareBuildB: BuildInput = {
-    totalAtk: build.totalAtk,
-    critRate: build.critRate,
-    critDmg: build.critDmg,
-    attackSpeed: build.attackSpeed,
-    awakeningOn: build.awakeningOn,
-    pantheonAspdOn: build.pantheonAspdOn,
-    leftSetId: selectedB?.leftSetId ?? leftSets[0].id,
-    rightSetId: selectedB?.rightSetId ?? rightSets[0].id,
-    setUptime: 1,
-  }
+    setCompareBuildA((prev) => ({
+      ...prev,
+      totalAtk: build.totalAtk,
+      critRate: build.critRate,
+      critDmg: build.critDmg,
+      attackSpeed: build.attackSpeed,
+      awakeningOn: build.awakeningOn,
+      pantheonAspdOn: build.pantheonAspdOn,
+      factionAccessoryId: 'none',
+      lordEffectId: 'none',
+      leftSetId: 'none_left',
+      rightSetId: selectedA.rightSetId,
+      setUptime: 1,
+    }))
+
+    setCompareBuildB((prev) => ({
+      ...prev,
+      totalAtk: build.totalAtk,
+      critRate: build.critRate,
+      critDmg: build.critDmg,
+      attackSpeed: build.attackSpeed,
+      awakeningOn: build.awakeningOn,
+      pantheonAspdOn: build.pantheonAspdOn,
+      factionAccessoryId: 'none',
+      lordEffectId: 'none',
+      leftSetId: 'none_left',
+      rightSetId: selectedB.rightSetId,
+      setUptime: 1,
+    }))
+  }, [build, selectedA, selectedB, heroId, useFactionExclusive])
 
   const compareLeftA = findSetById(compareBuildA.leftSetId, leftSets)
   const compareRightA = findSetById(compareBuildA.rightSetId, rightSets)
@@ -199,6 +241,14 @@ export default function App() {
           <div className="pill">기본 간격 {hero.baseInterval.toFixed(1)}초</div>
           <div className="pill">각성 +{hero.awakeningAtkBonus}</div>
           <div className="pill">{hero.heroClass} · {hero.damageType}</div>
+        </div>
+
+        <div className="factionBadgeRow">
+          {hero.factions.map((faction) => (
+            <span key={faction} className="factionBadge">
+              {faction}
+            </span>
+          ))}
         </div>
       </header>
 
@@ -264,7 +314,7 @@ export default function App() {
           <section className="summaryStrip">
             <div className="summaryCard">
               <span>최적 조합</span>
-              <strong>{best.leftSetName} + {best.rightSetName}</strong>
+              <strong>{best.rightSetName}</strong>
             </div>
             <div className="summaryCard">
               <span>최대 30초 누적</span>
@@ -286,6 +336,24 @@ export default function App() {
 
           <section className="notesPanel">
             <h3>현재 영웅 프로필 / 전용 효과</h3>
+            <div className="effectSummaryGrid">
+              <div className="effectCard">
+                <span>진영 전용 악세서리</span>
+                <strong>{factionExclusive?.sourceName ?? '없음'}</strong>
+                <p>{factionExclusive?.summary ?? '적용 가능한 진영 전용 효과 없음'}</p>
+                <small className={factionExclusiveActive ? 'activeEffect' : 'inactiveEffect'}>
+                  {factionExclusive ? (factionExclusiveActive ? '현재 조건에서 활성' : '현재 조건에서 비활성') : '없음'}
+                </small>
+              </div>
+              <div className="effectCard">
+                <span>영웅 전용 장비</span>
+                <strong>{heroExclusive?.sourceName ?? '없음'}</strong>
+                <p>{heroExclusive?.summary ?? '적용 가능한 영웅 전용 장비 없음'}</p>
+                <small className={heroExclusiveActive ? 'activeEffect' : 'inactiveEffect'}>
+                  {heroExclusive ? (heroExclusiveActive ? '현재 조건에서 활성' : '현재 조건에서 비활성') : '없음'}
+                </small>
+              </div>
+            </div>
             <ul>
               {(profile?.notes ?? ['공통 프로필']).map((note) => <li key={note}>{note}</li>)}
               {useFactionExclusive && factionExclusive ? <li>{factionExclusive.sourceName}: {factionExclusive.summary}</li> : null}
@@ -303,7 +371,6 @@ export default function App() {
 
             <div className="rankTable rankTableExtended">
               <div className="tableHead">순위</div>
-              <div className="tableHead">좌측 2세트</div>
               <div className="tableHead">우측 3세트</div>
               <div className="tableHead">아티팩트</div>
               <div className="tableHead">30초 누적</div>
@@ -316,7 +383,6 @@ export default function App() {
               {topTen.map((row, index) => (
                 <Fragment key={row.key}>
                   <div className="tableCell rankIndex">#{index + 1}</div>
-                  <div className="tableCell">{row.leftSetName}</div>
                   <div className="tableCell">{row.rightSetName}</div>
                   <div className="tableCell">{row.artifactName}</div>
                   <div className="tableCell strongCell">{row.score.toLocaleString()}</div>
@@ -342,7 +408,7 @@ export default function App() {
             <h3>v1 실험 범위</h3>
             <ul>
               <li>hero profile, 아티팩트, 진영/영웅 전용 장비, 조건 토글, 30초 시뮬레이션 창을 붙였습니다.</li>
-              <li>현재 데이터는 모든 영웅 선택 기준으로 세트 랭킹과 비교 후보 선택이 가능합니다.</li>
+              <li>현재 데이터는 모든 영웅 선택 기준으로 우측 3세트 랭킹과 비교 후보 선택이 가능합니다.</li>
               <li>랭킹에서 고른 A/B 후보는 상단 탭의 `v0 비교` 페이지에서 바로 상세 비교할 수 있습니다.</li>
             </ul>
           </section>
@@ -352,15 +418,26 @@ export default function App() {
           <section className="summaryStrip comparisonCandidates">
             <div className="summaryCard">
               <span>세팅 A 후보</span>
-              <strong>{selectedA?.leftSetName} + {selectedA?.rightSetName}</strong>
+              <strong>{selectedA?.rightSetName}</strong>
               <small>{selectedA?.artifactName}</small>
             </div>
             <div className="summaryCard">
               <span>세팅 B 후보</span>
-              <strong>{selectedB?.leftSetName} + {selectedB?.rightSetName}</strong>
+              <strong>{selectedB?.rightSetName}</strong>
               <small>{selectedB?.artifactName}</small>
             </div>
           </section>
+
+          <CompareBuildForm
+            hero={hero}
+            buildA={compareBuildA}
+            buildB={compareBuildB}
+            accessoryOptions={[]}
+            lordOptions={[]}
+            onChangeA={setCompareBuildA}
+            onChangeB={setCompareBuildB}
+            showLeftSet={false}
+          />
 
           <ComparisonSummary resultA={compareResultA} resultB={compareResultB} />
           <QuickCompareTable resultA={compareResultA} resultB={compareResultB} />
@@ -374,7 +451,7 @@ export default function App() {
           <section className="notesPanel">
             <h3>v0 비교 페이지 안내</h3>
             <ul>
-              <li>이 페이지는 랭킹에서 고른 좌측 2세트 / 우측 3세트 조합을 v0 공통 계산 로직으로 다시 비교합니다.</li>
+              <li>이 페이지는 랭킹에서 고른 우측 3세트 조합을 v0 공통 계산 로직으로 다시 비교합니다.</li>
               <li>아티팩트와 영웅/진영 전용 장비는 비교 후보 설명으로만 유지되고, 상세 비교 수치는 v0 기준 세트 비교에 초점을 둡니다.</li>
               <li>다시 후보를 바꾸려면 `v1 최적화` 탭으로 돌아가 A/B를 다시 선택하면 됩니다.</li>
             </ul>

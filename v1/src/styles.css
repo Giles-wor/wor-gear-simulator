@@ -112,6 +112,24 @@ h2 {
   margin-top: 16px;
 }
 
+.factionBadgeRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.factionBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(239, 177, 108, 0.14);
+  border: 1px solid rgba(239, 177, 108, 0.24);
+  color: #f6e4d0;
+  font-size: 0.92rem;
+}
+
 .inputGrid {
   grid-template-columns: repeat(4, minmax(0, 1fr)) repeat(2, auto);
   margin-top: 16px;
@@ -205,7 +223,7 @@ h2 {
 }
 
 .rankTableExtended {
-  grid-template-columns: 90px 1fr 1fr 1fr 1fr 1fr 1fr 120px 108px 108px;
+  grid-template-columns: 90px 1fr 1fr 1fr 1fr 1fr 120px 108px 108px;
 }
 
 .compareCards {
@@ -213,6 +231,38 @@ h2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
+}
+
+.effectSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.effectCard {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 248, 240, 0.05);
+  display: grid;
+  gap: 8px;
+}
+
+.effectCard span,
+.effectCard p {
+  color: #cfbca8;
+}
+
+.effectCard strong {
+  font-size: 1.05rem;
+}
+
+.activeEffect {
+  color: #9ff1b9;
+}
+
+.inactiveEffect {
+  color: #ffb2b2;
 }
 
 .comparisonCandidates small {
@@ -260,7 +310,8 @@ h2 {
   .summaryStrip,
   .rankTable,
   .rankTableExtended,
-  .compareCards {
+  .compareCards,
+  .effectSummaryGrid {
     grid-template-columns: 1fr;
   }
 

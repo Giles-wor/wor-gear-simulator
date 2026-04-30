@@ -36,7 +36,7 @@ body, input, select, button, textarea { font: inherit; }
 .columns, .resultsGrid { display: grid; gap: 16px; margin-top: 16px; }
 .columns { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
 .resultsGrid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-.summaryCard, .footerNote, .comparisonCard, .quickCompareCard { margin-top: 16px; }
+.summaryCard, .footerNote, .comparisonCard, .quickCompareCard, .recommendationPanel, .formulaPanel { margin-top: 16px; }
 .summaryGrid, .grid, .statList, .scenarioBox { display: grid; gap: 12px; }
 .summaryGrid { grid-template-columns: repeat(3, 1fr); margin-top: 12px; }
 .grid { grid-template-columns: repeat(2, 1fr); }
@@ -148,6 +148,13 @@ h3 {
   border-radius: 14px;
   padding: 12px;
 }
+.effectInfoBox {
+  margin-top: 14px;
+  background: rgba(109, 201, 143, 0.1);
+  border: 1px solid rgba(109, 201, 143, 0.24);
+  border-radius: 14px;
+  padding: 12px;
+}
 .setInfoBox p {
   margin-top: 6px;
 }
@@ -204,6 +211,57 @@ h3 {
 }
 .compareFormRow {
   display: contents;
+}
+.setRankingGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+.setRankingGrid > div {
+  display: grid;
+  gap: 8px;
+  min-height: 92px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 248, 240, 0.05);
+}
+.setRankingGrid span {
+  color: #d9cabb;
+}
+.setRankingGrid strong {
+  font-size: 1.2rem;
+}
+.formulaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+.formulaCard {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 248, 240, 0.05);
+}
+.formulaLine {
+  display: grid;
+  gap: 5px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(18, 15, 13, 0.28);
+}
+.formulaLine span {
+  color: #d9cabb;
+  font-size: 0.92rem;
+}
+.formulaExpression {
+  padding: 10px 12px;
+  border: 1px solid rgba(231, 166, 95, 0.22);
+  border-radius: 12px;
+  color: #f6ead8;
+  background: rgba(231, 166, 95, 0.08);
 }
 .chartCard {
   margin-top: 16px;
@@ -320,7 +378,7 @@ ul { padding-left: 20px; }
 
 @media (max-width: 720px) {
   .heroBanner, .rowSpace, .sectionHeading { flex-direction: column; align-items: stretch; }
-  .grid, .statList, .summaryGrid { grid-template-columns: 1fr; }
+  .grid, .statList, .summaryGrid, .setRankingGrid, .formulaGrid { grid-template-columns: 1fr; }
   .bigNumber { font-size: 1.75rem; }
   .app { padding: 12px; }
   .card { padding: 14px; border-radius: 18px; }

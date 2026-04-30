@@ -62,6 +62,17 @@ export function BuildResultCard({ title, result, recommendation, compareAgainst 
         </div>
       </div>
 
+      {result.appliedEffects.length ? (
+        <div className="effectInfoBox">
+          <strong>자동/선택 적용 효과</strong>
+          <div className="setDetailList">
+            {result.appliedEffects.map((effect) => (
+              <div key={effect}>{effect}</div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="recommendBox">
         <strong>추천 스탯: {recommendation.title}</strong>
         <p>{recommendation.reason}</p>

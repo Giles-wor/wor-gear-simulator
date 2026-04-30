@@ -1,12 +1,19 @@
 import type { ReactNode } from 'react'
 import { leftSets, rightSets } from '../data/gearSets'
+import type { FactionAccessoryEffect } from '../data/factionAccessories'
+import type { Hero } from '../data/heroes'
+import type { LordEffect } from '../data/lordEffects'
 import type { BuildInput } from '../lib/calc'
 
 type CompareBuildFormProps = {
+  hero: Hero
   buildA: BuildInput
   buildB: BuildInput
+  accessoryOptions: FactionAccessoryEffect[]
+  lordOptions: LordEffect[]
   onChangeA: (next: BuildInput) => void
   onChangeB: (next: BuildInput) => void
+  showLeftSet?: boolean
 }
 
 type RowProps = {
@@ -25,13 +32,56 @@ function Row({ label, left, right }: RowProps) {
   )
 }
 
-export function CompareBuildForm({ buildA, buildB, onChangeA, onChangeB }: CompareBuildFormProps) {
+function getDefaultUptime(setId: string) {
+  return rightSets.find((set) => set.id === setId)?.defaultUptime ?? 1
+}
+
+function accessorySelect(
+  build: BuildInput,
+  options: FactionAccessoryEffect[],
+  onChange: (next: BuildInput) => void,
+) {
+  const value = options.some((option) => option.id === build.factionAccessoryId) ? build.factionAccessoryId : 'none'
+
+  return (
+    <select value={value} onChange={(e) => onChange({ ...build, factionAccessoryId: e.target.value })}>
+      <option value="none">적용 안 함</option>
+      {options.map((option) => (
+        <option key={option.id} value={option.id}>
+          {option.faction} · {option.summary}
+        </option>
+      ))}
+    </select>
+  )
+}
+
+function lordSelect(
+  build: BuildInput,
+  options: LordEffect[],
+  onChange: (next: BuildInput) => void,
+) {
+  const value = options.some((option) => option.id === build.lordEffectId) ? build.lordEffectId : 'none'
+
+  return (
+    <select value={value} onChange={(e) => onChange({ ...build, lordEffectId: e.target.value })}>
+      <option value="none">영주 없음</option>
+      {options.map((option) => (
+        <option key={option.id} value={option.id}>
+          {option.faction} · {option.name}
+        </option>
+      ))}
+    </select>
+  )
+}
+
+export function CompareBuildForm({ hero, buildA, buildB, accessoryOptions, lordOptions, onChangeA, onChangeB, showLeftSet = true }: CompareBuildFormProps) {
   return (
     <section className="card compareFormCard">
       <div className="sectionHeading">
         <div>
           <p className="eyebrow">입력 비교</p>
           <h2>세팅 A / B를 같은 화면에서 입력</h2>
+          <p className="muted compactHeroMeta">{hero.name}의 진영 기준으로 영주와 3세트 악세서리를 선택합니다.</p>
         </div>
       </div>
 
@@ -60,28 +110,30 @@ export function CompareBuildForm({ buildA, buildB, onChangeA, onChangeB }: Compa
           left={<input type="number" value={buildA.attackSpeed} onChange={(e) => onChangeA({ ...buildA, attackSpeed: Number(e.target.value) })} />}
           right={<input type="number" value={buildB.attackSpeed} onChange={(e) => onChangeB({ ...buildB, attackSpeed: Number(e.target.value) })} />}
         />
-        <Row
-          label="좌측 2세트"
-          left={
-            <select value={buildA.leftSetId} onChange={(e) => onChangeA({ ...buildA, leftSetId: e.target.value })}>
-              {leftSets.map((set) => <option key={set.id} value={set.id}>{set.name}</option>)}
-            </select>
-          }
-          right={
-            <select value={buildB.leftSetId} onChange={(e) => onChangeB({ ...buildB, leftSetId: e.target.value })}>
-              {leftSets.map((set) => <option key={set.id} value={set.id}>{set.name}</option>)}
-            </select>
-          }
-        />
+        {showLeftSet ? (
+          <Row
+            label="좌측 2세트"
+            left={
+              <select value={buildA.leftSetId} onChange={(e) => onChangeA({ ...buildA, leftSetId: e.target.value })}>
+                {leftSets.map((set) => <option key={set.id} value={set.id}>{set.name}</option>)}
+              </select>
+            }
+            right={
+              <select value={buildB.leftSetId} onChange={(e) => onChangeB({ ...buildB, leftSetId: e.target.value })}>
+                {leftSets.map((set) => <option key={set.id} value={set.id}>{set.name}</option>)}
+              </select>
+            }
+          />
+        ) : null}
         <Row
           label="우측 3세트"
           left={
-            <select value={buildA.rightSetId} onChange={(e) => onChangeA({ ...buildA, rightSetId: e.target.value })}>
+            <select value={buildA.rightSetId} onChange={(e) => onChangeA({ ...buildA, rightSetId: e.target.value, setUptime: getDefaultUptime(e.target.value) })}>
               {rightSets.map((set) => <option key={set.id} value={set.id}>{set.name}</option>)}
             </select>
           }
           right={
-            <select value={buildB.rightSetId} onChange={(e) => onChangeB({ ...buildB, rightSetId: e.target.value })}>
+            <select value={buildB.rightSetId} onChange={(e) => onChangeB({ ...buildB, rightSetId: e.target.value, setUptime: getDefaultUptime(e.target.value) })}>
               {rightSets.map((set) => <option key={set.id} value={set.id}>{set.name}</option>)}
             </select>
           }
@@ -95,6 +147,16 @@ export function CompareBuildForm({ buildA, buildB, onChangeA, onChangeB }: Compa
           label="판테온 공속 +40"
           left={<input type="checkbox" checked={buildA.pantheonAspdOn} onChange={(e) => onChangeA({ ...buildA, pantheonAspdOn: e.target.checked })} />}
           right={<input type="checkbox" checked={buildB.pantheonAspdOn} onChange={(e) => onChangeB({ ...buildB, pantheonAspdOn: e.target.checked })} />}
+        />
+        <Row
+          label="영주 효과"
+          left={lordSelect(buildA, lordOptions, onChangeA)}
+          right={lordSelect(buildB, lordOptions, onChangeB)}
+        />
+        <Row
+          label="진영 3세트 악세서리"
+          left={accessorySelect(buildA, accessoryOptions, onChangeA)}
+          right={accessorySelect(buildB, accessoryOptions, onChangeB)}
         />
       </div>
     </section>

@@ -76,7 +76,7 @@ function getRightSetBonus(rightSet: GearSet | undefined, conditions: SimulationC
   }
 
   if (rightSet.id === 'hells_lament') {
-    return conditions.ultimateFromStart ? { damageBonus: 0.2, critDmgBonus: 30 } : { damageBonus: 0, critDmgBonus: 0 }
+    return conditions.ultimateFromStart ? { damageBonus: 0.35, critDmgBonus: 50 } : { damageBonus: 0, critDmgBonus: 0 }
   }
 
   return { damageBonus: rightSet.damagePct ?? 0, critDmgBonus: rightSet.critDmg ?? 0 }
@@ -142,13 +142,20 @@ export function simulateHeroLoadout(params: {
     (profile.penetrationBonus ?? 0) +
     (factionBonus.penetrationBonus ?? 0) +
     (heroExclusiveBonus.penetrationBonus ?? 0)
+  const aspdScalingDamageBonus = (profile.aspdDamageBonusPer100 ?? 0) * (totalAspd / 100)
 
   let cumulativeDamage = 0
   let processed = 0
   let hitIndex = 0
   let lastBasicHit = 0
   let lastUltimateHit = 0
-  const appliedEffects = [...profile.notes, ...factionBonus.notes, ...heroExclusiveBonus.notes, ...artifactBonus.notes]
+  const appliedEffects = [
+    ...profile.notes,
+    ...(aspdScalingDamageBonus > 0 ? [`공속 연동 피해 증가 +${Math.round(aspdScalingDamageBonus * 100)}%`] : []),
+    ...factionBonus.notes,
+    ...heroExclusiveBonus.notes,
+    ...artifactBonus.notes,
+  ]
 
   for (let second = 0; second <= battleSeconds; second += 1) {
     while (processed < hitTimes.length && hitTimes[processed] <= second + 1e-9) {
@@ -156,7 +163,9 @@ export function simulateHeroLoadout(params: {
       const attackType = conditions.ultimateFromStart && hitIndex % 5 === 0 ? 'ultimate' : 'basic'
       const profileDamageBonus =
         (conditions.markedTarget ? profile.markDamageBonus ?? 0 : 0) +
-        (conditions.antiAir ? profile.antiAirDamageBonus ?? 0 : 0)
+        (conditions.antiAir ? profile.antiAirDamageBonus ?? 0 : 0) +
+        (conditions.burningTarget ? profile.burningDamageBonus ?? 0 : 0) +
+        (conditions.ultimateFromStart ? profile.ultimateStartDamageBonus ?? 0 : 0)
       const rightSetBonus = getRightSetBonus(rightSet, conditions, hitIndex, attackType)
       const critMultiplier = getDamageMultiplier(
         critRate,
@@ -169,6 +178,7 @@ export function simulateHeroLoadout(params: {
         critMultiplier *
         (1 +
           leftDamageBonus +
+          aspdScalingDamageBonus +
           profileDamageBonus +
           rightSetBonus.damageBonus +
           factionBonus.damageBonus +

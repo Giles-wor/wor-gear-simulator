@@ -9,6 +9,8 @@ import { BuildResultCard } from './components/BuildResultCard'
 import { ComparisonSummary } from './components/ComparisonSummary'
 import { QuickCompareTable } from './components/QuickCompareTable'
 import { DamageTimelineChart } from './components/DamageTimelineChart'
+import { getFactionAccessoryOptions } from './data/factionAccessories'
+import { getLordOptionsForFactions } from './data/lordEffects'
 
 const defaultBuild: BuildInput = {
   totalAtk: 12000,
@@ -17,6 +19,8 @@ const defaultBuild: BuildInput = {
   attackSpeed: 120,
   awakeningOn: true,
   pantheonAspdOn: true,
+  factionAccessoryId: 'none',
+  lordEffectId: 'none',
   leftSetId: 'warlord',
   rightSetId: 'infernal_roar',
   setUptime: 1
@@ -29,6 +33,8 @@ export default function App() {
   const [buildB, setBuildB] = useState<BuildInput>({ ...defaultBuild, critDmg: 300, attackSpeed: 80, rightSetId: 'cataclysm', setUptime: 0.75 })
 
   const hero = heroes.find((item) => item.id === appliedHeroId) ?? heroes[0]
+  const accessoryOptions = useMemo(() => getFactionAccessoryOptions(hero.factions), [hero.factions])
+  const lordOptions = useMemo(() => getLordOptionsForFactions(hero.factions), [hero.factions])
 
   const leftA = useMemo(() => findSetById(buildA.leftSetId, leftSets), [buildA.leftSetId])
   const rightA = useMemo(() => findSetById(buildA.rightSetId, rightSets), [buildA.rightSetId])
@@ -40,6 +46,13 @@ export default function App() {
 
   const recA = useMemo(() => getBestStatRecommendation(hero, leftA, rightA, buildA), [hero, leftA, rightA, buildA])
   const recB = useMemo(() => getBestStatRecommendation(hero, leftB, rightB, buildB), [hero, leftB, rightB, buildB])
+  const rightSetRankings = useMemo(
+    () => rightSets.map((set) => {
+      const result = calculateBuild(hero, leftA, set, { ...buildA, rightSetId: set.id, setUptime: 1 })
+      return { set, result }
+    }).sort((a, b) => b.result.itemMaxCumulative30s - a.result.itemMaxCumulative30s),
+    [hero, leftA, buildA],
+  )
 
   return (
     <div className="app">
@@ -52,15 +65,95 @@ export default function App() {
         onHeroApply={() => setAppliedHeroId(selectedHeroId)}
       />
 
+      <CompareBuildForm
+        hero={hero}
+        buildA={buildA}
+        buildB={buildB}
+        accessoryOptions={accessoryOptions}
+        lordOptions={lordOptions}
+        onChangeA={setBuildA}
+        onChangeB={setBuildB}
+      />
+
+      <section className="card summaryCard">
+        <div className="sectionHeading compactHeading">
+          <div>
+            <h2 className="compactHeroName">{hero.name}</h2>
+            <p className="muted compactHeroMeta">{hero.heroClass} · {hero.damageType} · {hero.rarity}</p>
+          </div>
+        </div>
+        <div className="summaryGrid compactSummaryGrid">
+          <div><span>기본 간격</span><strong>{hero.baseInterval.toFixed(1)}초</strong></div>
+          <div><span>각성 보너스</span><strong>+{hero.awakeningAtkBonus}</strong></div>
+          <div><span>출처</span><strong>{hero.sourceLevel}</strong></div>
+        </div>
+        <p className="muted detailNote">
+          기본 스탯 출처: {hero.source} / {hero.sourceLevel} 기준
+        </p>
+      </section>
+
       <ComparisonSummary resultA={resultA} resultB={resultB} />
+      <section className="card recommendationPanel">
+        <div className="sectionHeading">
+          <div>
+            <p className="eyebrow">영웅별 사전 시뮬레이션</p>
+            <h2>{hero.name} 추천 우측 3세트</h2>
+          </div>
+          <strong className="deltaBadge positive">{rightSetRankings[0]?.set.name ?? '-'}</strong>
+        </div>
+        <div className="setRankingGrid">
+          {rightSetRankings.slice(0, 4).map((row, index) => (
+            <div key={row.set.id}>
+              <span>#{index + 1} {row.set.name}</span>
+              <strong>{row.result.itemMaxCumulative30s.toLocaleString()}</strong>
+            </div>
+          ))}
+        </div>
+        <p className="muted helperText">세팅 A의 스탯과 좌측 2세트를 기준으로 우측 3세트만 바꿔 30초 누적 데미지를 비교합니다.</p>
+      </section>
       <QuickCompareTable resultA={resultA} resultB={resultB} />
       <DamageTimelineChart resultA={resultA} resultB={resultB} />
-
-      <CompareBuildForm buildA={buildA} buildB={buildB} onChangeA={setBuildA} onChangeB={setBuildB} />
 
       <section className="resultsGrid">
         <BuildResultCard title="세팅 A 결과" result={resultA} compareAgainst={resultB} recommendation={recA} />
         <BuildResultCard title="세팅 B 결과" result={resultB} compareAgainst={resultA} recommendation={recB} />
+      </section>
+
+      <section className="card formulaPanel">
+        <div className="sectionHeading">
+          <div>
+            <p className="eyebrow">계산식</p>
+            <h2>데미지 계산 구조</h2>
+          </div>
+        </div>
+        <div className="formulaGrid">
+          {[
+            { label: '세팅 A', result: resultA },
+            { label: '세팅 B', result: resultB },
+          ].map(({ label, result }) => (
+            <div className="formulaCard" key={label}>
+              <h3>{label}</h3>
+              <div className="formulaLine">
+                <span>기본 피해</span>
+                <strong>max({result.finalAtk.toLocaleString()} - {result.formula.defense.toLocaleString()}, 공격력 5%) = {result.formula.rawDamage.toLocaleString()}</strong>
+              </div>
+              <div className="formulaLine">
+                <span>치명 보정</span>
+                <strong>1 + 치확 x (치피 - 1) = x{result.formula.critMultiplier}</strong>
+              </div>
+              <div className="formulaLine">
+                <span>피해 증가</span>
+                <strong>{Math.round(result.formula.itemDamageBonus * 100)}%</strong>
+              </div>
+              <div className="formulaExpression">
+                1타 최대값 = 기본 피해 x 치명 보정 x (1 + 피해 증가)
+              </div>
+              <div className="formulaExpression">
+                30초 누적 = 공격 간격 {result.interval.toFixed(2)}초 기준 타임라인 누적
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="card footerNote">

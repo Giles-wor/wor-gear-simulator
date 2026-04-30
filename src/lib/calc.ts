@@ -1,6 +1,8 @@
 import type { Hero } from '../data/heroes'
 import type { GearSet } from '../data/gearSets'
 import { getAttackSpeedProfile } from '../data/attackSpeed'
+import { findFactionAccessory } from '../data/factionAccessories'
+import { findLordEffect } from '../data/lordEffects'
 
 export type BuildInput = {
   totalAtk: number
@@ -9,6 +11,8 @@ export type BuildInput = {
   attackSpeed: number
   awakeningOn: boolean
   pantheonAspdOn: boolean
+  factionAccessoryId: string
+  lordEffectId: string
   leftSetId: string
   rightSetId: string
   setUptime: number
@@ -37,6 +41,20 @@ export type DamageResult = {
   itemMaxCumulative30s: number
   itemMaxDps30s: number
   timeline30s: { second: number; cumulativeDamage: number }[]
+  appliedEffects: string[]
+  formula: {
+    defense: number
+    rawDamage: number
+    critMultiplier: number
+    statDamageBonus: number
+    itemDamageBonus: number
+    itemCritDmgBonus: number
+    hitCount30s: number
+    factionAccessoryName: string | null
+    factionAccessorySummary: string | null
+    lordEffectName: string | null
+    lordEffectSummary: string | null
+  }
   rightSetSummary: {
     name: string
     summary: string
@@ -119,7 +137,7 @@ function getMaxSetBonus(rightSet: GearSet | undefined) {
   }
 
   if (rightSet.id === 'hells_lament') {
-    return { damageBonus: 0.2, critDmgBonus: 30 }
+    return { damageBonus: 0.35, critDmgBonus: 50 }
   }
 
   return { damageBonus: rightSet.damagePct ?? 0, critDmgBonus: rightSet.critDmg ?? 0 }
@@ -151,8 +169,8 @@ function getAttackTypeDamageBonus(rightSet: GearSet | undefined, type: 'basic' |
 
   if (rightSet.id === 'hells_lament') {
     return {
-      damageBonus: 0.2,
-      critDmgBonus: 30,
+      damageBonus: 0.35,
+      critDmgBonus: 50,
     }
   }
 
@@ -195,8 +213,8 @@ function buildTimeline30s(
       } else if (rightSet?.id === 'soulbound_arcana') {
         rightSetDamageBonus = 0.5
       } else if (rightSet?.id === 'hells_lament') {
-        rightSetDamageBonus = 0.2
-        rightSetCritBonus = 30
+        rightSetDamageBonus = 0.35
+        rightSetCritBonus = 50
       }
 
       const critMultiplier = 1 + critRateRatio * ((finalCritDmg + rightSetCritBonus) / 100 - 1)
@@ -298,35 +316,57 @@ export function calculateBuild(
   const midDefense = 5000
   const awakeningBonus = build.awakeningOn ? hero.awakeningAtkBonus : 0
   const pantheonAspdBonus = build.pantheonAspdOn ? 40 : 0
+  const factionAccessory = findFactionAccessory(build.factionAccessoryId, hero.factions)
+  const lordEffect = findLordEffect(build.lordEffectId, hero.factions)
+  const factionAtkPctBonus = factionAccessory?.atkPctBonus ?? 0
+  const factionDamageBonus = factionAccessory?.damageBonus ?? 0
+  const factionCritDmgBonus = factionAccessory?.critDmgBonus ?? 0
+  const factionPenetrationBonus = factionAccessory?.penetrationBonus ?? 0
+  const lordAtkPctBonus = lordEffect?.atkPctBonus ?? 0
+  const lordDamageBonus = lordEffect?.damageBonus ?? 0
+  const lordBasicDamageBonus = lordEffect?.basicDamageBonus ?? 0
+  const lordCritDmgBonus = lordEffect?.critDmgBonus ?? 0
+  const lordAttackSpeedBonus = lordEffect?.attackSpeedBonus ?? 0
+  const lordPenetrationBonus = lordEffect?.penetrationBonus ?? 0
   const leftSetDamagePct = leftSet?.damagePct ?? 0
   const { normalDamageBonus, totalDamageBonus, bonusCritDmg } = damageMultiplier(rightSet, build.setUptime)
   const maxSetBonus = getMaxSetBonus(rightSet)
 
-  const finalAtk = Math.round(build.totalAtk + awakeningBonus)
+  const finalAtk = Math.round(build.totalAtk + awakeningBonus + build.totalAtk * (factionAtkPctBonus + lordAtkPctBonus))
   const finalCritRate = build.critRate
-  const finalCritDmg = build.critDmg + bonusCritDmg
+  const baseFinalCritDmg = build.critDmg + factionCritDmgBonus + lordCritDmgBonus
+  const finalCritDmg = baseFinalCritDmg + bonusCritDmg
   const totalAspd = build.attackSpeed
-  const finalAspd = totalAspd + pantheonAspdBonus
+  const finalAspd = totalAspd + pantheonAspdBonus + lordAttackSpeedBonus
   const attackSpeedProfileBaseInterval = hero.attackSpeedProfileBaseIntervalOverride ?? hero.baseInterval
   const bp = getBreakpointInfo(attackSpeedProfileBaseInterval, finalAspd)
 
   const critRateRatio = Math.min(finalCritRate, 100) / 100
   const critMultiplier = 1 + critRateRatio * (finalCritDmg / 100 - 1)
   const draculaBurstBonus = hero.burstAtkBonusPer100Aspd ? (totalAspd / 100) * hero.burstAtkBonusPer100Aspd : 0
+  const automaticHeroDamageBonus = draculaBurstBonus
+  const statDamageBonus = leftSetDamagePct + automaticHeroDamageBonus + factionDamageBonus + lordDamageBonus
+  const itemDamageBonus = maxSetBonus.damageBonus + leftSetDamagePct + automaticHeroDamageBonus + factionDamageBonus + lordDamageBonus
+  const effectiveMidDefense = Math.round(midDefense * (1 - Math.min(factionPenetrationBonus + lordPenetrationBonus, 0.9)))
 
-  const statIgnoreDefenseMetrics = calculateDamageMetrics(finalAtk, critMultiplier, bp.interval, leftSetDamagePct + draculaBurstBonus, 0)
-  const maxCritMultiplier = 1 + critRateRatio * ((finalCritDmg + maxSetBonus.critDmgBonus) / 100 - 1)
-  const itemIgnoreDefenseMetrics = calculateDamageMetrics(finalAtk, maxCritMultiplier, bp.interval, maxSetBonus.damageBonus + leftSetDamagePct + draculaBurstBonus, 0)
-  const statMidDefenseMetrics = calculateDamageMetrics(finalAtk, critMultiplier, bp.interval, leftSetDamagePct + draculaBurstBonus, midDefense)
-  const itemMidDefenseMetrics = calculateDamageMetrics(finalAtk, maxCritMultiplier, bp.interval, maxSetBonus.damageBonus + leftSetDamagePct + draculaBurstBonus, midDefense)
+  const statIgnoreDefenseMetrics = calculateDamageMetrics(finalAtk, critMultiplier, bp.interval, statDamageBonus, 0)
+  const maxCritMultiplier = 1 + critRateRatio * ((baseFinalCritDmg + maxSetBonus.critDmgBonus) / 100 - 1)
+  const itemIgnoreDefenseMetrics = calculateDamageMetrics(finalAtk, maxCritMultiplier, bp.interval, itemDamageBonus, 0)
+  const statMidDefenseMetrics = calculateDamageMetrics(finalAtk, critMultiplier, bp.interval, statDamageBonus, effectiveMidDefense)
+  const itemMidDefenseMetrics = calculateDamageMetrics(finalAtk, maxCritMultiplier, bp.interval, itemDamageBonus, effectiveMidDefense)
   const basicAttackMax = getAttackTypeDamageBonus(rightSet, 'basic', 'max')
   const ultimateAttackMax = getAttackTypeDamageBonus(rightSet, 'ultimate', 'max')
-  const basicCritMultiplier = 1 + critRateRatio * ((finalCritDmg + basicAttackMax.critDmgBonus) / 100 - 1)
-  const ultimateCritMultiplier = 1 + critRateRatio * ((finalCritDmg + ultimateAttackMax.critDmgBonus) / 100 - 1)
-  const basicAttackItemMaxDamage = calculateDamageMetrics(finalAtk, basicCritMultiplier, bp.interval, leftSetDamagePct + draculaBurstBonus + basicAttackMax.damageBonus, 0).damage
-  const ultimateAttackItemMaxDamage = calculateDamageMetrics(finalAtk, ultimateCritMultiplier, bp.interval, leftSetDamagePct + draculaBurstBonus + ultimateAttackMax.damageBonus, 0).damage
-  const timeline30s = buildTimeline30s(rightSet, finalAtk, finalCritDmg, critRateRatio, bp.interval, leftSetDamagePct + draculaBurstBonus, midDefense)
+  const basicCritMultiplier = 1 + critRateRatio * ((baseFinalCritDmg + basicAttackMax.critDmgBonus) / 100 - 1)
+  const ultimateCritMultiplier = 1 + critRateRatio * ((baseFinalCritDmg + ultimateAttackMax.critDmgBonus) / 100 - 1)
+  const basicAttackItemMaxDamage = calculateDamageMetrics(finalAtk, basicCritMultiplier, bp.interval, statDamageBonus + lordBasicDamageBonus + basicAttackMax.damageBonus, 0).damage
+  const ultimateAttackItemMaxDamage = calculateDamageMetrics(finalAtk, ultimateCritMultiplier, bp.interval, statDamageBonus + ultimateAttackMax.damageBonus, 0).damage
+  const timeline30s = buildTimeline30s(rightSet, finalAtk, baseFinalCritDmg, critRateRatio, bp.interval, statDamageBonus + lordBasicDamageBonus, effectiveMidDefense)
   const itemMaxCumulative30s = timeline30s[timeline30s.length - 1]?.cumulativeDamage ?? 0
+  const appliedEffects = [
+    ...(hero.burstAtkBonusPer100Aspd ? [`${hero.name}: 공속 100당 피해 +${Math.round(hero.burstAtkBonusPer100Aspd * 100)}% 자동 적용`] : []),
+    ...(factionAccessory ? [`${factionAccessory.sourceName}: ${factionAccessory.summary}`] : []),
+    ...(lordEffect ? [`${lordEffect.sourceName}: ${lordEffect.summary}`] : []),
+  ]
 
   return {
     finalAtk,
@@ -341,7 +381,7 @@ export function calculateBuild(
     nextThreshold: bp.nextThreshold,
     neededAspd: bp.neededAspd,
     normalDamageBonus,
-    totalDamageBonus: leftSetDamagePct + totalDamageBonus + draculaBurstBonus,
+    totalDamageBonus: leftSetDamagePct + totalDamageBonus + automaticHeroDamageBonus + factionDamageBonus + lordDamageBonus + lordBasicDamageBonus,
     basicAttackItemMaxDamage,
     ultimateAttackItemMaxDamage,
     statDamageIgnoreDefense: statIgnoreDefenseMetrics.damage,
@@ -351,6 +391,20 @@ export function calculateBuild(
     itemMaxCumulative30s,
     itemMaxDps30s: Math.round(itemMaxCumulative30s / 30),
     timeline30s,
+    appliedEffects,
+    formula: {
+      defense: effectiveMidDefense,
+      rawDamage: Math.round(Math.max(finalAtk - effectiveMidDefense, finalAtk * 0.05)),
+      critMultiplier: Number(maxCritMultiplier.toFixed(4)),
+      statDamageBonus,
+      itemDamageBonus: itemDamageBonus + lordBasicDamageBonus,
+      itemCritDmgBonus: maxSetBonus.critDmgBonus,
+      hitCount30s: timeline30s.length > 0 ? Math.max(0, Math.round(30 / bp.interval) + 1) : 0,
+      factionAccessoryName: factionAccessory?.sourceName ?? null,
+      factionAccessorySummary: factionAccessory?.summary ?? null,
+      lordEffectName: lordEffect?.sourceName ?? null,
+      lordEffectSummary: lordEffect?.summary ?? null,
+    },
     rightSetSummary: getRightSetSummary(rightSet),
     critAlert: finalCritRate < 100
   }

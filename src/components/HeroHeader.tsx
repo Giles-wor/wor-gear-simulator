@@ -27,23 +27,6 @@ export function HeroHeader({ hero, heroOptions, selectedHeroId, appliedHeroId, o
           onApply={onHeroApply}
         />
       </header>
-
-      <section className="card summaryCard">
-        <div className="sectionHeading compactHeading">
-          <div>
-            <h2 className="compactHeroName">{hero.name}</h2>
-            <p className="muted compactHeroMeta">{hero.heroClass} · {hero.damageType} · {hero.rarity}</p>
-          </div>
-        </div>
-        <div className="summaryGrid compactSummaryGrid">
-          <div><span>기본 간격</span><strong>{hero.baseInterval.toFixed(1)}초</strong></div>
-          <div><span>각성 보너스</span><strong>+{hero.awakeningAtkBonus}</strong></div>
-          <div><span>출처</span><strong>{hero.sourceLevel}</strong></div>
-        </div>
-        <p className="muted detailNote">
-          기본 스탯 출처: {hero.source} / {hero.sourceLevel} 기준
-        </p>
-      </section>
     </>
   )
 }
