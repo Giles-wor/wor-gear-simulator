@@ -8,12 +8,16 @@
   },
   "scripts": {
     "sync:heroes": "node scripts/sync-heroes.mjs",
+    "sync:summon": "node scripts/sync-summon.mjs",
     "typecheck": "tsc --noEmit",
     "typecheck:v1": "tsc --noEmit -p v1/tsconfig.json",
+    "typecheck:summon": "tsc --noEmit -p summon/tsconfig.json",
     "dev": "vite",
     "dev:v1": "vite --config v1/vite.config.ts",
+    "dev:summon": "vite --config summon/vite.config.ts",
     "build": "npm run typecheck && vite build",
     "build:v1": "npm run typecheck:v1 && vite build --config v1/vite.config.ts",
+    "build:summon": "npm run typecheck:summon && vite build --config summon/vite.config.ts",
     "preview": "vite preview"
   },
   "dependencies": {

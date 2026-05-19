@@ -1,0 +1,54 @@
+name: Sync game data
+
+on:
+  schedule:
+    # 매주 월요일 03:00 UTC
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: "sync-data"
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync heroes (Fandom crawl)
+        run: npm run sync:heroes
+
+      - name: Sync summon rates (best-effort crawl)
+        run: npm run sync:summon
+        continue-on-error: true
+
+      - name: Typecheck
+        run: |
+          npm run typecheck
+          npm run typecheck:summon
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: data/auto-sync
+          title: "chore: refresh crawled game data"
+          commit-message: "chore: refresh crawled hero & summon data"
+          body: |
+            자동 크롤 갱신 (sync:heroes / sync:summon).
+            소환율 파싱은 best-effort 이며 페이지 구조 변경 시 검토 필요.
+          delete-branch: true
