@@ -370,8 +370,8 @@ export default function App() {
         <div className="summonGrid">
           <label className="field">
             <span>
-              천장 카운트
-              <small className="hint"> · {pityGroupLabel} 통합 (마지막 {isLordOnlyPity ? '영주' : '5성'} 이후 소환)</small>
+              현재 스택수
+              <small className="hint"> · {pityGroupLabel} 통합 천장 카운터 (마지막 {isLordOnlyPity ? '영주' : '5성'} 이후 소환 수)</small>
             </span>
             <input type="number" value={pity} onChange={(e) => setPity(Number(e.target.value))} />
           </label>
