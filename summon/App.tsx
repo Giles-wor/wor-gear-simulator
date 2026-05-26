@@ -56,44 +56,48 @@ export default function App() {
   const [bannerId, setBannerId] = useState<BannerConfig['id']>('limited')
   const [config, setConfig] = useState<BannerConfig>(banners.limited)
   const [pickups, setPickups] = useState<FeaturedHero[]>(banners.limited.defaultPickups)
-  const [targetIndex, setTargetIndex] = useState<number>(banners.limited.defaultTargetIndex ?? 0)
+  const [goals, setGoals] = useState<number[]>(banners.limited.defaultGoals)
+  const [ownedCopies, setOwnedCopies] = useState<number[]>(
+    banners.limited.defaultPickups.map(() => 0),
+  )
 
   const [pity, setPity] = useState(0)
   const [rateUpMisses, setRateUpMisses] = useState(0)
   const [pullsOnBanner, setPullsOnBanner] = useState(0)
-  const [copies, setCopies] = useState(0)
-  const [goal, setGoal] = useState(1)
   const [availablePulls, setAvailablePulls] = useState(200)
 
-  // 배너 바꾸면 픽업 구성 / 타겟도 default 로 리셋
+  // 배너 변경 시 픽업 구성과 목표/보유 리셋
   useEffect(() => {
-    setConfig(banners[bannerId])
-    setPickups(banners[bannerId].defaultPickups.map((p) => ({ ...p })))
-    setTargetIndex(banners[bannerId].defaultTargetIndex ?? 0)
+    const cfg = banners[bannerId]
+    setConfig(cfg)
+    setPickups(cfg.defaultPickups.map((p) => ({ ...p })))
+    setGoals([...cfg.defaultGoals])
+    setOwnedCopies(cfg.defaultPickups.map(() => 0))
   }, [bannerId])
 
   const isLimited = config.featuredHardGuarantee != null
+
   const selection: PickupSelection = useMemo(
     () => ({
       pickups,
-      targetIndex: Math.min(targetIndex, Math.max(0, pickups.length - 1)),
+      goals: pickups.map((_, i) => goals[i] ?? 0),
+      ownedCopies: pickups.map((_, i) => ownedCopies[i] ?? 0),
     }),
-    [pickups, targetIndex],
+    [pickups, goals, ownedCopies],
   )
 
   const state: SummonState = useMemo(
     () => ({
       pity: Math.max(0, pity),
       rateUpMisses: Math.max(0, rateUpMisses),
-      copies: Math.max(0, copies),
       pullsOnBanner: Math.max(0, pullsOnBanner),
     }),
-    [pity, rateUpMisses, copies, pullsOnBanner],
+    [pity, rateUpMisses, pullsOnBanner],
   )
 
   const report = useMemo(
-    () => buildStrategyReport(config, selection, goal, state, availablePulls),
-    [config, selection, goal, state, availablePulls],
+    () => buildStrategyReport(config, selection, state, availablePulls),
+    [config, selection, state, availablePulls],
   )
 
   const updateConfig = (patch: Partial<BannerConfig>) =>
@@ -101,52 +105,107 @@ export default function App() {
 
   const pityGroupLabel = PITY_GROUP_LABEL[config.id]
   const isLordOnlyPity = config.pityFocus === 'lord'
-  const targetHero = pickups[selection.targetIndex]
+
+  const activeTargets = report.activeTargets
+  const numActiveTargets = activeTargets.length
 
   const updatePickup = (idx: number, patch: Partial<FeaturedHero>) => {
     setPickups((prev) => prev.map((p, i) => (i === idx ? { ...p, ...patch } : p)))
   }
+  const updateGoal = (idx: number, value: number) => {
+    setGoals((prev) => {
+      const next = [...prev]
+      while (next.length <= idx) next.push(0)
+      next[idx] = Math.max(0, Math.floor(value))
+      return next
+    })
+  }
+  const updateOwned = (idx: number, value: number) => {
+    setOwnedCopies((prev) => {
+      const next = [...prev]
+      while (next.length <= idx) next.push(0)
+      next[idx] = Math.max(0, Math.floor(value))
+      return next
+    })
+  }
   const removePickup = (idx: number) => {
     if (pickups.length <= 1) return
     setPickups((prev) => prev.filter((_, i) => i !== idx))
-    if (idx <= targetIndex) setTargetIndex((t) => Math.max(0, t - (idx === t ? 0 : 1)))
+    setGoals((prev) => prev.filter((_, i) => i !== idx))
+    setOwnedCopies((prev) => prev.filter((_, i) => i !== idx))
   }
   const addPickup = () => {
     const lastGroup = pickups[pickups.length - 1]?.group ?? 'common'
     setPickups((prev) => [...prev, { label: `픽업 ${prev.length + 1}`, group: lastGroup }])
+    setGoals((prev) => [...prev, 1])
+    setOwnedCopies((prev) => [...prev, 0])
   }
-  type Preset = { id: string; label: string; pickups: FeaturedHero[] }
+
+  type Preset = { id: string; label: string; pickups: FeaturedHero[]; goals: number[] }
   const presets: Preset[] = [
-    { id: 'common1', label: '일반 픽업 1명', pickups: [{ label: '픽업', group: 'common' as FeaturedGroup }] },
     {
-      id: 'common2',
-      label: '일반 픽업 2명',
+      id: 'common1',
+      label: '일반 픽업 1명',
+      pickups: [{ label: '픽업', group: 'common' as FeaturedGroup }],
+      goals: [1],
+    },
+    {
+      id: 'common2-one',
+      label: '일반 2명 중 1명만',
       pickups: [
         { label: '픽업 A', group: 'common' as FeaturedGroup },
         { label: '픽업 B', group: 'common' as FeaturedGroup },
       ],
+      goals: [1, 0],
     },
     {
-      id: 'mixed',
-      label: '영주 + 일반',
+      id: 'common2-both',
+      label: '일반 2명 모두',
+      pickups: [
+        { label: '픽업 A', group: 'common' as FeaturedGroup },
+        { label: '픽업 B', group: 'common' as FeaturedGroup },
+      ],
+      goals: [1, 1],
+    },
+    {
+      id: 'mixed-lord',
+      label: '영주 + 일반 중 영주만',
       pickups: [
         { label: '영주 픽업', group: 'lord' as FeaturedGroup },
         { label: '일반 픽업', group: 'common' as FeaturedGroup },
       ],
+      goals: [1, 0],
     },
     {
-      id: 'lord2',
-      label: '영주 2명',
+      id: 'mixed-both',
+      label: '영주 + 일반 둘 다',
       pickups: [
-        { label: '영주 A', group: 'lord' as FeaturedGroup },
-        { label: '영주 B', group: 'lord' as FeaturedGroup },
+        { label: '영주 픽업', group: 'lord' as FeaturedGroup },
+        { label: '일반 픽업', group: 'common' as FeaturedGroup },
       ],
+      goals: [1, 1],
     },
   ]
   const applyPreset = (preset: Preset) => {
     setPickups(preset.pickups.map((x) => ({ ...x })))
-    setTargetIndex(0)
+    setGoals([...preset.goals])
+    setOwnedCopies(preset.pickups.map(() => 0))
   }
+
+  // 결과 헤더 텍스트
+  const resultHeader = useMemo(() => {
+    if (numActiveTargets === 0) return '노리는 픽업 영웅이 없습니다. 픽업 행의 "획득 목표" 를 1 이상으로 설정하세요.'
+    if (numActiveTargets === 1) {
+      const t = activeTargets[0]
+      const label = pickups[t.pickupIdx]?.label || `픽업 ${t.pickupIdx + 1}`
+      return `${availablePulls}회 안에 ${label} ${t.goal}회 획득 확률`
+    }
+    const labels = activeTargets.map((t) => {
+      const lab = pickups[t.pickupIdx]?.label || `픽업 ${t.pickupIdx + 1}`
+      return `${lab} ${t.goal}회`
+    })
+    return `${availablePulls}회 안에 ${labels.join(' + ')} 모두 달성 확률`
+  }, [activeTargets, numActiveTargets, availablePulls, pickups])
 
   return (
     <div className="app">
@@ -159,9 +218,9 @@ export default function App() {
           </div>
         </div>
         <p className="muted">
-          ① 소환 풀 선택 → ② 픽업 영웅·타겟 설정 (그룹 + 행 클릭으로 타겟 지정) →
-          ③ 현재 스택과 남은 소환 수로 <strong>달성 확률 계산</strong>. 인게임 Drop Rates 탭 기준
-          (×20 픽업 + ×10/×2 stacking, 한정 200픽 자체 확정, 고대 영주 전용 천장, 혼합 그룹 픽업) 반영.
+          ① 소환 풀 선택 → ② 픽업 영웅 설정 (그룹·획득 목표·이미 보유) → ③ 천장 스택 + 남은 소환 수 →
+          <strong> 모든 노리는 픽업 동시 달성 확률</strong> 계산. 인게임 Drop Rates 기준 (×20 픽업,
+          ×10/×2 stacking, 한정 200픽 자체 확정, 고대 영주 전용 천장, 혼합 그룹 픽업) 반영.
         </p>
         {config.placeholder ? (
           <p className="alert">⚠️ <strong>{config.name}</strong> 의 일부 수치는 추정. 인게임 확인 후 고급 편집에서 교체하세요.</p>
@@ -195,46 +254,43 @@ export default function App() {
       <section className="card">
         <div className="sectionHeading">
           <div>
-            <p className="eyebrow">② 픽업 영웅 + 타겟</p>
-            <h2>이 배너의 픽업 영웅들과 노리는 타겟 영웅</h2>
+            <p className="eyebrow">② 픽업 영웅</p>
+            <h2>이 배너의 픽업 영웅들 — 각자의 획득 목표와 현재 보유</h2>
           </div>
         </div>
         {!isLimited ? (
           <div className="pickupPresets">
             <span className="presetLabel">빠른 설정:</span>
             {presets.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className="presetChip"
-                onClick={() => applyPreset(p)}
-              >
+              <button key={p.id} type="button" className="presetChip" onClick={() => applyPreset(p)}>
                 {p.label}
               </button>
             ))}
           </div>
         ) : null}
         <div className="pickupList">
+          <div className="pickupHeader">
+            <span className="pickupHeaderTarget">노림</span>
+            <span className="pickupHeaderGroup">그룹</span>
+            <span className="pickupHeaderName">영웅 라벨</span>
+            <span className="pickupHeaderInputs">획득 목표 / 이미 보유</span>
+          </div>
           {pickups.map((p, i) => {
-            const isTarget = i === selection.targetIndex
+            const goal = goals[i] ?? 0
+            const owned = ownedCopies[i] ?? 0
+            const isActive = goal > 0
             return (
-              <div
-                key={i}
-                className={`pickupRow${isTarget ? ' isTarget' : ''} ${p.group}`}
-                onClick={() => setTargetIndex(i)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    setTargetIndex(i)
-                  }
-                }}
-              >
-                <span className={`targetRadio${isTarget ? ' active' : ''}`} aria-label={isTarget ? '타겟' : '타겟 아님'}>
-                  {isTarget ? '🎯' : '○'}
-                </span>
-                <div className="pickupGroupToggle" onClick={(e) => e.stopPropagation()}>
+              <div key={i} className={`pickupRow ${p.group}${isActive ? ' isActive' : ''}`}>
+                <button
+                  type="button"
+                  className={`targetRadio${isActive ? ' active' : ''}`}
+                  onClick={() => updateGoal(i, isActive ? 0 : 1)}
+                  aria-label={isActive ? '노림 끄기' : '노림 켜기'}
+                  title={isActive ? '노림 끄기' : '노림 켜기'}
+                >
+                  {isActive ? '🎯' : '○'}
+                </button>
+                <div className="pickupGroupToggle">
                   <button
                     type="button"
                     className={p.group === 'lord' ? 'groupChip lord active' : 'groupChip lord'}
@@ -254,17 +310,34 @@ export default function App() {
                   className="pickupLabel"
                   value={p.label}
                   onChange={(e) => updatePickup(i, { label: e.target.value })}
-                  onClick={(e) => e.stopPropagation()}
                   placeholder={`픽업 ${i + 1}`}
                 />
+                <div className="pickupNumbers">
+                  <label className="miniField">
+                    <span>목표</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={goal}
+                      onChange={(e) => updateGoal(i, Number(e.target.value))}
+                    />
+                  </label>
+                  <label className={`miniField ${isActive ? '' : 'dim'}`}>
+                    <span>보유</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={owned}
+                      onChange={(e) => updateOwned(i, Number(e.target.value))}
+                      disabled={!isActive}
+                    />
+                  </label>
+                </div>
                 {pickups.length > 1 && !isLimited ? (
                   <button
                     type="button"
                     className="pickupRemove"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      removePickup(i)
-                    }}
+                    onClick={() => removePickup(i)}
                     aria-label="픽업 제거"
                   >
                     ×
@@ -281,12 +354,10 @@ export default function App() {
             <p className="muted helperText">한정 선택 소환은 한 번에 픽업 1명만 선택 가능합니다.</p>
           )}
         </div>
-        {targetHero ? (
-          <p className="muted helperText">
-            타겟 그룹: <strong>{targetHero.group === 'lord' ? `영주 (${config.lordPoolSize}명 풀 · ${(config.lordGroupRate * 100).toFixed(2)}%)` : `일반 (${config.commonPoolSize}명 풀 · ${(config.commonGroupRate * 100).toFixed(2)}%)`}</strong>
-            {isLordOnlyPity ? ' · 고대 천장은 영주만 카운터를 리셋 (일반 타겟이면 천장 도움 없음)' : ''}
-          </p>
-        ) : null}
+        <p className="muted helperText">
+          🎯 표시된 영웅이 "노리는 타겟". 여러 명에 🎯 켜면 <strong>모두 자기 목표 만큼 획득</strong>해야 성공으로 집계 (AND).
+          {isLordOnlyPity ? ' · 고대 천장은 영주만 카운터 리셋 (일반만 노리면 천장 도움 없음)' : ''}
+        </p>
       </section>
 
       <section className="card">
@@ -331,19 +402,6 @@ export default function App() {
             </label>
           ) : null}
           <label className="field">
-            <span>이미 보유한 타겟 카피</span>
-            <input type="number" value={copies} onChange={(e) => setCopies(Number(e.target.value))} />
-          </label>
-          <label className="field">
-            <span>목표 타겟 카피 수</span>
-            <input
-              type="number"
-              min={1}
-              value={goal}
-              onChange={(e) => setGoal(Math.max(1, Number(e.target.value)))}
-            />
-          </label>
-          <label className="field">
             <span>
               남은 소환 수
               <small className="hint"> · 보석/티켓 합산 (1회 = 1소환)</small>
@@ -361,30 +419,42 @@ export default function App() {
         <div className="sectionHeading">
           <div>
             <p className="eyebrow">결과</p>
-            <h2>
-              {availablePulls}회 소환 안에 <strong>{targetHero?.label || '타겟'}</strong> {goal}카피 확보 확률
-            </h2>
+            <h2>{resultHeader}</h2>
           </div>
         </div>
-        <div className="heroNumber">{pctSharp(report.probabilityWithBudget)}</div>
-        <div className="summaryGrid">
-          <div>
-            <span>타겟 기대 카피</span>
-            <strong>{report.expectedCopiesWithBudget.toFixed(2)}</strong>
+        {numActiveTargets > 0 ? (
+          <div className="heroNumber">{pctSharp(report.jointProbabilityWithBudget)}</div>
+        ) : null}
+
+        {numActiveTargets > 1 ? (
+          <div className="marginalGrid">
+            <div className="marginalHead">개별 픽업 단독 달성 확률 (각자 목표만 충족)</div>
+            {activeTargets.map((t) => {
+              const lab = pickups[t.pickupIdx]?.label || `픽업 ${t.pickupIdx + 1}`
+              return (
+                <div key={t.pickupIdx} className="marginalRow">
+                  <span>{lab} ({t.goal}회)</span>
+                  <strong>{pct(report.marginalProbabilityWithBudget[t.pickupIdx] ?? 0)}</strong>
+                </div>
+              )
+            })}
           </div>
-          {pickups.length > 1 ? (
-            <div>
-              <span>다른 픽업 기대 횟수</span>
-              <strong>{report.expectedOtherFeaturedWithBudget.toFixed(2)}</strong>
+        ) : null}
+
+        <div className="summaryGrid">
+          {pickups.map((p, i) => (
+            <div key={i}>
+              <span>{p.label || `픽업 ${i + 1}`} 기대 획득 수</span>
+              <strong>{(report.expectedHitsWithBudget[i] ?? 0).toFixed(2)}</strong>
             </div>
-          ) : null}
+          ))}
           <div>
             <span>픽업 아닌 5성 기대 횟수</span>
             <strong>{report.expectedNonRateUpLegendaryWithBudget.toFixed(2)}</strong>
           </div>
           <div>
-            <span>지금 5성 1개 나오면 타겟일 확률</span>
-            <strong>{pct(report.conditionalFeatured)}</strong>
+            <span>지금 5성 1개 나오면 픽업(어느 것이든)일 확률</span>
+            <strong>{pct(report.conditionalAnyPickup)}</strong>
           </div>
         </div>
       </section>
@@ -397,16 +467,19 @@ export default function App() {
           </div>
         </div>
         <div className="outcomeGrid">
-          <div className="outcomeRow target">
-            <span>🎯 타겟 픽업 ({targetHero?.label || '-'})</span>
-            <strong>{pctSharp(report.outcomeNow.target)}</strong>
-          </div>
-          {pickups.length > 1 ? (
-            <div className="outcomeRow other">
-              <span>🟣 다른 픽업 ({pickups.length - 1}명 합)</span>
-              <strong>{pctSharp(report.outcomeNow.otherFeatured)}</strong>
-            </div>
-          ) : null}
+          {pickups.map((p, i) => {
+            const isActive = (goals[i] ?? 0) > 0
+            return (
+              <div key={i} className={`outcomeRow ${isActive ? 'target' : 'other'}`}>
+                <span>
+                  {isActive ? '🎯 ' : ''}
+                  {p.label || `픽업 ${i + 1}`}
+                  <small className="hint"> · {p.group === 'lord' ? '영주' : '일반'} 그룹</small>
+                </span>
+                <strong>{pctSharp(report.outcomeNow.pickupProbs[i] ?? 0)}</strong>
+              </div>
+            )
+          })}
           <div className="outcomeRow nonRateUp">
             <span>🟠 픽업 아닌 5성</span>
             <strong>{pctSharp(report.outcomeNow.nonRateUpLegendary)}</strong>
@@ -422,10 +495,10 @@ export default function App() {
         <div className="sectionHeading">
           <div>
             <p className="eyebrow">소환 수 vs 달성 확률</p>
-            <h2>곡선</h2>
+            <h2>곡선 (모든 노리는 픽업 동시 달성)</h2>
           </div>
         </div>
-        <CdfChart cdf={report.cdf} budget={report.availablePulls} />
+        <CdfChart cdf={report.jointCdf} budget={report.availablePulls} />
         <p className="muted helperText">
           세로 점선 = 현재 남은 소환 수 ({num(report.availablePulls)}회).
         </p>
@@ -435,7 +508,7 @@ export default function App() {
         <div className="sectionHeading">
           <div>
             <p className="eyebrow">필요 소환수</p>
-            <h2>목표 확률별</h2>
+            <h2>목표 확률별 (전체 달성 기준)</h2>
           </div>
         </div>
         <div className="milestoneGrid">
@@ -499,7 +572,7 @@ export default function App() {
             />
           </label>
           <label className="field">
-            <span>하드 천장 (보장 확정 픽수)</span>
+            <span>하드 천장</span>
             <input
               type="number"
               value={config.hardPity}

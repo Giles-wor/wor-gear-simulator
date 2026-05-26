@@ -1,71 +1,61 @@
-// 가챠(소환) 확률 엔진 — WoR Drop Rates 정확 반영.
+// 가챠(소환) 확률 엔진 — WoR Drop Rates 정확 반영, 멀티 타겟 동시 노림 (AND) 지원.
+//
 // 모델 흐름:
 //  1차 RNG (rarity): 영주 그룹 hit / 일반 그룹 hit / 미스
-//  2차 RNG (그룹 내 영웅): 그 그룹의 픽업들은 ×featuredMultiplier × stack^miss 가중치, 비-픽업은 ×1.
-// stacking 보정: 비-픽업 5성을 뽑을 때마다 모든 그룹의 모든 픽업 가중치가 ×stack. 픽업(어느 그룹이든) 뽑으면 0 리셋.
-// 천장 (pityFocus='lord'): Lord 만 카운터 리셋. Common 5성도 미-Lord 로 간주해 카운터 계속 증가.
-// 네트워크/외부 의존성 없음, 순수 함수.
+//  2차 RNG (그룹 내 영웅): 픽업들은 ×featuredMultiplier × stack^miss 가중치, 비-픽업은 ×1.
+// stacking 보정: 비-픽업 5성을 뽑을 때마다 모든 그룹의 모든 픽업 가중치가 ×stack. 픽업(타겟이든 아니든) 뽑으면 0 리셋.
+// 천장 (pityFocus='lord'): Lord 만 카운터 리셋. Common 5성은 카운터 계속 증가.
+//
+// 멀티 타겟: 각 픽업 슬롯이 goal>0 이면 "노리는 영웅". DP 가 모든 노리는 픽업의 카피를 동시에 추적,
+// 모두가 자기 goal 에 도달하면 "성공" (AND). marginalCdf 로 픽업별 단독 달성 확률도 노출.
 
 export type FeaturedGroup = 'lord' | 'common'
 
 export type FeaturedHero = {
-  /** UI 라벨 (예: 'A', '비올레타 베인', 또는 비워두면 group 으로 자동 표시) */
+  /** 사용자에게 표시할 라벨 (예: 'Reve', '한정 영웅') */
   label: string
-  /** 영주 그룹 / 일반 그룹 */
+  /** 영주 / 일반 그룹 */
   group: FeaturedGroup
 }
 
 export type PickupSelection = {
   /** 이 배너의 모든 픽업(rate-up) 영웅 구성 */
   pickups: FeaturedHero[]
-  /** 사용자가 노리는 타겟 픽업의 인덱스 */
-  targetIndex: number
+  /** 각 픽업별 획득 목표 (0 = 안 노림, ≥1 = 노리는 영웅) */
+  goals: number[]
+  /** 각 픽업별 이미 보유한 카피 수 */
+  ownedCopies: number[]
 }
 
 export type BannerConfig = {
   id: 'normal' | 'limited' | 'ancient' | 'divine'
   name: string
-  /** 영주(Lord) 그룹 전체 전설 확률 합 (0~1) */
   lordGroupRate: number
-  /** 일반(Common) 그룹 전체 전설 확률 합 (0~1) */
   commonGroupRate: number
-  /** 영주 풀 크기 */
   lordPoolSize: number
-  /** 일반 풀 크기 */
   commonPoolSize: number
-  /** 소프트 천장 시작 카운트 */
   softPityStart?: number
-  /** 소프트 천장 1회당 추가 확률 (0~1) */
   softPityIncrement?: number
-  /** 하드 천장: 천장 카운터 도달 시 (해당 그룹의) 전설 확정 */
   hardPity: number
-  /** 천장 카운터 대상.
-   *  'anyLegendary' (기본): 영주/일반 모두 천장 리셋, 소프트 천장 영주/일반 비율 유지.
-   *  'lord' (고대): 영주만 천장 리셋·소프트 천장 적용. 일반은 base 유지하고 카운터 계속. */
   pityFocus?: 'anyLegendary' | 'lord'
-  /** 픽업 영웅 1명당 가중치 multiplier (Special 계열=20, Basic=1) */
   featuredMultiplier: number
-  /** 비-픽업 전설 뽑을 때 누적 곱해지는 stacking 보정. 모든 픽업에 적용. 픽업(어느 그룹이든) 뽑으면 0 리셋. */
   rateUpStackingMultiplier?: number
-  /** 한정 선택 소환: 이 배너 누적 소환 N번째에서 타겟 픽업 자체 확정 (1카피 한정) */
+  /** 한정 선택 소환: 이 배너 누적 소환 N번째에서 타겟 픽업 자체 확정 (단일 타겟 한정) */
   featuredHardGuarantee?: number
   /** 기본 픽업 구성 (사용자가 UI에서 수정 가능) */
   defaultPickups: FeaturedHero[]
-  /** 기본 타겟 인덱스 (사용자가 UI에서 수정 가능) */
-  defaultTargetIndex?: number
-  /** 추정 placeholder 여부 */
+  /** 기본 goals (각 픽업 슬롯의 기본 획득 목표; 0 또는 1 권장) */
+  defaultGoals: number[]
   placeholder: boolean
   notes: string
 }
 
 export type SummonState = {
-  /** 마지막 (천장 기준) 전설 이후 누적 소환 수 */
+  /** 마지막 (천장 기준) 5성 이후 누적 소환 수 */
   pity: number
-  /** 마지막 픽업 이후 비-픽업 5성 누적 수 (stacking 보정 카운터) */
+  /** 마지막 픽업 이후 비-픽업 5성 누적 수 (stacking 보정) */
   rateUpMisses: number
-  /** 이미 보유한 타겟 픽업 카피 수 */
-  copies: number
-  /** 이 배너에서 지금까지 누적한 총 소환 수 (featuredHardGuarantee 계산용) */
+  /** 이 배너에서 누적한 총 소환 수 (featuredHardGuarantee 계산용) */
   pullsOnBanner: number
 }
 
@@ -111,33 +101,31 @@ export function groupHitRatesAt(
 }
 
 // ─────────────────────────────────────────────────────────────
-// 2차 RNG: 그룹 내 영웅 선택 — 픽업 가중치 분해
+// 2차 RNG: 그룹 내 픽업 / 비-픽업 share
 // ─────────────────────────────────────────────────────────────
 
-/** 픽업 1명당 가중치 = featuredMultiplier × stack^miss. */
 export function featuredWeightAt(config: BannerConfig, rateUpMisses: number): number {
   const stack = config.rateUpStackingMultiplier ?? 1
   return Math.max(0, config.featuredMultiplier) * Math.pow(stack, Math.max(0, rateUpMisses))
 }
 
 export type GroupBreakdown = {
-  /** 이 그룹에 픽업이 hit 했다 가정 시, 1명의 픽업이 차지하는 share (=가중치/전체가중치) */
+  /** 그룹 hit 시 픽업 1명이 차지하는 share */
   perPickupShare: number
-  /** 이 그룹의 비-픽업 5성 share */
+  /** 그룹 hit 시 비-픽업 5성이 차지하는 share */
   nonRateUpShare: number
   /** 이 그룹의 픽업 영웅 수 */
   numPickups: number
 }
 
-/** 영주/일반 그룹 각각에 대해 픽업/비-픽업 share 산출. */
 export function groupBreakdownAt(
   config: BannerConfig,
-  selection: PickupSelection,
+  pickups: FeaturedHero[],
   rateUpMisses: number,
 ): { lord: GroupBreakdown; common: GroupBreakdown } {
   const wF = featuredWeightAt(config, rateUpMisses)
   const compute = (group: FeaturedGroup): GroupBreakdown => {
-    const numPickups = selection.pickups.filter((p) => p.group === group).length
+    const numPickups = pickups.filter((p) => p.group === group).length
     const poolSize = group === 'lord' ? config.lordPoolSize : config.commonPoolSize
     const nonRateUpSize = Math.max(0, poolSize - numPickups)
     const totalWeight = numPickups * wF + nonRateUpSize
@@ -152,17 +140,15 @@ export function groupBreakdownAt(
 }
 
 // ─────────────────────────────────────────────────────────────
-// 한 번 소환 시 4가지 결과 분포 (현재 상태 즉시 분기)
+// 1회 소환 결과 분포 (즉시 분기)
 // ─────────────────────────────────────────────────────────────
 
 export type SummonOutcome = {
-  /** 타겟 픽업 영웅 */
-  target: number
-  /** 타겟 외 다른 픽업 영웅 (어느 그룹이든 합산) */
-  otherFeatured: number
-  /** 픽업 아닌 5성 (어느 그룹이든 합산) */
+  /** 각 픽업별 hit 확률 (index = pickup idx) */
+  pickupProbs: number[]
+  /** 픽업 아닌 5성 합산 확률 */
   nonRateUpLegendary: number
-  /** 5성 아님 (에픽/레어 등) */
+  /** 5성 아님 */
   noLegendary: number
 }
 
@@ -173,109 +159,157 @@ export function summonOutcomeAt(
 ): SummonOutcome {
   const { lord: lordHit, common: commonHit } = groupHitRatesAt(config, state.pity)
   const noLegendary = Math.max(0, 1 - lordHit - commonHit)
-  const breakdown = groupBreakdownAt(config, selection, state.rateUpMisses)
-  const target = selection.pickups[selection.targetIndex]
-  if (!target) {
-    return {
-      target: 0,
-      otherFeatured: 0,
-      nonRateUpLegendary: lordHit * 1 + commonHit * 1, // 픽업 없으면 모든 전설은 비-픽업
-      noLegendary,
-    }
-  }
+  const breakdown = groupBreakdownAt(config, selection.pickups, state.rateUpMisses)
 
-  // 타겟 그룹의 hit 확률 × 타겟 1명 share
-  const tHit = target.group === 'lord' ? lordHit : commonHit
-  const tBreak = breakdown[target.group]
-  const targetP = tHit * tBreak.perPickupShare
-
-  // 다른 픽업: 타겟 그룹 안의 다른 픽업 + 다른 그룹의 모든 픽업
-  const otherFeaturedSameGroupCount = Math.max(0, tBreak.numPickups - 1)
-  const otherGroup: FeaturedGroup = target.group === 'lord' ? 'common' : 'lord'
-  const oHit = otherGroup === 'lord' ? lordHit : commonHit
-  const oBreak = breakdown[otherGroup]
-  const otherFeatured =
-    tHit * otherFeaturedSameGroupCount * tBreak.perPickupShare +
-    oHit * oBreak.numPickups * oBreak.perPickupShare
-
-  const nonRateUpLegendary =
-    tHit * tBreak.nonRateUpShare + oHit * oBreak.nonRateUpShare
-
-  return { target: targetP, otherFeatured, nonRateUpLegendary, noLegendary }
+  const pickupProbs = selection.pickups.map((p) => {
+    const hit = p.group === 'lord' ? lordHit : commonHit
+    const share = p.group === 'lord' ? breakdown.lord.perPickupShare : breakdown.common.perPickupShare
+    return hit * share
+  })
+  const nonRateUpLegendary = lordHit * breakdown.lord.nonRateUpShare + commonHit * breakdown.common.nonRateUpShare
+  return { pickupProbs, nonRateUpLegendary, noLegendary }
 }
 
-/** "지금 전설 1개 나오면 그것이 타겟 픽업일 확률" */
-export function conditionalFeaturedGivenLegendary(
+/** "지금 5성 1개 나오면 그 5성이 픽업 영웅(어느 것이든) 일 확률" */
+export function conditionalAnyPickupGivenLegendary(
   config: BannerConfig,
   selection: PickupSelection,
   state: SummonState,
 ): number {
   const o = summonOutcomeAt(config, selection, state)
-  const legendary = o.target + o.otherFeatured + o.nonRateUpLegendary
-  return legendary > 0 ? o.target / legendary : 0
+  const anyPickup = o.pickupProbs.reduce((s, p) => s + p, 0)
+  const legendary = anyPickup + o.nonRateUpLegendary
+  return legendary > 0 ? anyPickup / legendary : 0
 }
 
 // ─────────────────────────────────────────────────────────────
-// Max miss 동적 산출 (stacking 수렴 시점)
+// Max miss 동적 산출
 // ─────────────────────────────────────────────────────────────
 
-function maxMissesNeeded(config: BannerConfig, selection: PickupSelection): number {
+function maxMissesNeeded(config: BannerConfig, pickups: FeaturedHero[]): number {
   const stack = config.rateUpStackingMultiplier ?? 1
   if (stack <= 1) return 0
-  const target = selection.pickups[selection.targetIndex]
-  if (!target) return 0
-  const numFeatInTargetGroup = selection.pickups.filter((p) => p.group === target.group).length
-  if (numFeatInTargetGroup === 0) return 0
-  const groupSize = target.group === 'lord' ? config.lordPoolSize : config.commonPoolSize
-  const nonRateUp = Math.max(0, groupSize - numFeatInTargetGroup)
-  const M = Math.max(0, config.featuredMultiplier)
-  if (nonRateUp === 0 || M <= 0) return 0
-  for (let m = 0; m <= MAX_RATE_UP_MISSES_ABS; m += 1) {
-    const wF = M * Math.pow(stack, m)
-    const totalFeatWeight = numFeatInTargetGroup * wF
-    const featShare = totalFeatWeight / (totalFeatWeight + nonRateUp)
-    if (featShare >= FEATURED_CONVERGE_THRESHOLD) return m
+  if (pickups.length === 0) return 0
+
+  let maxNeeded = 0
+  for (const group of ['lord', 'common'] as const) {
+    const numPickups = pickups.filter((p) => p.group === group).length
+    if (numPickups === 0) continue
+    const groupSize = group === 'lord' ? config.lordPoolSize : config.commonPoolSize
+    const nonRateUp = Math.max(0, groupSize - numPickups)
+    const M = Math.max(0, config.featuredMultiplier)
+    if (nonRateUp === 0 || M <= 0) continue
+    for (let m = 0; m <= MAX_RATE_UP_MISSES_ABS; m += 1) {
+      const wF = M * Math.pow(stack, m)
+      const totalFeatWeight = numPickups * wF
+      const featShare = totalFeatWeight / (totalFeatWeight + nonRateUp)
+      if (featShare >= FEATURED_CONVERGE_THRESHOLD) {
+        if (m > maxNeeded) maxNeeded = m
+        break
+      }
+    }
   }
-  return MAX_RATE_UP_MISSES_ABS
+  return maxNeeded
 }
 
 // ─────────────────────────────────────────────────────────────
-// 마르코프 DP — 단일 패스로 모든 목표 카피 cdf 산출
+// 멀티 타겟 DP — 각 활성 픽업의 카피를 동시 추적
 // ─────────────────────────────────────────────────────────────
 
-export type CopiesDistribution = {
-  /** copiesAtLeast[g][k] = k회 소환 안에 타겟 픽업 g카피 이상 확보 누적 확률 */
-  copiesAtLeast: number[][]
-  /** copiesExpected[k] = k회 소환 시점의 타겟 픽업 기대 카피 */
-  copiesExpected: number[]
-  /** expectedOtherFeatured[k] = "타겟 외 다른 픽업" 누적 기대 횟수 */
-  expectedOtherFeatured: number[]
-  /** expectedNonRateUpLegendary[k] = "픽업 아닌 5성" 누적 기대 횟수 */
+type ActiveTarget = {
+  /** pickups 배열에서의 원본 인덱스 */
+  pickupIdx: number
+  /** 목표 카피 수 */
+  goal: number
+  group: FeaturedGroup
+  /** 이미 보유 카피 (start) */
+  owned: number
+}
+
+export type MultiTargetDistribution = {
+  /** P(모든 활성 타겟이 자기 goal 만큼 보유) by pull k */
+  cdf: number[]
+  /** P(정확히 pull k 에 모든 활성 타겟 달성 완료) */
+  pmf: number[]
+  /** 픽업별 단독 목표 달성 확률 (활성 픽업만). 키 = pickupIdx */
+  marginalCdf: Record<number, number[]>
+  /** 픽업별 누적 기대 hit 횟수 (활성/비활성 모두). 키 = pickupIdx */
+  expectedHitsByPickup: Record<number, number[]>
+  /** 비-픽업 5성 누적 기대 횟수 */
   expectedNonRateUpLegendary: number[]
+  /** 활성 타겟 정보 (UI 표시용) */
+  activeTargets: ActiveTarget[]
 }
 
-export function simulateCopiesDistribution(
+export function simulateMultiTargetDistribution(
   config: BannerConfig,
   selection: PickupSelection,
-  maxCopies: number,
   pulls: number,
   start: SummonState,
-): CopiesDistribution {
+): MultiTargetDistribution {
   const hard = Math.max(1, Math.floor(config.hardPity))
-  const mxMiss = maxMissesNeeded(config, selection)
-  const mxCopy = Math.max(1, Math.floor(maxCopies))
-  const missStride = mxCopy + 1
+  const mxMiss = maxMissesNeeded(config, selection.pickups)
+  const pickups = selection.pickups
+
+  const activeTargets: ActiveTarget[] = pickups
+    .map((p, i) => ({
+      pickupIdx: i,
+      goal: Math.max(0, Math.floor(selection.goals[i] ?? 0)),
+      group: p.group,
+      owned: Math.max(0, Math.floor(selection.ownedCopies[i] ?? 0)),
+    }))
+    .filter((t) => t.goal > 0)
+
+  // 활성 픽업 각각의 카피 차원
+  const dims = activeTargets.length > 0 ? activeTargets.map((t) => t.goal + 1) : [1]
+  // 스트라이드 (multi-dim 인덱싱)
+  const strides = new Array<number>(dims.length)
+  let cumStride = 1
+  for (let j = 0; j < dims.length; j += 1) {
+    strides[j] = cumStride
+    cumStride *= dims[j]
+  }
+  const totalCopiesStates = cumStride
+  const successCopiesIdx = activeTargets.length > 0 ? totalCopiesStates - 1 : 0
+
+  // pickup idx → active position (없으면 -1)
+  const activePosByPickup = new Array<number>(pickups.length).fill(-1)
+  activeTargets.forEach((t, j) => {
+    activePosByPickup[t.pickupIdx] = j
+  })
+
+  const initCopiesState = (() => {
+    let s = 0
+    for (let j = 0; j < activeTargets.length; j += 1) {
+      const owned = Math.min(activeTargets[j].owned, activeTargets[j].goal)
+      s += owned * strides[j]
+    }
+    return s
+  })()
+
+  // 활성 픽업 i 에 hit 했을 때 copiesIdx 가 어떻게 바뀌는지
+  function tryIncrement(copiesIdx: number, pickupIdx: number): number {
+    const j = activePosByPickup[pickupIdx]
+    if (j < 0) return copiesIdx // 비활성 픽업은 copies 추적 안 함
+    const stride = strides[j]
+    const dimSize = dims[j]
+    const before = Math.floor(copiesIdx / stride) % dimSize
+    if (before >= activeTargets[j].goal) return copiesIdx
+    return copiesIdx + stride
+  }
+
+  const missStride = totalCopiesStates
   const pityStride = (mxMiss + 1) * missStride
   const size = hard * pityStride
-  const idx = (p: number, m: number, c: number) => p * pityStride + m * missStride + c
+  const idx = (pity: number, miss: number, copies: number) =>
+    pity * pityStride + miss * missStride + copies
 
   let cur = new Float64Array(size)
   let nxt = new Float64Array(size)
 
   const startPity = Math.min(start.pity, hard - 1)
   const startMiss = Math.min(start.rateUpMisses, mxMiss)
-  const startCopy = Math.min(start.copies, mxCopy)
-  cur[idx(startPity, startMiss, startCopy)] = 1
+  cur[idx(startPity, startMiss, initCopiesState)] = 1
 
   // 그룹 hit 확률 (pity 별 미리 계산)
   const lordHitByPity = new Float64Array(hard)
@@ -286,195 +320,228 @@ export function simulateCopiesDistribution(
     commonHitByPity[p] = common
   }
 
-  // 그룹별 share (miss 별)
-  const lordPerPickupByMiss = new Float64Array(mxMiss + 1)
-  const lordNonRateUpByMiss = new Float64Array(mxMiss + 1)
-  const commonPerPickupByMiss = new Float64Array(mxMiss + 1)
-  const commonNonRateUpByMiss = new Float64Array(mxMiss + 1)
+  // miss 별 그룹 share
+  const lordPerByMiss = new Float64Array(mxMiss + 1)
+  const lordNonByMiss = new Float64Array(mxMiss + 1)
+  const commonPerByMiss = new Float64Array(mxMiss + 1)
+  const commonNonByMiss = new Float64Array(mxMiss + 1)
   for (let m = 0; m <= mxMiss; m += 1) {
-    const b = groupBreakdownAt(config, selection, m)
-    lordPerPickupByMiss[m] = b.lord.perPickupShare
-    lordNonRateUpByMiss[m] = b.lord.nonRateUpShare
-    commonPerPickupByMiss[m] = b.common.perPickupShare
-    commonNonRateUpByMiss[m] = b.common.nonRateUpShare
+    const b = groupBreakdownAt(config, pickups, m)
+    lordPerByMiss[m] = b.lord.perPickupShare
+    lordNonByMiss[m] = b.lord.nonRateUpShare
+    commonPerByMiss[m] = b.common.perPickupShare
+    commonNonByMiss[m] = b.common.nonRateUpShare
   }
-  const target = selection.pickups[selection.targetIndex]
-  const numLordFeat = selection.pickups.filter((p) => p.group === 'lord').length
-  const numCommonFeat = selection.pickups.filter((p) => p.group === 'common').length
-  const numOtherLordFeat = numLordFeat - (target?.group === 'lord' ? 1 : 0)
-  const numOtherCommonFeat = numCommonFeat - (target?.group === 'common' ? 1 : 0)
-  const targetIsLord = target?.group === 'lord'
-  const targetIsCommon = target?.group === 'common'
 
   const pityFocus = config.pityFocus ?? 'anyLegendary'
   const commonResetsPity = pityFocus !== 'lord'
 
-  const copiesAtLeast: number[][] = []
-  for (let g = 0; g <= mxCopy; g += 1) copiesAtLeast.push(new Array(pulls + 1).fill(0))
-  for (let g = 0; g <= startCopy; g += 1) copiesAtLeast[g][0] = 1
-  const copiesExpected: number[] = new Array(pulls + 1).fill(startCopy)
-  const expectedOtherFeatured: number[] = new Array(pulls + 1).fill(0)
-  const expectedNonRateUpLegendary: number[] = new Array(pulls + 1).fill(0)
-  let cumOtherFeatured = 0
-  let cumNonRateUpLegendary = 0
+  // 결과 누적 컨테이너
+  const cdf = new Array(pulls + 1).fill(0)
+  const pmf = new Array(pulls + 1).fill(0)
+  const expectedNonRateUpLegendary = new Array(pulls + 1).fill(0)
+  const marginalCdf: Record<number, number[]> = {}
+  const expectedHitsByPickup: Record<number, number[]> = {}
+  for (let i = 0; i < pickups.length; i += 1) {
+    expectedHitsByPickup[i] = new Array(pulls + 1).fill(0)
+  }
+  for (const t of activeTargets) {
+    marginalCdf[t.pickupIdx] = new Array(pulls + 1).fill(0)
+  }
+
+  // 초기 상태가 이미 성공이면 cdf[0] = 1
+  let absorbedSuccessMass = 0
+  if (activeTargets.length === 0) {
+    // goal 이 하나도 없으면: 통계만 보고 싶은 경우. success 의미 없음.
+    cdf[0] = 0
+  } else if (initCopiesState === successCopiesIdx) {
+    absorbedSuccessMass = 1
+    cdf[0] = 1
+    cur[idx(startPity, startMiss, initCopiesState)] = 0
+  }
+
+  // 초기 marginal (start 상태 기준)
+  for (const t of activeTargets) {
+    const owned = Math.min(t.owned, t.goal)
+    marginalCdf[t.pickupIdx][0] = owned >= t.goal ? 1 : 0
+  }
+
+  let cumNonRateUpLeg = 0
+  const cumPickupHits = new Array(pickups.length).fill(0)
 
   for (let pull = 1; pull <= pulls; pull += 1) {
     nxt.fill(0)
-    let pullOtherFeatured = 0
-    let pullNonRateUpLegendary = 0
+    let pullNonRateUpLeg = 0
+    const pullPickupHits = new Array(pickups.length).fill(0)
+    let pullSuccessMass = 0
+
     const totalPullsOnBanner = start.pullsOnBanner + pull
-    const isForcedFeatured =
+    const isForcedFeaturedHardGuarantee =
       config.featuredHardGuarantee != null &&
-      totalPullsOnBanner === config.featuredHardGuarantee
+      totalPullsOnBanner === config.featuredHardGuarantee &&
+      activeTargets.length === 1 // 한정 선택 소환은 단일 타겟만 의미
+
+    const forcedTargetPickupIdx = isForcedFeaturedHardGuarantee
+      ? activeTargets[0].pickupIdx
+      : -1
 
     for (let pity = 0; pity < hard; pity += 1) {
       const lordHit = lordHitByPity[pity]
       const commonHit = commonHitByPity[pity]
       const noLegendary = 1 - lordHit - commonHit
       const nextPity = Math.min(pity + 1, hard - 1)
-      const lordNextPity = 0 // 영주는 항상 천장 리셋
+      const lordNextPity = 0
       const commonNextPity = commonResetsPity ? 0 : nextPity
 
       for (let miss = 0; miss <= mxMiss; miss += 1) {
-        const lordPer = lordPerPickupByMiss[miss]
-        const lordNon = lordNonRateUpByMiss[miss]
-        const commonPer = commonPerPickupByMiss[miss]
-        const commonNon = commonNonRateUpByMiss[miss]
+        const lordPer = lordPerByMiss[miss]
+        const lordNon = lordNonByMiss[miss]
+        const commonPer = commonPerByMiss[miss]
+        const commonNon = commonNonByMiss[miss]
         const nextMiss = Math.min(miss + 1, mxMiss)
-        const off = pity * pityStride + miss * missStride
 
-        for (let copy = 0; copy <= mxCopy; copy += 1) {
-          const prob = cur[off + copy]
+        for (let copies = 0; copies < totalCopiesStates; copies += 1) {
+          const prob = cur[idx(pity, miss, copies)]
           if (prob === 0) continue
 
-          // 한정 선택 소환: pullsOnBanner == featuredHardGuarantee 일 때 타겟 자체 확정 (copy<1)
-          if (isForcedFeatured && copy < 1) {
-            const nextCopy = Math.min(copy + 1, mxCopy)
-            nxt[idx(0, 0, nextCopy)] += prob
-            continue
-          }
-
-          // 1) 전설 안 뽑힘
-          if (noLegendary > 0) {
-            nxt[idx(nextPity, miss, copy)] += prob * noLegendary
-          }
-
-          // 2) 영주 그룹 hit (천장 항상 리셋)
-          if (lordHit > 0) {
-            const pLord = prob * lordHit
-            // 2a) 타겟이 영주인 경우 → 타겟 픽업 가능성
-            if (targetIsLord) {
-              const pTarget = pLord * lordPer
-              const pOtherLordFeat = pLord * numOtherLordFeat * lordPer
-              const pLordNonRateUp = pLord * lordNon
-              if (pTarget > 0) {
-                const nextCopy = Math.min(copy + 1, mxCopy)
-                nxt[idx(lordNextPity, 0, nextCopy)] += pTarget
+          // Forced (한정 200픽 픽업 확정): 활성 타겟의 첫 카피 미보유 시 그 타겟 강제
+          if (isForcedFeaturedHardGuarantee && forcedTargetPickupIdx >= 0) {
+            const activePos = activePosByPickup[forcedTargetPickupIdx]
+            const before = Math.floor(copies / strides[activePos]) % dims[activePos]
+            if (before === 0) {
+              const newCopies = tryIncrement(copies, forcedTargetPickupIdx)
+              if (newCopies === successCopiesIdx) {
+                pullSuccessMass += prob
+              } else {
+                nxt[idx(0, 0, newCopies)] += prob
               }
-              if (pOtherLordFeat > 0) {
-                nxt[idx(lordNextPity, 0, copy)] += pOtherLordFeat
-                pullOtherFeatured += pOtherLordFeat
-              }
-              if (pLordNonRateUp > 0) {
-                nxt[idx(lordNextPity, nextMiss, copy)] += pLordNonRateUp
-                pullNonRateUpLegendary += pLordNonRateUp
-              }
-            } else {
-              // 2b) 타겟이 일반 → 영주 그룹 hit 은 "다른 픽업"(영주 픽업이 있다면) 또는 "픽업 아닌 5성"
-              const pAnyLordFeat = pLord * numLordFeat * lordPer
-              const pLordNonRateUp = pLord * lordNon
-              if (pAnyLordFeat > 0) {
-                nxt[idx(lordNextPity, 0, copy)] += pAnyLordFeat
-                pullOtherFeatured += pAnyLordFeat
-              }
-              if (pLordNonRateUp > 0) {
-                nxt[idx(lordNextPity, nextMiss, copy)] += pLordNonRateUp
-                pullNonRateUpLegendary += pLordNonRateUp
-              }
+              pullPickupHits[forcedTargetPickupIdx] += prob
+              continue
             }
           }
 
-          // 3) 일반 그룹 hit (천장 리셋 여부는 commonResetsPity 에 의존)
+          // 1) 전설 안 뽑힘 → pity+1, miss 유지
+          if (noLegendary > 0) {
+            nxt[idx(nextPity, miss, copies)] += prob * noLegendary
+          }
+
+          // 2) 영주 그룹 hit
+          if (lordHit > 0) {
+            // 그룹 내 픽업별 분기
+            for (let pi = 0; pi < pickups.length; pi += 1) {
+              if (pickups[pi].group !== 'lord') continue
+              const p = prob * lordHit * lordPer
+              if (p === 0) continue
+              const newCopies = tryIncrement(copies, pi)
+              pullPickupHits[pi] += p
+              if (newCopies === successCopiesIdx && activeTargets.length > 0) {
+                pullSuccessMass += p
+              } else {
+                nxt[idx(lordNextPity, 0, newCopies)] += p
+              }
+            }
+            // 그룹 내 비-픽업 5성
+            const pNon = prob * lordHit * lordNon
+            if (pNon > 0) {
+              nxt[idx(lordNextPity, nextMiss, copies)] += pNon
+              pullNonRateUpLeg += pNon
+            }
+          }
+
+          // 3) 일반 그룹 hit
           if (commonHit > 0) {
-            const pCom = prob * commonHit
-            if (targetIsCommon) {
-              const pTarget = pCom * commonPer
-              const pOtherCommonFeat = pCom * numOtherCommonFeat * commonPer
-              const pCommonNonRateUp = pCom * commonNon
-              if (pTarget > 0) {
-                const nextCopy = Math.min(copy + 1, mxCopy)
-                nxt[idx(commonNextPity, 0, nextCopy)] += pTarget
+            for (let pi = 0; pi < pickups.length; pi += 1) {
+              if (pickups[pi].group !== 'common') continue
+              const p = prob * commonHit * commonPer
+              if (p === 0) continue
+              const newCopies = tryIncrement(copies, pi)
+              pullPickupHits[pi] += p
+              if (newCopies === successCopiesIdx && activeTargets.length > 0) {
+                pullSuccessMass += p
+              } else {
+                nxt[idx(commonNextPity, 0, newCopies)] += p
               }
-              if (pOtherCommonFeat > 0) {
-                nxt[idx(commonNextPity, 0, copy)] += pOtherCommonFeat
-                pullOtherFeatured += pOtherCommonFeat
-              }
-              if (pCommonNonRateUp > 0) {
-                nxt[idx(commonNextPity, nextMiss, copy)] += pCommonNonRateUp
-                pullNonRateUpLegendary += pCommonNonRateUp
-              }
-            } else {
-              const pAnyCommonFeat = pCom * numCommonFeat * commonPer
-              const pCommonNonRateUp = pCom * commonNon
-              if (pAnyCommonFeat > 0) {
-                nxt[idx(commonNextPity, 0, copy)] += pAnyCommonFeat
-                pullOtherFeatured += pAnyCommonFeat
-              }
-              if (pCommonNonRateUp > 0) {
-                nxt[idx(commonNextPity, nextMiss, copy)] += pCommonNonRateUp
-                pullNonRateUpLegendary += pCommonNonRateUp
-              }
+            }
+            const pNon = prob * commonHit * commonNon
+            if (pNon > 0) {
+              nxt[idx(commonNextPity, nextMiss, copies)] += pNon
+              pullNonRateUpLeg += pNon
             }
           }
         }
       }
     }
 
+    // swap
     const tmp = cur
     cur = nxt
     nxt = tmp
 
-    cumOtherFeatured += pullOtherFeatured
-    cumNonRateUpLegendary += pullNonRateUpLegendary
-    expectedOtherFeatured[pull] = cumOtherFeatured
-    expectedNonRateUpLegendary[pull] = cumNonRateUpLegendary
+    absorbedSuccessMass += pullSuccessMass
+    pmf[pull] = pullSuccessMass
+    cdf[pull] = absorbedSuccessMass
+    cumNonRateUpLeg += pullNonRateUpLeg
+    expectedNonRateUpLegendary[pull] = cumNonRateUpLeg
+    for (let i = 0; i < pickups.length; i += 1) {
+      cumPickupHits[i] += pullPickupHits[i]
+      expectedHitsByPickup[i][pull] = cumPickupHits[i]
+    }
 
-    // marginal 추출
-    let cumFromTop = 0
-    let exp = 0
-    for (let g = mxCopy; g >= 0; g -= 1) {
-      let pSum = 0
-      for (let p = 0; p < hard; p += 1) {
+    // Marginal CDF 계산: 활성 타겟 t 별로 c_j == goal[j] 인 모든 copies 합산 + absorbedSuccessMass
+    for (let j = 0; j < activeTargets.length; j += 1) {
+      const t = activeTargets[j]
+      const stride = strides[j]
+      const dimSize = dims[j]
+      // 합산: sum of cur[idx] where (copies / stride) % dimSize == goal[j]
+      let marginalMass = absorbedSuccessMass
+      for (let pity = 0; pity < hard; pity += 1) {
         for (let m = 0; m <= mxMiss; m += 1) {
-          pSum += cur[p * pityStride + m * missStride + g]
+          for (let copies = 0; copies < totalCopiesStates; copies += 1) {
+            const cj = Math.floor(copies / stride) % dimSize
+            if (cj === t.goal) {
+              marginalMass += cur[idx(pity, m, copies)]
+            }
+          }
         }
       }
-      cumFromTop += pSum
-      copiesAtLeast[g][pull] = cumFromTop
-      exp += g * pSum
+      marginalCdf[t.pickupIdx][pull] = marginalMass
     }
-    copiesExpected[pull] = exp
   }
 
-  return { copiesAtLeast, copiesExpected, expectedOtherFeatured, expectedNonRateUpLegendary }
+  return {
+    cdf,
+    pmf,
+    marginalCdf,
+    expectedHitsByPickup,
+    expectedNonRateUpLegendary,
+    activeTargets,
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
-// 결과 보고서 빌드
+// 결과 보고서
 // ─────────────────────────────────────────────────────────────
 
 export type StrategyReport = {
   availablePulls: number
-  goal: number
   selection: PickupSelection
-  probabilityWithBudget: number
-  expectedCopiesWithBudget: number
-  expectedOtherFeaturedWithBudget: number
+  /** 모든 활성 타겟 동시 달성 확률 (자원 한도 내) */
+  jointProbabilityWithBudget: number
+  /** 활성 타겟 별 단독 달성 확률 (자원 한도 내). key = pickupIdx */
+  marginalProbabilityWithBudget: Record<number, number>
+  /** 픽업별 기대 획득 수 (활성/비활성 모두). key = pickupIdx */
+  expectedHitsWithBudget: Record<number, number>
+  /** 자원 한도 내 픽업 아닌 5성 기대 횟수 */
   expectedNonRateUpLegendaryWithBudget: number
+  /** 현재 상태 1회 소환 결과 분포 */
   outcomeNow: SummonOutcome
-  conditionalFeatured: number
+  /** "지금 5성 1개 나오면 어느 픽업이든 일 확률" */
+  conditionalAnyPickup: number
   horizon: number
-  cdf: number[]
+  /** joint cdf (모든 활성 타겟 동시) — 곡선 표시용 */
+  jointCdf: number[]
+  /** 활성 타겟 정보 */
+  activeTargets: ActiveTarget[]
   milestones: {
     label: string
     p: number
@@ -493,32 +560,33 @@ export function pullsForProbabilityFromCdf(cdf: number[], p: number): number | n
 export function buildStrategyReport(
   config: BannerConfig,
   selection: PickupSelection,
-  goal: number,
   start: SummonState,
   availablePulls: number,
 ): StrategyReport {
-  const safeGoal = Math.max(1, Math.floor(goal))
   const safeBudget = Math.max(0, Math.floor(availablePulls))
   const horizon = Math.min(
     1500,
     Math.max(safeBudget, config.hardPity * 2, (config.featuredHardGuarantee ?? 0) + 20, 200),
   )
 
-  const { copiesAtLeast, copiesExpected, expectedOtherFeatured, expectedNonRateUpLegendary } =
-    simulateCopiesDistribution(config, selection, safeGoal, horizon, start)
-  const cdf = copiesAtLeast[safeGoal] ?? new Array(horizon + 1).fill(0)
+  const dist = simulateMultiTargetDistribution(config, selection, horizon, start)
+  const budgetIdx = Math.min(safeBudget, dist.cdf.length - 1)
 
-  const budgetIdx = Math.min(safeBudget, cdf.length - 1)
-  const probabilityWithBudget = safeBudget > 0 ? cdf[budgetIdx] : cdf[0] ?? 0
-  const expectedCopiesWithBudget =
-    safeBudget > 0 ? copiesExpected[budgetIdx] : copiesExpected[0] ?? start.copies
-  const expectedOtherFeaturedWithBudget =
-    safeBudget > 0 ? expectedOtherFeatured[budgetIdx] : 0
+  const jointProbabilityWithBudget = safeBudget > 0 ? dist.cdf[budgetIdx] : dist.cdf[0] ?? 0
+  const marginalProbabilityWithBudget: Record<number, number> = {}
+  for (const t of dist.activeTargets) {
+    const series = dist.marginalCdf[t.pickupIdx]
+    marginalProbabilityWithBudget[t.pickupIdx] = safeBudget > 0 ? series[budgetIdx] : series[0] ?? 0
+  }
+  const expectedHitsWithBudget: Record<number, number> = {}
+  for (let i = 0; i < selection.pickups.length; i += 1) {
+    expectedHitsWithBudget[i] = safeBudget > 0 ? dist.expectedHitsByPickup[i][budgetIdx] : 0
+  }
   const expectedNonRateUpLegendaryWithBudget =
-    safeBudget > 0 ? expectedNonRateUpLegendary[budgetIdx] : 0
+    safeBudget > 0 ? dist.expectedNonRateUpLegendary[budgetIdx] : 0
 
   const milestones = [0.5, 0.75, 0.9, 0.99].map((p) => {
-    const pulls = pullsForProbabilityFromCdf(cdf, p)
+    const pulls = pullsForProbabilityFromCdf(dist.cdf, p)
     return {
       label: `${Math.round(p * 100)}%`,
       p,
@@ -529,16 +597,16 @@ export function buildStrategyReport(
 
   return {
     availablePulls: safeBudget,
-    goal: safeGoal,
     selection,
-    probabilityWithBudget,
-    expectedCopiesWithBudget,
-    expectedOtherFeaturedWithBudget,
+    jointProbabilityWithBudget,
+    marginalProbabilityWithBudget,
+    expectedHitsWithBudget,
     expectedNonRateUpLegendaryWithBudget,
     outcomeNow: summonOutcomeAt(config, selection, start),
-    conditionalFeatured: conditionalFeaturedGivenLegendary(config, selection, start),
+    conditionalAnyPickup: conditionalAnyPickupGivenLegendary(config, selection, start),
     horizon,
-    cdf,
+    jointCdf: dist.cdf,
+    activeTargets: dist.activeTargets,
     milestones,
   }
 }

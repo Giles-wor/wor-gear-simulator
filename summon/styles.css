@@ -124,6 +124,77 @@
   gap: 8px;
 }
 
+.pickupHeader {
+  display: grid;
+  grid-template-columns: 36px auto 1fr auto;
+  gap: 10px;
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.55;
+  letter-spacing: 0.4px;
+}
+.pickupHeaderTarget { text-align: center; }
+.pickupHeaderInputs { text-align: right; }
+
+.pickupNumbers {
+  display: flex;
+  gap: 6px;
+}
+
+.miniField {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  font-size: 11px;
+}
+.miniField span {
+  font-weight: 700;
+  opacity: 0.7;
+}
+.miniField input {
+  width: 56px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.4);
+  color: inherit;
+  font-size: 14px;
+}
+.miniField.dim {
+  opacity: 0.45;
+}
+
+.marginalGrid {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+.marginalHead {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  opacity: 0.7;
+  text-transform: none;
+}
+.marginalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 4px 2px;
+  font-size: 14px;
+}
+.marginalRow strong {
+  color: #e0f2fe;
+  font-size: 15px;
+  font-weight: 700;
+}
+
 .pickupRow {
   display: flex;
   align-items: center;
@@ -132,24 +203,19 @@
   border-radius: 10px;
   background: rgba(15, 23, 42, 0.35);
   border: 1px solid rgba(148, 163, 184, 0.18);
-  cursor: pointer;
   transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+  flex-wrap: wrap;
 }
 
-.pickupRow:hover {
-  border-color: rgba(148, 163, 184, 0.5);
-  background: rgba(15, 23, 42, 0.5);
+.pickupRow.isActive {
+  border-color: rgba(56, 189, 248, 0.55);
+  background: rgba(56, 189, 248, 0.10);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.25);
 }
 
-.pickupRow:focus-visible {
-  outline: 2px solid rgba(56, 189, 248, 0.5);
-  outline-offset: 1px;
-}
-
-.pickupRow.isTarget {
-  border-color: rgba(56, 189, 248, 0.65);
-  background: rgba(56, 189, 248, 0.13);
-  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.3);
+.pickupRow .pickupLabel {
+  flex: 1 1 140px;
+  min-width: 0;
 }
 
 .targetRadio {

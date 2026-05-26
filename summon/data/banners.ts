@@ -19,7 +19,7 @@ const placeholderBanners: Record<BannerConfig['id'], BannerConfig> = {
     hardPity: 200,
     featuredMultiplier: 1,
     defaultPickups: [{ label: '타겟 영웅', group: 'common' }],
-    defaultTargetIndex: 0,
+    defaultGoals: [1],
     placeholder: false,
     notes:
       '기본 스피릿 배너 (Invocation of Spirits). 픽업 가중치 없음 → 풀에서 특정 1명만 노릴 때. 스피릿 천장 공유.',
@@ -38,7 +38,7 @@ const placeholderBanners: Record<BannerConfig['id'], BannerConfig> = {
     rateUpStackingMultiplier: 10,
     featuredHardGuarantee: 200,
     defaultPickups: [{ label: '한정 영웅', group: 'common' }],
-    defaultTargetIndex: 0,
+    defaultGoals: [1],
     placeholder: false,
     notes:
       '한정 5성 1명 선택 (콜라보 영웅 미나 제외). 선택 영웅 ×20 + ×10 stacking + 200픽 자체 확정. 스피릿 천장은 다른 스피릿 배너와 공유.',
@@ -60,7 +60,7 @@ const placeholderBanners: Record<BannerConfig['id'], BannerConfig> = {
       { label: '영주 픽업', group: 'lord' },
       { label: '일반 픽업', group: 'common' },
     ],
-    defaultTargetIndex: 0,
+    defaultGoals: [1, 0],
     placeholder: false,
     notes:
       '고대 소환: 5성 영주(알 수 없는 자 포함) 전용 천장. 영주 0.72% / 일반 1%, 185회 영주 미획득 후 +8%/회, 200픽 영주 확정. ×20 픽업 + ×2 stacking. 보통 영주+일반 각 1명씩 픽업하는 경우가 많음.',
@@ -81,7 +81,7 @@ const placeholderBanners: Record<BannerConfig['id'], BannerConfig> = {
       { label: '픽업 A', group: 'common' },
       { label: '픽업 B', group: 'common' },
     ],
-    defaultTargetIndex: 0,
+    defaultGoals: [1, 0],
     placeholder: false,
     notes:
       '디바인 소환: Legendary 크리스탈, 영주 0.4% / 일반 5.6%, 12회 미획득 후 +5%/회, 20픽 5성 확정. ×20 픽업 + ×10 stacking. 보통 일반 픽업 2명. 디바인 천장 공유.',
