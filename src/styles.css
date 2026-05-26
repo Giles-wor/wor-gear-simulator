@@ -285,29 +285,38 @@ h3 {
 .awakeningChip:hover {
   background: rgba(231, 166, 95, 0.15);
 }
-.appLinks {
+.globalNav {
   display: flex;
-  gap: 8px;
-  margin-top: 10px;
-  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  background: rgba(18, 15, 13, 0.55);
+  border: 1px solid rgba(231, 166, 95, 0.18);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(8px);
 }
-.appLink {
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(231, 166, 95, 0.32);
-  background: rgba(231, 166, 95, 0.08);
-  color: #f3d8b3;
-  font-size: 0.85rem;
+.globalNavLink {
+  flex: 1 1 auto;
+  text-align: center;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  color: #d9cabb;
+  font-size: 0.95rem;
   font-weight: 600;
   text-decoration: none;
+  transition: background 120ms ease, border-color 120ms ease;
 }
-.appLink.active {
+.globalNavLink:hover {
+  background: rgba(231, 166, 95, 0.10);
+}
+.globalNavLink.active {
   background: rgba(231, 166, 95, 0.22);
-  border-color: rgba(231, 166, 95, 0.6);
+  border-color: rgba(231, 166, 95, 0.55);
   color: #ffe1b5;
-}
-.appLink:hover {
-  background: rgba(231, 166, 95, 0.16);
 }
 .formulaExpression {
   padding: 10px 12px;

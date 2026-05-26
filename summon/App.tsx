@@ -8,6 +8,7 @@ import {
   type SummonState,
 } from './lib/gacha'
 import { banners, bannerOrder, summonDataSource } from './data/banners'
+import { GlobalNav } from './components/GlobalNav'
 
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`
 const pctSharp = (v: number) => `${(v * 100).toFixed(2)}%`
@@ -112,25 +113,54 @@ export default function App() {
   }
   const addPickup = () => {
     const lastGroup = pickups[pickups.length - 1]?.group ?? 'common'
-    setPickups((prev) => [...prev, { label: '픽업', group: lastGroup }])
+    setPickups((prev) => [...prev, { label: `픽업 ${prev.length + 1}`, group: lastGroup }])
+  }
+  type Preset = { id: string; label: string; pickups: FeaturedHero[] }
+  const presets: Preset[] = [
+    { id: 'common1', label: '일반 픽업 1명', pickups: [{ label: '픽업', group: 'common' as FeaturedGroup }] },
+    {
+      id: 'common2',
+      label: '일반 픽업 2명',
+      pickups: [
+        { label: '픽업 A', group: 'common' as FeaturedGroup },
+        { label: '픽업 B', group: 'common' as FeaturedGroup },
+      ],
+    },
+    {
+      id: 'mixed',
+      label: '영주 + 일반',
+      pickups: [
+        { label: '영주 픽업', group: 'lord' as FeaturedGroup },
+        { label: '일반 픽업', group: 'common' as FeaturedGroup },
+      ],
+    },
+    {
+      id: 'lord2',
+      label: '영주 2명',
+      pickups: [
+        { label: '영주 A', group: 'lord' as FeaturedGroup },
+        { label: '영주 B', group: 'lord' as FeaturedGroup },
+      ],
+    },
+  ]
+  const applyPreset = (preset: Preset) => {
+    setPickups(preset.pickups.map((x) => ({ ...x })))
+    setTargetIndex(0)
   }
 
   return (
     <div className="app">
+      <GlobalNav active="summon" />
       <section className="card">
         <div className="sectionHeading">
           <div>
             <p className="eyebrow">SUMMON LAB</p>
             <h1>픽업 영웅 달성 확률 계산기</h1>
-            <nav className="appLinks">
-              <a className="appLink" href="../">DPS 시뮬레이터</a>
-              <a className="appLink active" href="./">소환 확률 계산기</a>
-            </nav>
           </div>
         </div>
         <p className="muted">
-          ① 소환 풀 선택 → ② 픽업 영웅 구성 (영주/일반) → ③ 노리는 타겟 선택 →
-          ④ 현재 스택과 남은 소환 수로 <strong>달성 확률 계산</strong>. 인게임 Drop Rates 탭 기준
+          ① 소환 풀 선택 → ② 픽업 영웅·타겟 설정 (그룹 + 행 클릭으로 타겟 지정) →
+          ③ 현재 스택과 남은 소환 수로 <strong>달성 확률 계산</strong>. 인게임 Drop Rates 탭 기준
           (×20 픽업 + ×10/×2 stacking, 한정 200픽 자체 확정, 고대 영주 전용 천장, 혼합 그룹 픽업) 반영.
         </p>
         {config.placeholder ? (
@@ -165,76 +195,96 @@ export default function App() {
       <section className="card">
         <div className="sectionHeading">
           <div>
-            <p className="eyebrow">② 픽업 영웅</p>
-            <h2>이 배너의 픽업 영웅들 (그룹 + 라벨)</h2>
+            <p className="eyebrow">② 픽업 영웅 + 타겟</p>
+            <h2>이 배너의 픽업 영웅들과 노리는 타겟 영웅</h2>
           </div>
         </div>
+        {!isLimited ? (
+          <div className="pickupPresets">
+            <span className="presetLabel">빠른 설정:</span>
+            {presets.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className="presetChip"
+                onClick={() => applyPreset(p)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div className="pickupList">
-          {pickups.map((p, i) => (
-            <div key={i} className={`pickupRow ${i === selection.targetIndex ? 'isTarget' : ''}`}>
-              <div className="pickupGroupToggle">
-                <button
-                  type="button"
-                  className={p.group === 'lord' ? 'groupChip lord active' : 'groupChip lord'}
-                  onClick={() => updatePickup(i, { group: 'lord' })}
-                >
-                  영주
-                </button>
-                <button
-                  type="button"
-                  className={p.group === 'common' ? 'groupChip common active' : 'groupChip common'}
-                  onClick={() => updatePickup(i, { group: 'common' })}
-                >
-                  일반
-                </button>
+          {pickups.map((p, i) => {
+            const isTarget = i === selection.targetIndex
+            return (
+              <div
+                key={i}
+                className={`pickupRow${isTarget ? ' isTarget' : ''} ${p.group}`}
+                onClick={() => setTargetIndex(i)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setTargetIndex(i)
+                  }
+                }}
+              >
+                <span className={`targetRadio${isTarget ? ' active' : ''}`} aria-label={isTarget ? '타겟' : '타겟 아님'}>
+                  {isTarget ? '🎯' : '○'}
+                </span>
+                <div className="pickupGroupToggle" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    className={p.group === 'lord' ? 'groupChip lord active' : 'groupChip lord'}
+                    onClick={() => updatePickup(i, { group: 'lord' })}
+                  >
+                    영주
+                  </button>
+                  <button
+                    type="button"
+                    className={p.group === 'common' ? 'groupChip common active' : 'groupChip common'}
+                    onClick={() => updatePickup(i, { group: 'common' })}
+                  >
+                    일반
+                  </button>
+                </div>
+                <input
+                  className="pickupLabel"
+                  value={p.label}
+                  onChange={(e) => updatePickup(i, { label: e.target.value })}
+                  onClick={(e) => e.stopPropagation()}
+                  placeholder={`픽업 ${i + 1}`}
+                />
+                {pickups.length > 1 && !isLimited ? (
+                  <button
+                    type="button"
+                    className="pickupRemove"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      removePickup(i)
+                    }}
+                    aria-label="픽업 제거"
+                  >
+                    ×
+                  </button>
+                ) : null}
               </div>
-              <input
-                className="pickupLabel"
-                value={p.label}
-                onChange={(e) => updatePickup(i, { label: e.target.value })}
-                placeholder={`픽업 ${i + 1}`}
-              />
-              {pickups.length > 1 ? (
-                <button type="button" className="pickupRemove" onClick={() => removePickup(i)} aria-label="픽업 제거">
-                  ×
-                </button>
-              ) : null}
-            </div>
-          ))}
+            )
+          })}
           {!isLimited ? (
             <button type="button" className="pickupAdd" onClick={addPickup}>
               + 픽업 추가
             </button>
           ) : (
-            <p className="muted helperText">한정 선택 소환은 한 번에 1명만 선택 가능합니다.</p>
+            <p className="muted helperText">한정 선택 소환은 한 번에 픽업 1명만 선택 가능합니다.</p>
           )}
-        </div>
-      </section>
-
-      <section className="card">
-        <div className="sectionHeading">
-          <div>
-            <p className="eyebrow">③ 타겟</p>
-            <h2>이 중 어떤 영웅을 노리고 있나요?</h2>
-          </div>
-        </div>
-        <div className="targetTabs">
-          {pickups.map((p, i) => (
-            <button
-              key={i}
-              type="button"
-              className={`targetTab ${i === selection.targetIndex ? 'active' : ''} ${p.group}`}
-              onClick={() => setTargetIndex(i)}
-            >
-              <span className="groupBadge">{p.group === 'lord' ? '영주' : '일반'}</span>
-              <span className="targetLabel">{p.label || `픽업 ${i + 1}`}</span>
-            </button>
-          ))}
         </div>
         {targetHero ? (
           <p className="muted helperText">
-            타겟 그룹: <strong>{targetHero.group === 'lord' ? `영주(${config.lordPoolSize}명 풀 · ${(config.lordGroupRate * 100).toFixed(2)}%)` : `일반(${config.commonPoolSize}명 풀 · ${(config.commonGroupRate * 100).toFixed(2)}%)`}</strong>
-            {isLordOnlyPity ? ' · 고대 천장은 영주만 카운터를 리셋합니다 (일반 타겟이면 천장 도움 없음)' : ''}
+            타겟 그룹: <strong>{targetHero.group === 'lord' ? `영주 (${config.lordPoolSize}명 풀 · ${(config.lordGroupRate * 100).toFixed(2)}%)` : `일반 (${config.commonPoolSize}명 풀 · ${(config.commonGroupRate * 100).toFixed(2)}%)`}</strong>
+            {isLordOnlyPity ? ' · 고대 천장은 영주만 카운터를 리셋 (일반 타겟이면 천장 도움 없음)' : ''}
           </p>
         ) : null}
       </section>
@@ -242,7 +292,7 @@ export default function App() {
       <section className="card">
         <div className="sectionHeading">
           <div>
-            <p className="eyebrow">④ 내 현황</p>
+            <p className="eyebrow">③ 내 현황</p>
             <h2>지금 스택과 남은 소환 수</h2>
           </div>
         </div>
