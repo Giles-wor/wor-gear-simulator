@@ -41,7 +41,7 @@ export function BuildResultCard({ title, result, recommendation, compareAgainst 
         <div><span>아이템 적용 최대 30초 누적</span><strong className={compareClass(result.itemMaxCumulative30s, compareAgainst.itemMaxCumulative30s)}>{result.itemMaxCumulative30s.toLocaleString()}</strong></div>
         <div><span>아이템 적용 최대 DPS(30s)</span><strong className={compareClass(result.itemMaxDps30s, compareAgainst.itemMaxDps30s)}>{result.itemMaxDps30s.toLocaleString()}</strong></div>
         <div><span>최종 공격력</span><strong>{result.finalAtk.toLocaleString()}</strong></div>
-        <div><span>각성 반영 공격력</span><strong>{result.awakeningAtkBonusApplied > 0 ? `+${result.awakeningAtkBonusApplied}` : '-'}</strong></div>
+        <div><span>각성 레벨</span><strong>{result.awakeningLevel}각{result.awakeningAtkBonusApplied > 0 ? ` (ATK +${result.awakeningAtkBonusApplied})` : ''}</strong></div>
         <div><span>총 치피</span><strong>{result.finalCritDmg}%</strong></div>
         <div><span>총 공속</span><strong>{result.totalAspd}</strong></div>
         <div><span>판테온 공속</span><strong>{result.pantheonAspdBonus}</strong></div>

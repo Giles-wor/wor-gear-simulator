@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
-import type { Hero } from '../data/heroes'
+import { heroDisplayName, type Hero } from '../data/heroes'
 
 type HeroPickerProps = {
   selectedHeroId: string
@@ -23,6 +23,7 @@ export function HeroPicker({ selectedHeroId, appliedHeroId, heroes, onChange, on
     return heroes.filter((hero) => {
       const haystack = [
         hero.name,
+        hero.nameKo ?? '',
         hero.heroClass,
         hero.damageType,
         hero.rarity,
@@ -60,12 +61,12 @@ export function HeroPicker({ selectedHeroId, appliedHeroId, heroes, onChange, on
           {filteredHeroes.length > 0 ? (
             filteredHeroes.map((hero) => (
               <option key={hero.id} value={hero.id}>
-                {hero.name} · {hero.heroClass}
+                {heroDisplayName(hero)} · {hero.heroClass}
               </option>
             ))
           ) : (
             <option value={currentHero.id}>
-              검색 결과 없음 · 현재 선택 {currentHero.name}
+              검색 결과 없음 · 현재 선택 {heroDisplayName(currentHero)}
             </option>
           )}
         </select>
@@ -78,7 +79,7 @@ export function HeroPicker({ selectedHeroId, appliedHeroId, heroes, onChange, on
       <p className="muted heroPickerMeta">
         검색 결과 {filteredHeroes.length}명 / 전체 {heroes.length}명
         {' · '}
-        현재 적용: {appliedHero.name}
+        현재 적용: {heroDisplayName(appliedHero)}
       </p>
     </div>
   )

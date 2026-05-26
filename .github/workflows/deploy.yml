@@ -34,8 +34,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build (v0 DPS simulator)
         run: npm run build
+
+      - name: Build (소환 확률 계산기)
+        run: npm run build:summon
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

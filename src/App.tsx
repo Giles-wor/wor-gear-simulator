@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { heroes } from './data/heroes'
+import { heroes, heroDisplayName } from './data/heroes'
 import { leftSets, rightSets } from './data/gearSets'
 import { calculateBuild, findSetById, type BuildInput } from './lib/calc'
 import { getBestStatRecommendation } from './lib/recommend'
@@ -20,12 +20,18 @@ function formatDamageBonusParts(parts: { label: string; value: number }[], total
   return `(${expression}) = ${Math.round(total * 100)}%`
 }
 
+function formatLordBreakdownValue(item: { value?: number; text?: string }) {
+  if (item.text) return item.text
+  if (item.value != null) return `+${Math.round(item.value * 100)}%`
+  return ''
+}
+
 const defaultBuild: BuildInput = {
   totalAtk: 12000,
   critRate: 100,
   critDmg: 250,
   attackSpeed: 120,
-  awakeningOn: true,
+  awakeningLevel: 2,
   pantheonAspdOn: true,
   factionAccessoryId: 'none',
   lordEffectId: 'none',
@@ -86,13 +92,13 @@ export default function App() {
       <section className="card summaryCard">
         <div className="sectionHeading compactHeading">
           <div>
-            <h2 className="compactHeroName">{hero.name}</h2>
+            <h2 className="compactHeroName">{heroDisplayName(hero)}</h2>
             <p className="muted compactHeroMeta">{hero.heroClass} · {hero.damageType} · {hero.rarity}</p>
           </div>
         </div>
         <div className="summaryGrid compactSummaryGrid">
           <div><span>기본 간격</span><strong>{hero.baseInterval.toFixed(1)}초</strong></div>
-          <div><span>각성 보너스</span><strong>+{hero.awakeningAtkBonus}</strong></div>
+          <div><span>2각 ATK 보너스</span><strong>+{hero.awakeningAtkBonus || '-'}</strong></div>
           <div><span>출처</span><strong>{hero.sourceLevel}</strong></div>
         </div>
         <p className="muted detailNote">
@@ -105,7 +111,7 @@ export default function App() {
         <div className="sectionHeading">
           <div>
             <p className="eyebrow">영웅별 사전 시뮬레이션</p>
-            <h2>{hero.name} 추천 우측 3세트</h2>
+            <h2>{heroDisplayName(hero)} 추천 우측 3세트</h2>
           </div>
           <strong className="deltaBadge positive">{rightSetRankings[0]?.set.name ?? '-'}</strong>
         </div>
@@ -162,6 +168,90 @@ export default function App() {
               <div className="formulaExpression">
                 30초 누적 = 공격 간격 {result.interval.toFixed(2)}초 기준 타임라인 누적
               </div>
+
+              {result.awakeningLevel > 0 && result.awakeningTiersApplied.length > 0 ? (
+                <div className="lordBreakdown">
+                  <div className="lordBreakdownHeader">
+                    <strong>각성 효과 상세 — {result.awakeningLevel}각</strong>
+                    <span className="lordBreakdownTotal">
+                      합산:
+                      {result.awakeningTotal.atkBonus > 0 ? ` 공격력 +${result.awakeningTotal.atkBonus}` : ''}
+                      {result.awakeningTotal.atkPctBonus > 0 ? ` / 공격력 +${Math.round(result.awakeningTotal.atkPctBonus * 100)}%` : ''}
+                      {result.awakeningTotal.damageBonus > 0 ? ` / 피해 +${Math.round(result.awakeningTotal.damageBonus * 100)}%` : ''}
+                      {result.awakeningTotal.basicDamageBonus > 0 ? ` / 기본 공격 +${Math.round(result.awakeningTotal.basicDamageBonus * 100)}%` : ''}
+                      {result.awakeningTotal.critRateBonus > 0 ? ` / 치확 +${result.awakeningTotal.critRateBonus}` : ''}
+                      {result.awakeningTotal.critDmgBonus > 0 ? ` / 치피 +${result.awakeningTotal.critDmgBonus}` : ''}
+                      {result.awakeningTotal.attackSpeedBonus > 0 ? ` / 공속 +${result.awakeningTotal.attackSpeedBonus}` : ''}
+                      {result.awakeningTotal.penetrationBonus > 0 ? ` / 관통 +${Math.round(result.awakeningTotal.penetrationBonus * 100)}%` : ''}
+                      {result.awakeningTotal.derivedPenetrationApplied > 0
+                        ? ` / 관통(파생) +${Math.round(result.awakeningTotal.derivedPenetrationApplied * 100)}% [치피의 ${Math.round(result.awakeningTotal.penetrationFromCritDmgRatio * 100)}%]`
+                        : ''}
+                      {result.awakeningTotal.atkBonus === 0 && result.awakeningTotal.atkPctBonus === 0 &&
+                        result.awakeningTotal.damageBonus === 0 && result.awakeningTotal.basicDamageBonus === 0 &&
+                        result.awakeningTotal.critRateBonus === 0 && result.awakeningTotal.critDmgBonus === 0 &&
+                        result.awakeningTotal.attackSpeedBonus === 0 && result.awakeningTotal.penetrationBonus === 0 &&
+                        result.awakeningTotal.derivedPenetrationApplied === 0
+                        ? ' 정량 효과 없음 (note 만)' : ''}
+                    </span>
+                  </div>
+                  <ul className="lordBreakdownList">
+                    {result.awakeningTiersApplied.map((tier) => {
+                      const parts: string[] = []
+                      if (tier.atkBonus) parts.push(`공격력 +${tier.atkBonus}`)
+                      if (tier.atkPctBonus) parts.push(`공격력 +${Math.round(tier.atkPctBonus * 100)}%`)
+                      if (tier.damageBonus) parts.push(`피해 +${Math.round(tier.damageBonus * 100)}%`)
+                      if (tier.basicDamageBonus) parts.push(`기본 공격 +${Math.round(tier.basicDamageBonus * 100)}%`)
+                      if (tier.critRateBonus) parts.push(`치확 +${tier.critRateBonus}`)
+                      if (tier.critDmgBonus) parts.push(`치피 +${tier.critDmgBonus}`)
+                      if (tier.attackSpeedBonus) parts.push(`공속 +${tier.attackSpeedBonus}`)
+                      if (tier.penetrationBonus) parts.push(`관통 +${Math.round(tier.penetrationBonus * 100)}%`)
+                      if (tier.penetrationFromCritDmgRatio) {
+                        const applied = tier.penetrationFromCritDmgRatio * (result.finalCritDmg / 100)
+                        parts.push(
+                          `관통(파생) +${Math.round(applied * 100)}% [치피 ${result.finalCritDmg} × ${Math.round(tier.penetrationFromCritDmgRatio * 100)}%]`,
+                        )
+                      }
+                      const value = parts.join(' / ')
+                      return (
+                        <li key={tier.level}>
+                          <span className="lordBreakdownLabel">{tier.label}</span>
+                          <span className="lordBreakdownValue">{value || '— (정량 효과 없음)'}</span>
+                          {tier.note ? <small className="lordBreakdownNote">{tier.note}</small> : null}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              ) : null}
+
+              {result.formula.lordEffectName ? (
+                <div className="lordBreakdown">
+                  <div className="lordBreakdownHeader">
+                    <strong>영주 효과 상세 — {result.formula.lordEffectName}</strong>
+                    <span className="lordBreakdownTotal">
+                      합산: {result.formula.lordEffectAtkPctBonus > 0 ? `공격력 +${Math.round(result.formula.lordEffectAtkPctBonus * 100)}%` : null}
+                      {result.formula.lordEffectDamageBonus > 0 ? ` / 피해 +${Math.round(result.formula.lordEffectDamageBonus * 100)}%` : ''}
+                      {result.formula.lordEffectBasicDamageBonus > 0 ? ` / 기본 공격 피해 +${Math.round(result.formula.lordEffectBasicDamageBonus * 100)}%` : ''}
+                      {result.formula.lordEffectCritDmgBonus > 0 ? ` / 치피 +${result.formula.lordEffectCritDmgBonus}` : ''}
+                      {result.formula.lordEffectAttackSpeedBonus > 0 ? ` / 공속 +${result.formula.lordEffectAttackSpeedBonus}` : ''}
+                      {result.formula.lordEffectPenetrationBonus > 0 ? ` / 관통 +${Math.round(result.formula.lordEffectPenetrationBonus * 100)}%` : ''}
+                    </span>
+                  </div>
+                  {result.formula.lordEffectBreakdown.length > 0 ? (
+                    <ul className="lordBreakdownList">
+                      {result.formula.lordEffectBreakdown.map((item, idx) => (
+                        <li key={`${item.label}-${idx}`}>
+                          <span className="lordBreakdownLabel">{item.label}</span>
+                          <span className="lordBreakdownValue">{formatLordBreakdownValue(item)}</span>
+                          {item.note ? <small className="lordBreakdownNote">{item.note}</small> : null}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="muted helperText">{result.formula.lordEffectSummary}</p>
+                  )}
+                </div>
+              ) : null}
             </div>
           ))}
         </div>

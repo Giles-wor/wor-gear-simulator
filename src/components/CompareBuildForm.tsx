@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { leftSets, rightSets } from '../data/gearSets'
 import type { FactionAccessoryEffect } from '../data/factionAccessories'
-import type { Hero } from '../data/heroes'
+import { heroDisplayName, type Hero } from '../data/heroes'
 import type { LordEffect } from '../data/lordEffects'
 import type { BuildInput } from '../lib/calc'
 
@@ -81,7 +81,7 @@ export function CompareBuildForm({ hero, buildA, buildB, accessoryOptions, lordO
         <div>
           <p className="eyebrow">입력 비교</p>
           <h2>세팅 A / B를 같은 화면에서 입력</h2>
-          <p className="muted compactHeroMeta">{hero.name}의 진영 기준으로 영주와 3세트 악세서리를 선택합니다.</p>
+          <p className="muted compactHeroMeta">{heroDisplayName(hero)}의 진영 기준으로 영주와 3세트 악세서리를 선택합니다.</p>
         </div>
       </div>
 
@@ -139,9 +139,35 @@ export function CompareBuildForm({ hero, buildA, buildB, accessoryOptions, lordO
           }
         />
         <Row
-          label="각성 적용"
-          left={<input type="checkbox" checked={buildA.awakeningOn} onChange={(e) => onChangeA({ ...buildA, awakeningOn: e.target.checked })} />}
-          right={<input type="checkbox" checked={buildB.awakeningOn} onChange={(e) => onChangeB({ ...buildB, awakeningOn: e.target.checked })} />}
+          label="각성 레벨"
+          left={
+            <div className="awakeningPicker">
+              {[0, 1, 2, 3, 4, 5].map((lv) => (
+                <button
+                  key={lv}
+                  type="button"
+                  className={buildA.awakeningLevel === lv ? 'awakeningChip active' : 'awakeningChip'}
+                  onClick={() => onChangeA({ ...buildA, awakeningLevel: lv })}
+                >
+                  {lv}
+                </button>
+              ))}
+            </div>
+          }
+          right={
+            <div className="awakeningPicker">
+              {[0, 1, 2, 3, 4, 5].map((lv) => (
+                <button
+                  key={lv}
+                  type="button"
+                  className={buildB.awakeningLevel === lv ? 'awakeningChip active' : 'awakeningChip'}
+                  onClick={() => onChangeB({ ...buildB, awakeningLevel: lv })}
+                >
+                  {lv}
+                </button>
+              ))}
+            </div>
+          }
         />
         <Row
           label="판테온 공속 +40"

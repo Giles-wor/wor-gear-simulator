@@ -8,15 +8,8 @@ import { writeFile } from 'node:fs/promises'
 const API_BASE = 'https://watcher-of-realms.fandom.com/api.php'
 const OUTPUT_FILE = new URL('../summon/data/banners.generated.ts', import.meta.url)
 
-// 소환율이 실릴 가능성이 있는 후보 위키 문서들 (실페이지 확인 후 좁힐 것).
-const CANDIDATE_PAGES = ['Summon', 'Summoning', 'Recruitment', 'Hero Recruitment', 'Gacha', 'Banner']
-
-const BANNER_KEYWORDS = {
-  normal: ['normal', '일반', 'standard'],
-  limited: ['limited', '한정', 'featured'],
-  ancient: ['ancient', '고대'],
-  divine: ['divine', '신성'],
-}
+const SOURCE_PAGE = 'Banner'
+const SOURCE_URL = 'https://watcher-of-realms.fandom.com/wiki/Banner'
 
 function buildApiUrl(params) {
   const url = new URL(API_BASE)
@@ -53,62 +46,102 @@ async function fetchPageHtml(title) {
   }
 }
 
-// 텍스트 블록에서 'rate'/'확률' 근처 퍼센트와 'pity'/'천장' 근처 숫자를 추출 (휴리스틱).
-function extractBanner(text, keywords) {
-  const lower = text.toLowerCase()
-  const hit = keywords.some((kw) => lower.includes(kw.toLowerCase()))
-  if (!hit) return null
+function firstNumber(pattern, text) {
+  const match = text.match(pattern)
+  return match ? Number(match[1]) : null
+}
 
-  const rateMatch = text.match(/legendary[^%]{0,40}?(\d+(?:\.\d+)?)\s*%/i)
-  const pityMatch = text.match(/(?:pity|guarantee|천장)[^0-9]{0,20}(\d{2,3})/i)
+function readTrack(text, label, fallback) {
+  const index = text.toLowerCase().indexOf(label.toLowerCase())
+  const block = index >= 0 ? text.slice(index, index + 600) : ''
+  const startsAfter = firstNumber(/after\s+(\d+)\s+consecutive\s+pulls/i, block)
+  const increasePct = firstNumber(/increases[^.]*?by\s+(\d+(?:\.\d+)?)%/i, block)
+  const guaranteedAt = firstNumber(/guaranteed\s+at\s+the\s+(\d+)(?:st|nd|rd|th)\s+summon/i, block)
 
-  const result = {}
-  if (rateMatch) result.legendaryBaseRate = Number(rateMatch[1]) / 100
-  if (pityMatch) result.hardPity = Number(pityMatch[1])
-  return Object.keys(result).length ? result : null
+  return {
+    softPityStart: startsAfter != null ? startsAfter + 1 : fallback.softPityStart,
+    softPityIncrement: increasePct != null ? increasePct / 100 : fallback.softPityIncrement,
+    hardPity: guaranteedAt ?? fallback.hardPity,
+  }
+}
+
+function buildGenerated(text) {
+  const rareTrack = readTrack(text, 'Rare Summoning Pity', {
+    softPityStart: 181,
+    softPityIncrement: 0.05,
+    hardPity: 200,
+  })
+  const legendaryTrack = readTrack(text, 'Legendary Summoning Pity', {
+    softPityStart: 13,
+    softPityIncrement: 0.05,
+    hardPity: 20,
+  })
+  const ancientTrack = readTrack(text, 'Ancient Summoning Pity', {
+    softPityStart: 186,
+    softPityIncrement: 0.08,
+    hardPity: 200,
+  })
+
+  const specialRateUpMultiplier = firstNumber(
+    /first time you obtain a Legendary hero that is not a Rate-Up hero[^.]*?multiplied by\s+(\d+)/i,
+    text,
+  ) ?? 10
+  const ancientRateUpMultiplier = firstNumber(
+    /Special Ancient Summoning pools[\s\S]{0,260}?multiplied by\s+(\d+)/i,
+    text,
+  ) ?? 2
+  const limitedGuarantee = firstNumber(/perform\s+(\d+)\s+summons[\s\S]{0,90}?guaranteed/i, text) ?? 200
+  const scarletFeastGuarantee = firstNumber(/Count Dracula[^.]*?guaranteed after\s+(\d+)\s+Ancient summons/i, text) ?? 90
+
+  // generated.ts 는 천장 규칙 / featuredMultiplier / stacking / featuredHardGuarantee 만 덮어쓴다.
+  // 영주/일반 base rate 와 풀 크기는 위키에 없으므로 banners.ts placeholder 가 그대로 사용됨.
+  return {
+    normal: {
+      ...rareTrack,
+      featuredMultiplier: 1,
+      notes: `기본 Rare 배너. Banner wiki Rare Summoning Pity 적용 (soft ${rareTrack.softPityStart}, hard ${rareTrack.hardPity}).`,
+    },
+    limited: {
+      ...rareTrack,
+      featuredMultiplier: 20,
+      rateUpStackingMultiplier: specialRateUpMultiplier,
+      featuredHardGuarantee: limitedGuarantee,
+      notes: `Limited: Rare pity + ×20 + ×${specialRateUpMultiplier} stacking + ${limitedGuarantee}픽 픽업 확정.`,
+    },
+    ancient: {
+      ...ancientTrack,
+      featuredMultiplier: 20,
+      rateUpStackingMultiplier: ancientRateUpMultiplier,
+      notes: `Special Ancient: Ancient pity + ×20 + ×${ancientRateUpMultiplier} stacking. Scarlet Feast 보장 ${scarletFeastGuarantee}픽 (미모델).`,
+    },
+    divine: {
+      ...legendaryTrack,
+      featuredMultiplier: 20,
+      rateUpStackingMultiplier: specialRateUpMultiplier,
+      notes: `Special Divine: Legendary pity + ×20 + ×${specialRateUpMultiplier} stacking.`,
+    },
+  }
 }
 
 async function main() {
-  let html = null
-  let sourceTitle = null
-  for (const title of CANDIDATE_PAGES) {
-    const candidate = await fetchPageHtml(title)
-    if (candidate && /pity|천장|legendary|소환율|summon rate/i.test(candidate)) {
-      html = candidate
-      sourceTitle = title
-      break
-    }
-  }
+  const html = await fetchPageHtml(SOURCE_PAGE)
 
   const fetchedAt = new Date().toISOString()
 
   if (!html) {
-    console.warn('소환율 페이지를 찾지 못했습니다. placeholder 유지 (generatedBanners=null).')
+    console.warn('Banner 페이지를 찾지 못했습니다. placeholder 유지 (generatedBanners=null).')
     await writeGenerated(null, null)
     return
   }
 
   const text = stripHtml(html)
-  const generated = {}
-  for (const [id, keywords] of Object.entries(BANNER_KEYWORDS)) {
-    const parsed = extractBanner(text, keywords)
-    if (parsed) generated[id] = parsed
-  }
-
-  if (Object.keys(generated).length === 0) {
-    console.warn('rate/pity 파싱 실패. placeholder 유지. (페이지 구조 확인 필요)')
-    await writeGenerated(null, {
-      url: `https://watcher-of-realms.fandom.com/wiki/${encodeURIComponent(sourceTitle)}`,
-      fetchedAt,
-    })
-    return
-  }
+  const generated = buildGenerated(text)
 
   await writeGenerated(generated, {
-    url: `https://watcher-of-realms.fandom.com/wiki/${encodeURIComponent(sourceTitle)}`,
+    url: SOURCE_URL,
     fetchedAt,
   })
-  console.log(`소환 데이터 ${Object.keys(generated).join(', ')} 갱신 완료 (${sourceTitle}).`)
+  console.log(`소환 천장/배너 규칙 ${Object.keys(generated).join(', ')} 갱신 완료 (${SOURCE_PAGE}).`)
 }
 
 async function writeGenerated(generated, source) {
