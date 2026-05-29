@@ -35,10 +35,11 @@ export type GuideCategory = {
 }
 
 /** 카테고리 노출 순서 + 폴더키 → 한글 라벨 */
-const CATEGORY_ORDER = ['tips', 'gearTips', 'titans', 'content'] as const
+const CATEGORY_ORDER = ['tips', 'gearTips', 'summonTips', 'titans', 'content'] as const
 const CATEGORY_LABELS: Record<string, string> = {
   tips: '초보팁',
   gearTips: '장비팁',
+  summonTips: '소환팁',
   titans: '타이탄',
   content: '던전 · 레이드 · 콘텐츠',
 }
