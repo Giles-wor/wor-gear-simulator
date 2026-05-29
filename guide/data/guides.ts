@@ -24,6 +24,8 @@ export type GuideItem = {
   name: string
   /** 갤러리 이미지 URL 목록 (파일명 자연 정렬) */
   images: string[]
+  /** 공략 제작자/출처 (선택). CREDITS 에서 주입 */
+  credit?: string
 }
 
 export type GuideCategory = {
@@ -41,6 +43,14 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 /** 폴더/파일명을 다른 제목으로 보이고 싶을 때만 등록 (선택) */
 const NAME_OVERRIDES: Record<string, string> = {}
+
+/**
+ * 항목별 공략 제작자/출처. 항목 키(폴더/파일명)로 등록.
+ * 카드와 이미지 팝업에 "출처: ○○" 로 표시된다.
+ */
+const CREDITS: Record<string, string> = {
+  '길드보스 (악몽·심연)': '9enie',
+}
 
 const stripExt = (name: string) => name.replace(/\.[^.]+$/, '')
 
@@ -83,6 +93,7 @@ function buildCatalog(): GuideCategory[] {
         key,
         name: NAME_OVERRIDES[key] ?? key,
         images: list.sort((x, y) => naturalCompare(x.file, y.file)).map((x) => x.url),
+        credit: CREDITS[key],
       }))
     return { id: catId, label: CATEGORY_LABELS[catId] ?? catId, items }
   })

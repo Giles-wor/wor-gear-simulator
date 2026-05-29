@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { GlobalNav } from './components/GlobalNav'
 import { SiteCredit } from './components/SiteCredit'
 import { guideCategories, hasAnyGuide, type GuideItem } from './data/guides'
@@ -26,6 +26,7 @@ function GuideCard({ item, onOpen }: { item: GuideItem; onOpen: () => void }) {
         {count > 1 && <span className="guideCardCount">🖼 {count}</span>}
       </span>
       <span className="guideCardName">{item.name}</span>
+      {item.credit && <span className="guideCardCredit">출처 · {item.credit}</span>}
     </button>
   )
 }
@@ -56,23 +57,38 @@ function Lightbox({
     }
   }, [onClose, onStep])
 
+  // 모바일 좌우 스와이프로 이미지 넘기기
+  const touchX = useRef<number | null>(null)
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchX.current = e.touches[0].clientX
+  }
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchX.current === null) return
+    const dx = e.changedTouches[0].clientX - touchX.current
+    touchX.current = null
+    if (total > 1 && Math.abs(dx) > 45) onStep(dx < 0 ? 1 : -1)
+  }
+
   return (
     <div className="lightboxOverlay" onClick={onClose} role="dialog" aria-modal="true">
       <div className="lightboxBox" onClick={(e) => e.stopPropagation()}>
         <div className="lightboxHead">
           <span className="lightboxTitle">
-            {item.name}
-            {total > 1 && (
-              <span className="lightboxCounter">
-                {index + 1} / {total}
-              </span>
-            )}
+            <span className="lightboxName">
+              {item.name}
+              {total > 1 && (
+                <span className="lightboxCounter">
+                  {index + 1} / {total}
+                </span>
+              )}
+            </span>
+            {item.credit && <span className="lightboxCredit">출처 · {item.credit}</span>}
           </span>
           <button type="button" className="lightboxClose" onClick={onClose} aria-label="닫기">
             ✕
           </button>
         </div>
-        <div className="lightboxStage">
+        <div className="lightboxStage" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
           {total > 1 && (
             <button
               type="button"
@@ -143,9 +159,19 @@ export default function App() {
         <h1>WoR 공략</h1>
         <p className="guideIntro">
           타이탄·콘텐츠별 공략 자료 모음입니다. 카드를 누르면 관련 이미지가 크게 열리고, 여러 장이면
-          좌우(‹ ›)로 넘겨볼 수 있어요.
+          좌우로 넘겨(모바일은 스와이프) 볼 수 있어요.
         </p>
       </header>
+
+      <div className="guideNotice" role="note">
+        <strong>📌 공략 자료 출처 안내</strong>
+        <p>
+          이곳의 공략 이미지는 <b>9enie</b> 님을 비롯한 여러 제작자분들이 만들어 주신 자료를
+          <b> 제작자분들의 허락을 받아</b> 게시하고 있습니다. 각 이미지의 출처는 이미지 내에 표기되어
+          있으며, 카드·팝업에도 함께 표시됩니다. 무단 도용·재배포는 삼가 주세요. 출처 정정이나 게시 관련
+          문의는 상단 카카오톡 오픈채팅으로 알려 주세요.
+        </p>
+      </div>
 
       {!hasAnyGuide ? (
         <div className="guideEmptyGlobal">
