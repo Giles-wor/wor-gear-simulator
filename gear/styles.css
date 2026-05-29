@@ -333,6 +333,11 @@
   border-color: rgba(231, 166, 95, 0.65);
   color: #ffe1b5;
 }
+.chip.req.active {
+  background: rgba(248, 113, 113, 0.2);
+  border-color: rgba(248, 113, 113, 0.65);
+  color: #fecaca;
+}
 
 .matchRow {
   display: flex;

@@ -5,6 +5,7 @@ import { calculateBuild, findSetById, type BuildInput } from './lib/calc'
 import { getBestStatRecommendation } from './lib/recommend'
 import { HeroHeader } from './components/HeroHeader'
 import { GlobalNav } from './components/GlobalNav'
+import { SiteCredit } from './components/SiteCredit'
 import { CompareBuildForm } from './components/CompareBuildForm'
 import { BuildResultCard } from './components/BuildResultCard'
 import { ComparisonSummary } from './components/ComparisonSummary'
@@ -71,6 +72,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <SiteCredit />
       <GlobalNav active="dps" />
       <HeroHeader
         hero={hero}

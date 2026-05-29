@@ -185,22 +185,32 @@ const STAT_KO: Record<string, string> = {
 }
 
 /**
- * 역할 정밀 규칙.
- * conversion=true (변환 고려, 기본): "핵심 옵션 N개" 만 매칭 (마지막 1옵은 변환으로 채울 수 있음, 루즈).
- * conversion=false (변환 미고려): 매칭을 부옵 풀 전체로 올려 강화 잘된 풀옵만 남김 (빡빡, 골드 정리용).
- * 딜러: 부위별(무기/방어구/악세 메인별) 분리. 탱커/힐러는 메타 기반 추정(인게임 확인 권장).
+ * 역할 정밀 규칙. 인게임 "필수 속성(requiredSubs)" 을 활용해 flex 분리 없이 표현.
+ * conversion=true (변환 고려, 기본): 매칭을 1 낮춤 (마지막 1옵은 변환으로 채울 수 있음, 루즈).
+ * conversion=false (변환 미고려): 부옵 풀 전체 매칭 (풀옵만, 빡빡, 골드 정리용).
+ * 필수 속성은 두 모드에서 항상 보장된다.
  */
 export function buildGranular(role: GranularRole, conversion = true): FilterRule[] {
   const tiers = [1, 2, 3]
   const rules: FilterRule[] = []
+  /**
+   * add(name, side, sets, mains, subs, req)
+   *  subs: 부옵 후보 풀 / req: 필수 부옵 (무조건 포함)
+   *  매칭 개수 = 변환 미고려면 풀 전체, 변환 고려면 (전체−1) — 단 필수 개수 이상은 유지.
+   */
   const add = (
     name: string,
     side: FilterRule['side'],
     sets: string[],
     mainStats: string[],
     subStats: string[],
-    match: number,
+    req: string[] = [],
   ) => {
+    const full = subStats.length
+    // 장비 부옵 슬롯은 최대 4개. 풀이 더 커도 매칭은 슬롯 수 기준.
+    const slots = Math.min(4, full)
+    // 변환 미고려: 슬롯 다 채워야(풀옵). 변환 고려: 1개는 변환으로 → slots-1. 단 필수 개수 이상.
+    const match = Math.max(req.length, conversion ? Math.max(1, slots - 1) : slots)
     rules.push({
       id: newRuleId(),
       name,
@@ -209,83 +219,63 @@ export function buildGranular(role: GranularRole, conversion = true): FilterRule
       sets,
       mainStats,
       subStats,
-      // 변환 미고려면 부옵 풀 전체를 요구 (풀옵). 변환 고려면 핵심 N개.
-      requiredSubMatches: conversion ? Math.min(match, subStats.length) : subStats.length,
+      requiredSubMatches: Math.min(match, full),
+      requiredSubs: req,
     })
   }
 
   if (role === 'attack_dps' || role === 'hp_dps' || role === 'def_dps') {
     const core = role === 'attack_dps' ? 'atk_pct' : role === 'hp_dps' ? 'hp_pct' : 'def_pct'
-    const FULL = [core, 'crit_rate', 'crit_dmg', 'atk_spd']
-
-    if (conversion) {
-      // 변환 고려: 핵심 옵션 N개만 (4번째는 변환으로 채움). 5규칙 루즈.
-      add('무기', 'weapon', [], [], FULL, 3)
-      add('방어구', 'armor', [], [], FULL, 3)
-      add('악세 치피메인', 'accessory', DPS_TOP_RIGHT, ['crit_dmg'], [core, 'crit_rate', 'atk_spd'], 2)
-      add('악세 공%메인', 'accessory', DPS_TOP_RIGHT, [core], ['crit_rate', 'crit_dmg', 'atk_spd'], 2)
-      // 악세 치확메인 = 안 씀
-      return rules
-    }
-
-    // 변환 미고려: 부옵 4개가 정확히 다 좋은 풀옵만. 4번째(flex)는 체%/공격력/체력/분노별로 규칙 분리.
-    const flexPool = ['atk_flat', 'hp_pct', 'hp_flat', 'rage_regen'].filter((f) => f !== core)
-    const STAR = (flex: string) => (flex === 'atk_flat' ? '★' : '') // 공격력 포함이 으뜸
-    add('무기 (풀옵)', 'weapon', [], [], FULL, 4)
-    add('방어구1 (풀옵)', 'armor', [], [], FULL, 4)
-    // 방어구2: 필수[스케일·치피·공속] + flex
-    for (const flex of flexPool) add(`방어구2 ${STAR(flex)}(+${STAT_KO[flex]})`, 'armor', [], [], [core, 'crit_dmg', 'atk_spd', flex], 4)
-    // 악세 치피메인: 필수[스케일·치확·공속] + flex
-    for (const flex of flexPool) add(`악세 치피메인 ${STAR(flex)}(+${STAT_KO[flex]})`, 'accessory', DPS_TOP_RIGHT, ['crit_dmg'], [core, 'crit_rate', 'atk_spd', flex], 4)
-    // 악세 공%메인 (가장 많이 씀): 필수[치확·치피·공속] + flex
-    for (const flex of flexPool) add(`악세 공%메인 ${STAR(flex)}(+${STAT_KO[flex]})`, 'accessory', DPS_TOP_RIGHT, [core], ['crit_rate', 'crit_dmg', 'atk_spd', flex], 4)
+    // flex 후보(체%/공격력/체력/분노). 4번째 자리는 이 중 아무거나(공격력 으뜸).
+    const flex = ['atk_flat', 'hp_pct', 'hp_flat', 'rage_regen'].filter((f) => f !== core)
+    // 무기/방어구1: 공%·치확·치피·공속 (4코어)
+    add('무기', 'weapon', [], [], [core, 'crit_rate', 'crit_dmg', 'atk_spd'], [core, 'atk_spd'])
+    add('방어구1', 'armor', [], [], [core, 'crit_rate', 'crit_dmg', 'atk_spd'], [core, 'atk_spd'])
+    // 방어구2: 필수[공%·치피·공속] + 4번째는 flex 풀에서
+    add('방어구2 (필수 공%·치피·공속 + 1)', 'armor', [], [], [core, 'crit_dmg', 'atk_spd', ...flex], [core, 'crit_dmg', 'atk_spd'])
+    // 악세 치피메인: 필수[공%·치확·공속] + flex
+    add('악세 치피메인', 'accessory', DPS_TOP_RIGHT, ['crit_dmg'], [core, 'crit_rate', 'atk_spd', ...flex], [core, 'crit_rate', 'atk_spd'])
+    // 악세 공%메인(가장 많이 씀): 필수[치확·치피·공속] + flex
+    add('악세 공%메인', 'accessory', DPS_TOP_RIGHT, [core], ['crit_rate', 'crit_dmg', 'atk_spd', ...flex], ['crit_rate', 'crit_dmg', 'atk_spd'])
+    // 악세 치확메인 = 안 씀
     return rules
   }
 
   if (role === 'tank') {
-    // 탱커: HP%/방% 위주 + 분노. 변환 전제 너그럽게.
     const TANK = TANK_TOP_RIGHT
-    add('무기', 'weapon', [], [], ['hp_pct', 'def_pct', 'rage_regen'], 2)
-    add('방어구', 'armor', [], [], ['hp_pct', 'def_pct', 'rage_regen'], 2)
-    add('악세 HP%메인', 'accessory', TANK, ['hp_pct'], ['def_pct', 'rage_regen', 'def_flat'], 2)
-    add('악세 방%메인', 'accessory', TANK, ['def_pct'], ['hp_pct', 'rage_regen', 'hp_flat'], 2)
+    add('무기', 'weapon', [], [], ['hp_pct', 'def_pct', 'rage_regen', 'hp_flat'], ['hp_pct', 'def_pct'])
+    add('방어구', 'armor', [], [], ['hp_pct', 'def_pct', 'rage_regen', 'def_flat'], ['hp_pct', 'def_pct'])
+    add('악세 HP%메인', 'accessory', TANK, ['hp_pct'], ['def_pct', 'rage_regen', 'hp_flat', 'def_flat'], ['def_pct'])
+    add('악세 방%메인', 'accessory', TANK, ['def_pct'], ['hp_pct', 'rage_regen', 'hp_flat', 'def_flat'], ['hp_pct'])
     return rules
   }
 
   if (role === 'inspiration') {
-    // 격려 힐러: 자기 공격력에 비례해 아군 공격력 버프 → 모든 장비에서 공%·공격력 최우선.
+    // 격려 힐러: 공%·공격력 최우선. 공% 필수.
     const HEAL = HEALER_TOP_RIGHT
-    // 무기: 메인 ATK 고정 (공격력 메인) → 부옵 공%·공속·분노 + 치유
-    add('무기 (격려)', 'weapon', [], [], ['atk_pct', 'atk_spd', 'rage_regen', 'healing'], 2)
-    // 방어구: 메인 HP 고정 → 부옵에 공%·공격력 우선
-    add('방어구 (격려)', 'armor', [], [], ['atk_pct', 'atk_flat', 'atk_spd', 'rage_regen'], 2)
-    // 악세 공%메인: 부옵 공격력·공속·분노 (공격력 최우선)
-    add('악세 공%메인', 'accessory', HEAL, ['atk_pct'], ['atk_flat', 'atk_spd', 'rage_regen'], 2)
-    // 악세 공격력메인(고정): 부옵 공%·공속·분노
-    add('악세 공격력메인', 'accessory', HEAL, ['atk_flat'], ['atk_pct', 'atk_spd', 'rage_regen'], 2)
+    add('무기', 'weapon', [], [], ['atk_pct', 'atk_spd', 'rage_regen', 'healing'], ['atk_pct'])
+    add('방어구', 'armor', [], [], ['atk_pct', 'atk_flat', 'atk_spd', 'rage_regen'], ['atk_pct'])
+    add('악세 공%메인', 'accessory', HEAL, ['atk_pct'], ['atk_flat', 'atk_spd', 'rage_regen', 'healing'], ['atk_flat'])
+    add('악세 공격력메인', 'accessory', HEAL, ['atk_flat'], ['atk_pct', 'atk_spd', 'rage_regen', 'healing'], ['atk_pct'])
     return rules
   }
 
   if (role === 'hp_healer' || role === 'atk_healer') {
-    // 핵심 우선순위: 주요스탯 > 공속 > 치유 > 분노. 공속이 빠지면 안 됨.
+    // 우선순위 주요>공속>치유>분노. 공속 필수.
     const HEAL = HEALER_TOP_RIGHT
     const core = role === 'hp_healer' ? 'hp_pct' : 'atk_pct'
-    // 무기/방어구: 부옵 [주요·공속·치유·분노] 중 3 (공속 포함 우선)
-    add('무기', 'weapon', [], [], [core, 'atk_spd', 'healing', 'rage_regen'], 3)
-    add('방어구', 'armor', [], [], [core, 'atk_spd', 'healing', 'rage_regen'], 3)
-    // 악세 주요메인: 부옵 [공속·치유·분노] 중 2 (공속 우선)
+    add('무기', 'weapon', [], [], [core, 'atk_spd', 'healing', 'rage_regen'], ['atk_spd'])
+    add('방어구', 'armor', [], [], [core, 'atk_spd', 'healing', 'rage_regen'], ['atk_spd'])
     add(
       role === 'hp_healer' ? '악세 HP%메인' : '악세 공%메인',
       'accessory',
       HEAL,
       [core],
       ['atk_spd', 'healing', 'rage_regen'],
-      2,
+      ['atk_spd'],
     )
-    // 악세 공속메인: 공속을 메인으로 확보 → 부옵 [주요·치유·분노]
-    add('악세 공속메인', 'accessory', HEAL, ['atk_spd'], [core, 'healing', 'rage_regen'], 2)
-    // 악세 분노메인: 부옵 [주요·공속·치유] (공속 포함)
-    add('악세 분노메인', 'accessory', HEAL, ['rage_regen'], [core, 'atk_spd', 'healing'], 2)
+    add('악세 공속메인', 'accessory', HEAL, ['atk_spd'], [core, 'healing', 'rage_regen'], [])
+    add('악세 분노메인', 'accessory', HEAL, ['rage_regen'], [core, 'atk_spd', 'healing'], ['atk_spd'])
     return rules
   }
 
@@ -321,6 +311,7 @@ export function buildRolePreset(
       mainStats: role.rightMain,
       subStats: role.rightSubs,
       requiredSubMatches: cap(role.rightSubs),
+      requiredSubs: [],
     },
   ]
   if (role.leftSubs.length > 0) {
@@ -333,14 +324,14 @@ export function buildRolePreset(
       mainStats: [],
       subStats: role.leftSubs,
       requiredSubMatches: cap(role.leftSubs),
+      requiredSubs: [],
     })
   }
   return rules
 }
 
 /** 모든 역할 규칙을 한 번에 — 초보/중급/상급 "한방" 프리셋용.
- *  변환 미고려(정리 모드)에서는 공격 딜러를 정밀 14규칙으로 넣는다 (정리할 땐 딜러 풀옵만 남기려고).
- *  HP/방어 딜러는 드물어 간단 버전 유지 (50개 규칙 한도 관리). */
+ *  변환 미고려(정리 모드)에서는 공격 딜러를 정밀(필수 속성 활용 5규칙)으로 넣는다. */
 export function buildAllRolesPreset(level: ProgressionLevel, conversion = true): FilterRule[] {
   return roles.flatMap((r) => {
     if (!conversion && r.id === 'attack_dps') return buildGranular('attack_dps', false)

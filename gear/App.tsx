@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { GlobalNav } from './components/GlobalNav'
+import { SiteCredit } from './components/SiteCredit'
 import { gearSetsBySide, gearSetDisplayName } from './data/gearSets'
 import { mainStats, subStats, statLabel } from './data/attributes'
 import {
@@ -39,7 +40,7 @@ function Chip({
   active: boolean
   onClick: () => void
   children: React.ReactNode
-  tone?: 'default' | 'main' | 'sub' | 'set'
+  tone?: 'default' | 'main' | 'sub' | 'set' | 'req'
 }) {
   return (
     <button type="button" className={`chip ${tone}${active ? ' active' : ''}`} onClick={onClick}>
@@ -67,7 +68,16 @@ function RuleCard({
   const toggle = (key: 'sets' | 'mainStats' | 'subStats', id: string) => {
     const cur = rule[key]
     const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]
-    onChange({ ...rule, [key]: next })
+    // 부옵에서 제거하면 필수 속성에서도 제거
+    const patch: Partial<FilterRule> = { [key]: next }
+    if (key === 'subStats') patch.requiredSubs = rule.requiredSubs.filter((s) => next.includes(s))
+    onChange({ ...rule, ...patch })
+  }
+  const toggleReq = (id: string) => {
+    const next = rule.requiredSubs.includes(id)
+      ? rule.requiredSubs.filter((x) => x !== id)
+      : [...rule.requiredSubs, id]
+    onChange({ ...rule, requiredSubs: next })
   }
   const toggleTier = (t: number) => {
     const next = rule.tiers.includes(t) ? rule.tiers.filter((x) => x !== t) : [...rule.tiers, t]
@@ -194,6 +204,21 @@ function RuleCard({
         </div>
       </div>
 
+      {rule.subStats.length > 0 ? (
+        <div className="ruleBlock">
+          <div className="ruleBlockLabel">
+            필수 속성 <small>· 선택한 부옵 중 무조건 포함돼야 하는 것 (인게임 "장비 필수 속성")</small>
+          </div>
+          <div className="chipRow">
+            {rule.subStats.map((id) => (
+              <Chip key={id} tone="req" active={rule.requiredSubs.includes(id)} onClick={() => toggleReq(id)}>
+                {subLabelOf(id)}
+              </Chip>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="ruleSummary">{ruleSummary(rule, setLabelOf, mainLabelOf, subLabelOf)}</div>
     </div>
   )
@@ -247,6 +272,7 @@ export default function App() {
         mainStats: [],
         subStats: [...reqOpts],
         requiredSubMatches: Math.min(match, reqOpts.length),
+        requiredSubs: [],
       },
     ])
   }
@@ -269,6 +295,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <SiteCredit />
       <GlobalNav active="gear" />
 
       <section className="card">

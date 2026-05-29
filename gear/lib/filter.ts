@@ -46,6 +46,9 @@ export type FilterRule = {
   subStats: string[]
   /** 부옵션 중 최소 몇 개가 매칭되어야 KEEP 인지 (1~4) */
   requiredSubMatches: number
+  /** 인게임 "장비 필수 속성": 반드시 포함돼야 하는 부옵션 id 목록 (subStats 의 부분집합).
+   *  비어 있으면 필수 조건 없음. 여기 있는 옵션은 무조건 매칭돼야 KEEP. */
+  requiredSubs: string[]
 }
 
 let ruleCounter = 0
@@ -64,6 +67,7 @@ export function emptyRule(name = '새 규칙'): FilterRule {
     mainStats: [],
     subStats: [],
     requiredSubMatches: 2,
+    requiredSubs: [],
   }
 }
 
@@ -89,7 +93,10 @@ export function ruleSummary(
   const subTxt = rule.subStats.length
     ? `${rule.subStats.map(statLabelSub).join(' / ')} 중 ${rule.requiredSubMatches}개 이상`
     : '부옵션 무관'
-  return `[${sideTxt} · ${tierTxt}] 세트: ${setTxt} · 주옵션: ${mainTxt} · 부옵션: ${subTxt}`
+  const reqTxt = rule.requiredSubs.length
+    ? ` · 필수: ${rule.requiredSubs.map(statLabelSub).join('+')}`
+    : ''
+  return `[${sideTxt} · ${tierTxt}] 세트: ${setTxt} · 주옵션: ${mainTxt} · 부옵션: ${subTxt}${reqTxt}`
 }
 
 /** 가상의 장비 — 판정 미리보기용 (빌더에선 미사용, 추후 확장 여지) */
@@ -108,6 +115,11 @@ export function matchesRule(rule: FilterRule, gear: GearPiece): boolean {
   if (rule.tiers.length > 0 && !rule.tiers.includes(gear.tier)) return false
   if (rule.sets.length > 0 && !rule.sets.includes(gear.setId)) return false
   if (rule.mainStats.length > 0 && !rule.mainStats.includes(gear.mainStat)) return false
+  // 필수 속성: 여기 있는 부옵은 무조건 다 포함돼야 함
+  if (rule.requiredSubs.length > 0) {
+    const hasAll = rule.requiredSubs.every((s) => gear.subStats.includes(s))
+    if (!hasAll) return false
+  }
   if (rule.subStats.length > 0) {
     const matched = gear.subStats.filter((s) => rule.subStats.includes(s)).length
     if (matched < rule.requiredSubMatches) return false

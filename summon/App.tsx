@@ -9,6 +9,7 @@ import {
 } from './lib/gacha'
 import { banners, bannerOrder, summonDataSource } from './data/banners'
 import { GlobalNav } from './components/GlobalNav'
+import { SiteCredit } from './components/SiteCredit'
 
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`
 const pctSharp = (v: number) => `${(v * 100).toFixed(2)}%`
@@ -209,6 +210,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <SiteCredit />
       <GlobalNav active="summon" />
       <section className="card">
         <div className="sectionHeading">

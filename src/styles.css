@@ -17,6 +17,32 @@ body {
 }
 body, input, select, button, textarea { font: inherit; }
 
+.siteCredit {
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(18, 15, 13, 0.5);
+  border: 1px solid rgba(231, 166, 95, 0.15);
+}
+.siteCreditMain {
+  font-size: 0.82rem;
+  color: #e6d8c5;
+}
+.siteCreditMain strong {
+  color: #ffe1b5;
+}
+.siteCreditSub {
+  margin-top: 4px;
+  font-size: 0.68rem;
+  line-height: 1.5;
+  color: #9b8d79;
+  word-break: keep-all;
+}
+.siteCreditSub em {
+  font-style: italic;
+  color: #b7a88f;
+}
+
 .app {
   max-width: 1120px;
   margin: 0 auto;
