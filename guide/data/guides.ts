@@ -35,13 +35,15 @@ export type GuideCategory = {
 }
 
 /** 카테고리 노출 순서 + 폴더키 → 한글 라벨 */
-const CATEGORY_ORDER = ['tips', 'gearTips', 'summonTips', 'titans', 'content'] as const
+const CATEGORY_ORDER = ['tips', 'gearTips', 'summonTips', 'guildWar', 'titans', 'malik', 'content'] as const
 const CATEGORY_LABELS: Record<string, string> = {
   tips: '초보팁',
   gearTips: '장비팁',
   summonTips: '소환팁',
+  guildWar: '길드전팁',
   titans: '타이탄',
-  content: '던전 · 레이드 · 콘텐츠',
+  malik: '말릭팁',
+  content: '길드보스',
 }
 
 /** 폴더/파일명을 다른 제목으로 보이고 싶을 때만 등록 (선택) */
@@ -56,6 +58,8 @@ const CREDITS: Record<string, string> = {
   '초보자 필독사항': '9enie',
   '장비 세팅 가이드': '9enie',
   '타이탄 배치도': '9enie',
+  '길드전 배치 · 세팅 팁': '9enie',
+  '악의무리 팁': '9enie',
 }
 
 const stripExt = (name: string) => name.replace(/\.[^.]+$/, '')
