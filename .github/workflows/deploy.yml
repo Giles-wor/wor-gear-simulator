@@ -40,6 +40,9 @@ jobs:
       - name: Build (소환 확률 계산기)
         run: npm run build:summon
 
+      - name: Build (장비 필터)
+        run: npm run build:gear
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

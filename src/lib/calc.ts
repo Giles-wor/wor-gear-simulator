@@ -1,5 +1,5 @@
 import { aggregateAwakening, type AwakeningTier, type Hero } from '../data/heroes'
-import type { GearSet } from '../data/gearSets'
+import { gearSetLabel, type GearSet } from '../data/gearSets'
 import { getAttackSpeedProfile } from '../data/attackSpeed'
 import { findFactionAccessory } from '../data/factionAccessories'
 import { findLordEffect } from '../data/lordEffects'
@@ -280,7 +280,7 @@ function getRightSetSummary(rightSet: GearSet | undefined) {
 
   if (!display || display.type === 'none') {
     return {
-      name: rightSet.name,
+      name: gearSetLabel(rightSet),
       summary: '조건부 효과 없음',
       details: ['입력 총 스탯에 상시 효과가 이미 포함되어 있다고 가정합니다.']
     }
@@ -288,7 +288,7 @@ function getRightSetSummary(rightSet: GearSet | undefined) {
 
   if (display.type === 'infernal_roar') {
     return {
-      name: rightSet.name,
+      name: gearSetLabel(rightSet),
       summary: display.summary,
       details: [
         '일반 공격 피해: +40%',
@@ -299,7 +299,7 @@ function getRightSetSummary(rightSet: GearSet | undefined) {
 
   if (display.type === 'soulbound_arcana') {
     return {
-      name: rightSet.name,
+      name: gearSetLabel(rightSet),
       summary: display.summary,
       details: [
         `스킬 1회 사용: 피해증가 ${formatPercent(0.1)}`,
@@ -310,7 +310,7 @@ function getRightSetSummary(rightSet: GearSet | undefined) {
 
   if (display.type === 'cataclysm') {
     return {
-      name: rightSet.name,
+      name: gearSetLabel(rightSet),
       summary: display.summary,
       details: [
         `첫 타: 피해증가 ${formatPercent(0)}`,
@@ -321,7 +321,7 @@ function getRightSetSummary(rightSet: GearSet | undefined) {
 
   if (display.type === 'hells_lament') {
     return {
-      name: rightSet.name,
+      name: gearSetLabel(rightSet),
       summary: display.summary,
       details: [
         '궁극기 미사용: 추가 조건부 효과 없음',
@@ -331,7 +331,7 @@ function getRightSetSummary(rightSet: GearSet | undefined) {
   }
 
   return {
-    name: rightSet.name,
+    name: gearSetLabel(rightSet),
     summary: rightSet.notes,
     details: [rightSet.notes]
   }
@@ -404,7 +404,7 @@ export function calculateBuild(
   const itemMaxCumulative30s = timeline30s[timeline30s.length - 1]?.cumulativeDamage ?? 0
   const itemDamageBonusParts = [
     { label: leftSet?.name ? `좌측 ${leftSet.name}` : '좌측 세트', value: leftSetDamagePct },
-    { label: rightSet?.name ? `우측 ${rightSet.name}` : '우측 세트', value: maxSetBonus.damageBonus },
+    { label: rightSet?.name ? `우측 ${gearSetLabel(rightSet)}` : '우측 세트', value: maxSetBonus.damageBonus },
     { label: `${hero.name} (자동)`, value: draculaBurstBonus },
     { label: `${hero.name} 각성 ${awakening.level}각`, value: awakening.damageBonus },
     { label: factionAccessory?.sourceName ?? '진영 악세서리', value: factionDamageBonus },

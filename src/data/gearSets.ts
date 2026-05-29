@@ -1,6 +1,8 @@
 export type GearSet = {
   id: string
   name: string
+  /** 한글 이름 (인게임 표기) */
+  nameKo?: string
   slotType: '좌측 2세트' | '우측 3세트'
   atkPct?: number
   critDmg?: number
@@ -16,6 +18,12 @@ export type GearSet = {
   notes: string
 }
 
+/** 세트 한글 우선 표시명 (한글 없으면 영문). */
+export function gearSetLabel(set: Pick<GearSet, 'name' | 'nameKo'> | undefined): string {
+  if (!set) return '-'
+  return set.nameKo ?? set.name
+}
+
 export const leftSets: GearSet[] = [
   {
     id: 'none_left',
@@ -26,6 +34,7 @@ export const leftSets: GearSet[] = [
   {
     id: 'warlord',
     name: 'Warlord',
+    nameKo: '전쟁의 주인',
     slotType: '좌측 2세트',
     atkPct: 0.25,
     attackSpeed: 30,
@@ -34,6 +43,7 @@ export const leftSets: GearSet[] = [
   {
     id: 'wicked_vengeance',
     name: 'Wicked Vengeance',
+    nameKo: '악의 복수',
     slotType: '좌측 2세트',
     atkPct: 0.10,
     critDmg: 40,
@@ -51,6 +61,7 @@ export const rightSets: GearSet[] = [
   {
     id: 'infernal_roar',
     name: 'Infernal Roar',
+    nameKo: '마수의 포효',
     slotType: '우측 3세트',
     normalDamage: 0.40,
     defaultUptime: 1,
@@ -63,6 +74,7 @@ export const rightSets: GearSet[] = [
   {
     id: 'soulbound_arcana',
     name: 'Soulbound Arcana',
+    nameKo: '영혼의 비밀',
     slotType: '우측 3세트',
     damagePct: 0.50,
     conditionLabel: '궁 사용 후 중첩 유지율',
@@ -76,6 +88,7 @@ export const rightSets: GearSet[] = [
   {
     id: 'cataclysm',
     name: 'Cataclysm',
+    nameKo: '재앙 드래곤',
     slotType: '우측 3세트',
     damagePct: 0.50,
     conditionLabel: '치명타 중첩 유지율',
@@ -89,6 +102,7 @@ export const rightSets: GearSet[] = [
   {
     id: 'hells_lament',
     name: "Hell's Lament",
+    nameKo: '지옥 비명',
     slotType: '우측 3세트',
     critDmg: 50,
     damagePct: 0.35,

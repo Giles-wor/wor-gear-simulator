@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { heroes, heroDisplayName } from './data/heroes'
-import { leftSets, rightSets } from './data/gearSets'
+import { leftSets, rightSets, gearSetLabel } from './data/gearSets'
 import { calculateBuild, findSetById, type BuildInput } from './lib/calc'
 import { getBestStatRecommendation } from './lib/recommend'
 import { HeroHeader } from './components/HeroHeader'
@@ -115,12 +115,12 @@ export default function App() {
             <p className="eyebrow">영웅별 사전 시뮬레이션</p>
             <h2>{heroDisplayName(hero)} 추천 우측 3세트</h2>
           </div>
-          <strong className="deltaBadge positive">{rightSetRankings[0]?.set.name ?? '-'}</strong>
+          <strong className="deltaBadge positive">{gearSetLabel(rightSetRankings[0]?.set)}</strong>
         </div>
         <div className="setRankingGrid">
           {rightSetRankings.slice(0, 4).map((row, index) => (
             <div key={row.set.id}>
-              <span>#{index + 1} {row.set.name}</span>
+              <span>#{index + 1} {gearSetLabel(row.set)}</span>
               <strong>{row.result.itemMaxCumulative30s.toLocaleString()}</strong>
             </div>
           ))}

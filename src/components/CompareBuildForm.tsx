@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { leftSets, rightSets } from '../data/gearSets'
+import { leftSets, rightSets, gearSetLabel } from '../data/gearSets'
 import type { FactionAccessoryEffect } from '../data/factionAccessories'
 import { heroDisplayName, type Hero } from '../data/heroes'
 import type { LordEffect } from '../data/lordEffects'
@@ -115,12 +115,12 @@ export function CompareBuildForm({ hero, buildA, buildB, accessoryOptions, lordO
             label="좌측 2세트"
             left={
               <select value={buildA.leftSetId} onChange={(e) => onChangeA({ ...buildA, leftSetId: e.target.value })}>
-                {leftSets.map((set) => <option key={set.id} value={set.id}>{set.name}</option>)}
+                {leftSets.map((set) => <option key={set.id} value={set.id}>{gearSetLabel(set)}</option>)}
               </select>
             }
             right={
               <select value={buildB.leftSetId} onChange={(e) => onChangeB({ ...buildB, leftSetId: e.target.value })}>
-                {leftSets.map((set) => <option key={set.id} value={set.id}>{set.name}</option>)}
+                {leftSets.map((set) => <option key={set.id} value={set.id}>{gearSetLabel(set)}</option>)}
               </select>
             }
           />
@@ -129,12 +129,12 @@ export function CompareBuildForm({ hero, buildA, buildB, accessoryOptions, lordO
           label="우측 3세트"
           left={
             <select value={buildA.rightSetId} onChange={(e) => onChangeA({ ...buildA, rightSetId: e.target.value, setUptime: getDefaultUptime(e.target.value) })}>
-              {rightSets.map((set) => <option key={set.id} value={set.id}>{set.name}</option>)}
+              {rightSets.map((set) => <option key={set.id} value={set.id}>{gearSetLabel(set)}</option>)}
             </select>
           }
           right={
             <select value={buildB.rightSetId} onChange={(e) => onChangeB({ ...buildB, rightSetId: e.target.value, setUptime: getDefaultUptime(e.target.value) })}>
-              {rightSets.map((set) => <option key={set.id} value={set.id}>{set.name}</option>)}
+              {rightSets.map((set) => <option key={set.id} value={set.id}>{gearSetLabel(set)}</option>)}
             </select>
           }
         />

@@ -3,3 +3,7 @@ dist
 .env
 .DS_Store
 ref_fig/
+*.jpg
+*.jpeg
+*.png
+wor-webapp.zip
