@@ -3,7 +3,10 @@
 // 모델 흐름:
 //  1차 RNG (rarity): 영주 그룹 hit / 일반 그룹 hit / 미스
 //  2차 RNG (그룹 내 영웅): 픽업들은 ×featuredMultiplier × stack^miss 가중치, 비-픽업은 ×1.
-// stacking 보정: 비-픽업 5성을 뽑을 때마다 모든 그룹의 모든 픽업 가중치가 ×stack. 픽업(타겟이든 아니든) 뽑으면 0 리셋.
+// stacking 보정: 비-픽업 5성을 뽑을 때마다 모든 그룹의 모든 픽업 가중치가 ×stack.
+//   단, 이 보정은 "첫 픽업 획득 전"에만 유효 — 픽업(타겟이든 아니든)을 1장이라도 얻으면
+//   그 배너 기간 동안 스택 보정은 영구히 꺼지고, 이후 카피는 기본 픽업배수(featuredMultiplier)만 적용된다.
+//   (DP 의 obtained 차원으로 추적. owned>0 으로 시작하면 이미 보정 소진으로 간주.)
 // 천장 (pityFocus='lord'): Lord 만 카운터 리셋. Common 5성은 카운터 계속 증가.
 //
 // 멀티 타겟: 각 픽업 슬롯이 goal>0 이면 "노리는 영웅". DP 가 모든 노리는 픽업의 카피를 동시에 추적,
@@ -313,18 +316,22 @@ export function simulateMultiTargetDistribution(
     return copiesIdx + stride
   }
 
-  const missStride = totalCopiesStates
+  // 상태: (pity, miss, obtained, copies). obtained ∈ {0,1} = 픽업을 1장이라도 얻었는지.
+  const obtainedStride = totalCopiesStates
+  const missStride = 2 * obtainedStride
   const pityStride = (mxMiss + 1) * missStride
   const size = hard * pityStride
-  const idx = (pity: number, miss: number, copies: number) =>
-    pity * pityStride + miss * missStride + copies
+  const idx = (pity: number, miss: number, obtained: number, copies: number) =>
+    pity * pityStride + miss * missStride + obtained * obtainedStride + copies
 
   let cur = new Float64Array(size)
   let nxt = new Float64Array(size)
 
+  // 이미 픽업을 보유 중이면(owned>0) 보정은 이미 소진된 것으로 보고 obtained=1 로 시작
+  const startObtained = selection.ownedCopies.some((c) => Math.floor(c ?? 0) > 0) ? 1 : 0
   const startPity = Math.min(start.pity, hard - 1)
-  const startMiss = Math.min(start.rateUpMisses, mxMiss)
-  cur[idx(startPity, startMiss, initCopiesState)] = 1
+  const startMiss = startObtained ? 0 : Math.min(start.rateUpMisses, mxMiss)
+  cur[idx(startPity, startMiss, startObtained, initCopiesState)] = 1
 
   // 그룹 hit 확률 (pity 별 미리 계산)
   const lordHitByPity = new Float64Array(hard)
@@ -385,7 +392,7 @@ export function simulateMultiTargetDistribution(
   } else if (initCopiesState === successCopiesIdx) {
     absorbedSuccessMass = 1
     cdf[0] = 1
-    cur[idx(startPity, startMiss, initCopiesState)] = 0
+    cur[idx(startPity, startMiss, startObtained, initCopiesState)] = 0
   }
 
   // 초기 marginal (start 상태 기준)
@@ -401,28 +408,36 @@ export function simulateMultiTargetDistribution(
    * 전설 hit 결과(pity·miss·copies, prob p)를 nxt 에 반영하고 success 기여분을 반환.
    * 1+1 이면 보너스 영웅 1개를 추가 분배(타겟이면 copy +1, 천장/miss 무관).
    */
-  const emit = (pity: number, miss: number, copies: number, p: number): number => {
+  const emit = (
+    pity: number,
+    miss: number,
+    obtained: number,
+    copies: number,
+    p: number,
+    shareMiss: number,
+  ): number => {
     if (p === 0) return 0
     if (!onePlusOne) {
       if (copies === successCopiesIdx) return p
-      nxt[idx(pity, miss, copies)] += p
+      nxt[idx(pity, miss, obtained, copies)] += p
       return 0
     }
     // 메인만으로 이미 성공이면 보너스 무관
     if (copies === successCopiesIdx) return p
     let sm = 0
     let assigned = 0
-    const row = bonusTargetProbByMiss[miss]
+    const row = bonusTargetProbByMiss[shareMiss]
     for (let j = 0; j < activeTargets.length; j += 1) {
       const bp = p * row[j]
       if (bp === 0) continue
       const nc = tryIncrement(copies, activeTargets[j].pickupIdx)
+      // 보너스로 픽업을 얻어도 이후 보정 OFF (obtained=1, miss=0)
       if (nc === successCopiesIdx) sm += bp
-      else nxt[idx(pity, miss, nc)] += bp
+      else nxt[idx(pity, 0, 1, nc)] += bp
       assigned += bp
     }
     const rest = p - assigned // 보너스가 타겟이 아님 (다른 픽업/비픽업)
-    if (rest > 0) nxt[idx(pity, miss, copies)] += rest
+    if (rest > 0) nxt[idx(pity, miss, obtained, copies)] += rest
     return sm
   }
 
@@ -457,64 +472,70 @@ export function simulateMultiTargetDistribution(
         const commonNon = commonNonByMiss[miss]
         const nextMiss = Math.min(miss + 1, mxMiss)
 
-        for (let copies = 0; copies < totalCopiesStates; copies += 1) {
-          const prob = cur[idx(pity, miss, copies)]
-          if (prob === 0) continue
+        // obtained: 픽업 1장이라도 얻은 뒤(=1)에는 스택 보정 OFF → 항상 base(miss=0) share 사용,
+        // 비-픽업 5성을 더 뽑아도 스택을 쌓지 않는다. (obtained=1 상태는 항상 miss=0 로만 존재)
+        for (let obtained = 0; obtained <= 1; obtained += 1) {
+          const missAfterNon = obtained === 1 ? 0 : nextMiss
 
-          // Forced (한정 200픽 픽업 확정): 활성 타겟의 첫 카피 미보유 시 그 타겟 강제
-          if (isForcedFeaturedHardGuarantee && forcedTargetPickupIdx >= 0) {
-            const activePos = activePosByPickup[forcedTargetPickupIdx]
-            const before = Math.floor(copies / strides[activePos]) % dims[activePos]
-            if (before === 0) {
-              const newCopies = tryIncrement(copies, forcedTargetPickupIdx)
-              if (newCopies === successCopiesIdx) {
-                pullSuccessMass += prob
-              } else {
-                nxt[idx(0, 0, newCopies)] += prob
+          for (let copies = 0; copies < totalCopiesStates; copies += 1) {
+            const prob = cur[idx(pity, miss, obtained, copies)]
+            if (prob === 0) continue
+
+            // Forced (한정 200픽 픽업 확정): 활성 타겟의 첫 카피 미보유 시 그 타겟 강제
+            if (isForcedFeaturedHardGuarantee && forcedTargetPickupIdx >= 0) {
+              const activePos = activePosByPickup[forcedTargetPickupIdx]
+              const before = Math.floor(copies / strides[activePos]) % dims[activePos]
+              if (before === 0) {
+                const newCopies = tryIncrement(copies, forcedTargetPickupIdx)
+                if (newCopies === successCopiesIdx) {
+                  pullSuccessMass += prob
+                } else {
+                  nxt[idx(0, 0, 1, newCopies)] += prob
+                }
+                pullPickupHits[forcedTargetPickupIdx] += prob
+                continue
               }
-              pullPickupHits[forcedTargetPickupIdx] += prob
-              continue
             }
-          }
 
-          // 1) 전설 안 뽑힘 → pity+1, miss 유지
-          if (noLegendary > 0) {
-            nxt[idx(nextPity, miss, copies)] += prob * noLegendary
-          }
+            // 1) 전설 안 뽑힘 → pity+1, miss·obtained 유지
+            if (noLegendary > 0) {
+              nxt[idx(nextPity, miss, obtained, copies)] += prob * noLegendary
+            }
 
-          // 2) 영주 그룹 hit
-          if (lordHit > 0) {
-            // 그룹 내 픽업별 분기
-            for (let pi = 0; pi < pickups.length; pi += 1) {
-              if (pickups[pi].group !== 'lord') continue
-              const p = prob * lordHit * lordPer
-              if (p === 0) continue
-              const newCopies = tryIncrement(copies, pi)
-              pullPickupHits[pi] += p
-              pullSuccessMass += emit(lordNextPity, 0, newCopies, p)
+            // 2) 영주 그룹 hit
+            if (lordHit > 0) {
+              // 그룹 내 픽업별 분기 → 픽업 획득이므로 obtained=1, 스택 리셋(miss=0)
+              for (let pi = 0; pi < pickups.length; pi += 1) {
+                if (pickups[pi].group !== 'lord') continue
+                const p = prob * lordHit * lordPer
+                if (p === 0) continue
+                const newCopies = tryIncrement(copies, pi)
+                pullPickupHits[pi] += p
+                pullSuccessMass += emit(lordNextPity, 0, 1, newCopies, p, 0)
+              }
+              // 그룹 내 비-픽업 5성 → obtained 유지, 미획득 상태에서만 스택 누적
+              const pNon = prob * lordHit * lordNon
+              if (pNon > 0) {
+                pullSuccessMass += emit(lordNextPity, missAfterNon, obtained, copies, pNon, miss)
+                pullNonRateUpLeg += pNon
+              }
             }
-            // 그룹 내 비-픽업 5성
-            const pNon = prob * lordHit * lordNon
-            if (pNon > 0) {
-              pullSuccessMass += emit(lordNextPity, nextMiss, copies, pNon)
-              pullNonRateUpLeg += pNon
-            }
-          }
 
-          // 3) 일반 그룹 hit
-          if (commonHit > 0) {
-            for (let pi = 0; pi < pickups.length; pi += 1) {
-              if (pickups[pi].group !== 'common') continue
-              const p = prob * commonHit * commonPer
-              if (p === 0) continue
-              const newCopies = tryIncrement(copies, pi)
-              pullPickupHits[pi] += p
-              pullSuccessMass += emit(commonNextPity, 0, newCopies, p)
-            }
-            const pNon = prob * commonHit * commonNon
-            if (pNon > 0) {
-              pullSuccessMass += emit(commonNextPity, nextMiss, copies, pNon)
-              pullNonRateUpLeg += pNon
+            // 3) 일반 그룹 hit
+            if (commonHit > 0) {
+              for (let pi = 0; pi < pickups.length; pi += 1) {
+                if (pickups[pi].group !== 'common') continue
+                const p = prob * commonHit * commonPer
+                if (p === 0) continue
+                const newCopies = tryIncrement(copies, pi)
+                pullPickupHits[pi] += p
+                pullSuccessMass += emit(commonNextPity, 0, 1, newCopies, p, 0)
+              }
+              const pNon = prob * commonHit * commonNon
+              if (pNon > 0) {
+                pullSuccessMass += emit(commonNextPity, missAfterNon, obtained, copies, pNon, miss)
+                pullNonRateUpLeg += pNon
+              }
             }
           }
         }
@@ -545,10 +566,12 @@ export function simulateMultiTargetDistribution(
       let marginalMass = absorbedSuccessMass
       for (let pity = 0; pity < hard; pity += 1) {
         for (let m = 0; m <= mxMiss; m += 1) {
-          for (let copies = 0; copies < totalCopiesStates; copies += 1) {
-            const cj = Math.floor(copies / stride) % dimSize
-            if (cj === t.goal) {
-              marginalMass += cur[idx(pity, m, copies)]
+          for (let obtained = 0; obtained <= 1; obtained += 1) {
+            for (let copies = 0; copies < totalCopiesStates; copies += 1) {
+              const cj = Math.floor(copies / stride) % dimSize
+              if (cj === t.goal) {
+                marginalMass += cur[idx(pity, m, obtained, copies)]
+              }
             }
           }
         }
@@ -650,6 +673,10 @@ export function buildStrategyReport(
     ? { ...config, lordGroupRate: config.lordGroupRate * 2, commonGroupRate: config.commonGroupRate * 2 }
     : config
 
+  // 이미 픽업 보유 중이면(owned>0) 보정 소진 → '현재 1회 소환'도 스택 OFF(기본배수)로 표시
+  const alreadyObtained = selection.ownedCopies.some((c) => Math.floor(c ?? 0) > 0)
+  const outcomeState: SummonState = alreadyObtained ? { ...start, rateUpMisses: 0 } : start
+
   return {
     availablePulls: safeBudget,
     selection,
@@ -657,8 +684,8 @@ export function buildStrategyReport(
     marginalProbabilityWithBudget,
     expectedHitsWithBudget,
     expectedNonRateUpLegendaryWithBudget,
-    outcomeNow: summonOutcomeAt(outcomeConfig, selection, start),
-    conditionalAnyPickup: conditionalAnyPickupGivenLegendary(outcomeConfig, selection, start),
+    outcomeNow: summonOutcomeAt(outcomeConfig, selection, outcomeState),
+    conditionalAnyPickup: conditionalAnyPickupGivenLegendary(outcomeConfig, selection, outcomeState),
     horizon,
     jointCdf: dist.cdf,
     activeTargets: dist.activeTargets,

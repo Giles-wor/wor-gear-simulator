@@ -225,7 +225,8 @@ export default function App() {
         <p className="muted">
           ① 소환 풀 선택 → ② 픽업 영웅 설정 (그룹·획득 목표·이미 보유) → ③ 천장 스택 + 남은 소환 수 →
           <strong> 모든 노리는 픽업 동시 달성 확률</strong> 계산. 인게임 Drop Rates 기준 (×20 픽업,
-          ×10/×2 stacking, 한정 200픽 자체 확정, 고대 영주 전용 천장, 혼합 그룹 픽업) 반영.
+          ×10/×2 stacking은 <strong>첫 픽업 획득 전까지만</strong> — 1장 얻은 뒤엔 기본배수만, 한정 200픽
+          자체 확정, 고대 영주 전용 천장, 혼합 그룹 픽업) 반영.
         </p>
         {config.placeholder ? (
           <p className="alert">⚠️ <strong>{config.name}</strong> 의 일부 수치는 추정. 인게임 확인 후 고급 편집에서 교체하세요.</p>
@@ -642,7 +643,7 @@ export default function App() {
             />
           </label>
           <label className="field">
-            <span>미스 stacking (스피릿/디바인 ×10, 고대 ×2)</span>
+            <span>미스 stacking (스피릿/디바인 ×10, 고대 ×2 · 첫 픽업 획득 전까지만)</span>
             <input
               type="number"
               step="1"
