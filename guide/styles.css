@@ -65,6 +65,33 @@
   font-size: 0.9rem;
 }
 
+/* ── 카테고리 필터 칩 ── */
+.guideFilter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+.guideChip {
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(231, 166, 95, 0.28);
+  background: rgba(18, 15, 13, 0.55);
+  color: #d9cabb;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.guideChip:hover {
+  background: rgba(231, 166, 95, 0.12);
+}
+.guideChip.active {
+  background: rgba(231, 166, 95, 0.24);
+  border-color: rgba(231, 166, 95, 0.6);
+  color: #ffe1b5;
+}
+
 /* ── 바둑판 그리드 ── */
 .guideGrid {
   display: grid;
@@ -116,6 +143,17 @@
   justify-content: center;
   color: #7d7368;
   font-size: 0.85rem;
+}
+.guideCardTag {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(231, 166, 95, 0.92);
+  color: #2a1c10;
+  font-size: 0.7rem;
+  font-weight: 800;
 }
 .guideCardCount {
   position: absolute;
