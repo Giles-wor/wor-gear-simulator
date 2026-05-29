@@ -7,3 +7,7 @@ ref_fig/
 *.jpeg
 *.png
 wor-webapp.zip
+
+# 공략 탭 이미지는 리포에 포함 (위 *.jpg/*.png 무시 규칙의 예외)
+!guide/assets/
+!guide/assets/**

@@ -13,14 +13,17 @@
     "typecheck:v1": "tsc --noEmit -p v1/tsconfig.json",
     "typecheck:summon": "tsc --noEmit -p summon/tsconfig.json",
     "typecheck:gear": "tsc --noEmit -p gear/tsconfig.json",
+    "typecheck:guide": "tsc --noEmit -p guide/tsconfig.json",
     "dev": "vite",
     "dev:v1": "vite --config v1/vite.config.ts",
     "dev:summon": "vite --config summon/vite.config.ts",
     "dev:gear": "vite --config gear/vite.config.ts",
+    "dev:guide": "vite --config guide/vite.config.ts",
     "build": "npm run typecheck && vite build",
     "build:v1": "npm run typecheck:v1 && vite build --config v1/vite.config.ts",
     "build:summon": "npm run typecheck:summon && vite build --config summon/vite.config.ts",
     "build:gear": "npm run typecheck:gear && vite build --config gear/vite.config.ts",
+    "build:guide": "npm run typecheck:guide && vite build --config guide/vite.config.ts",
     "preview": "vite preview"
   },
   "dependencies": {
