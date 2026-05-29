@@ -103,6 +103,7 @@ export const heroNameKo: Record<string, string> = {
   uredin: '우레딘',
   lu_bu: '여포',
   erlang_shen: '이랑신',
+  sun_wukong: '오공',
   kane: '케인',
   raizan: '레이칸',
   khadgrim: '카드그림',

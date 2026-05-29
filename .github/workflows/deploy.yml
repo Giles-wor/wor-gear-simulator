@@ -43,6 +43,9 @@ jobs:
       - name: Build (장비 필터)
         run: npm run build:gear
 
+      - name: Build (공략)
+        run: npm run build:guide
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
