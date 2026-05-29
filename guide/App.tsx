@@ -163,6 +163,22 @@ export default function App() {
         </p>
       </header>
 
+      <a
+        className="guideChatBanner"
+        href="https://open.kakao.com/o/goYXelkg"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <span className="guideChatIcon">💬</span>
+        <span className="guideChatText">
+          <b>공략 공유 오픈채팅 바로가기</b>
+          <span className="guideChatSub">
+            실시간으로 타이탄·콘텐츠 공략을 함께 나누는 카카오톡 오픈채팅이에요. 새 공략·질문 환영!
+          </span>
+        </span>
+        <span className="guideChatGo">입장 ›</span>
+      </a>
+
       <div className="guideNotice" role="note">
         <strong>📌 공략 자료 출처 안내</strong>
         <p>
