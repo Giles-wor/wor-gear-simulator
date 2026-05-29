@@ -241,14 +241,29 @@ export type MultiTargetDistribution = {
   activeTargets: ActiveTarget[]
 }
 
+/** 배너 변종 옵션 (열광/1+1 비교용) */
+export type SummonModifiers = {
+  /** 열광(Crazy): 모든 5성 base rate ×2 */
+  crazy?: boolean
+  /** 1+1: 전설 1개 나올 때마다 보너스 5성 1개 추가 (천장/stacking 무관, 영웅만 추가) */
+  onePlusOne?: boolean
+}
+
 export function simulateMultiTargetDistribution(
   config: BannerConfig,
   selection: PickupSelection,
   pulls: number,
   start: SummonState,
+  mods: SummonModifiers = {},
 ): MultiTargetDistribution {
-  const hard = Math.max(1, Math.floor(config.hardPity))
-  const mxMiss = maxMissesNeeded(config, selection.pickups)
+  const crazy = !!mods.crazy
+  const onePlusOne = !!mods.onePlusOne
+  // 열광: base rate ×2 (천장 증가분/하드천장 규칙은 그대로). clampProb 는 groupHitRatesAt 내부에서.
+  const effConfig: BannerConfig = crazy
+    ? { ...config, lordGroupRate: config.lordGroupRate * 2, commonGroupRate: config.commonGroupRate * 2 }
+    : config
+  const hard = Math.max(1, Math.floor(effConfig.hardPity))
+  const mxMiss = maxMissesNeeded(effConfig, selection.pickups)
   const pickups = selection.pickups
 
   const activeTargets: ActiveTarget[] = pickups
@@ -315,7 +330,7 @@ export function simulateMultiTargetDistribution(
   const lordHitByPity = new Float64Array(hard)
   const commonHitByPity = new Float64Array(hard)
   for (let p = 0; p < hard; p += 1) {
-    const { lord, common } = groupHitRatesAt(config, p)
+    const { lord, common } = groupHitRatesAt(effConfig, p)
     lordHitByPity[p] = lord
     commonHitByPity[p] = common
   }
@@ -326,15 +341,28 @@ export function simulateMultiTargetDistribution(
   const commonPerByMiss = new Float64Array(mxMiss + 1)
   const commonNonByMiss = new Float64Array(mxMiss + 1)
   for (let m = 0; m <= mxMiss; m += 1) {
-    const b = groupBreakdownAt(config, pickups, m)
+    const b = groupBreakdownAt(effConfig, pickups, m)
     lordPerByMiss[m] = b.lord.perPickupShare
     lordNonByMiss[m] = b.lord.nonRateUpShare
     commonPerByMiss[m] = b.common.perPickupShare
     commonNonByMiss[m] = b.common.nonRateUpShare
   }
 
-  const pityFocus = config.pityFocus ?? 'anyLegendary'
+  const pityFocus = effConfig.pityFocus ?? 'anyLegendary'
   const commonResetsPity = pityFocus !== 'lord'
+
+  // 1+1 보너스 영웅이 각 활성 타겟일 확률 (miss 별). 보너스는 전설 확정 → 그룹은 base 비율로 결정.
+  const baseTotal = effConfig.lordGroupRate + effConfig.commonGroupRate
+  const lordGroupShare = baseTotal > 0 ? effConfig.lordGroupRate / baseTotal : 0
+  const commonGroupShare = baseTotal > 0 ? effConfig.commonGroupRate / baseTotal : 0
+  // bonusTargetProbByMiss[m][activePos] = 보너스 1영웅이 활성타겟 activePos 일 확률
+  const bonusTargetProbByMiss: number[][] = []
+  for (let m = 0; m <= mxMiss; m += 1) {
+    const row = activeTargets.map((t) =>
+      t.group === 'lord' ? lordGroupShare * lordPerByMiss[m] : commonGroupShare * commonPerByMiss[m],
+    )
+    bonusTargetProbByMiss.push(row)
+  }
 
   // 결과 누적 컨테이너
   const cdf = new Array(pulls + 1).fill(0)
@@ -369,6 +397,35 @@ export function simulateMultiTargetDistribution(
   let cumNonRateUpLeg = 0
   const cumPickupHits = new Array(pickups.length).fill(0)
 
+  /**
+   * 전설 hit 결과(pity·miss·copies, prob p)를 nxt 에 반영하고 success 기여분을 반환.
+   * 1+1 이면 보너스 영웅 1개를 추가 분배(타겟이면 copy +1, 천장/miss 무관).
+   */
+  const emit = (pity: number, miss: number, copies: number, p: number): number => {
+    if (p === 0) return 0
+    if (!onePlusOne) {
+      if (copies === successCopiesIdx) return p
+      nxt[idx(pity, miss, copies)] += p
+      return 0
+    }
+    // 메인만으로 이미 성공이면 보너스 무관
+    if (copies === successCopiesIdx) return p
+    let sm = 0
+    let assigned = 0
+    const row = bonusTargetProbByMiss[miss]
+    for (let j = 0; j < activeTargets.length; j += 1) {
+      const bp = p * row[j]
+      if (bp === 0) continue
+      const nc = tryIncrement(copies, activeTargets[j].pickupIdx)
+      if (nc === successCopiesIdx) sm += bp
+      else nxt[idx(pity, miss, nc)] += bp
+      assigned += bp
+    }
+    const rest = p - assigned // 보너스가 타겟이 아님 (다른 픽업/비픽업)
+    if (rest > 0) nxt[idx(pity, miss, copies)] += rest
+    return sm
+  }
+
   for (let pull = 1; pull <= pulls; pull += 1) {
     nxt.fill(0)
     let pullNonRateUpLeg = 0
@@ -377,8 +434,8 @@ export function simulateMultiTargetDistribution(
 
     const totalPullsOnBanner = start.pullsOnBanner + pull
     const isForcedFeaturedHardGuarantee =
-      config.featuredHardGuarantee != null &&
-      totalPullsOnBanner === config.featuredHardGuarantee &&
+      effConfig.featuredHardGuarantee != null &&
+      totalPullsOnBanner === effConfig.featuredHardGuarantee &&
       activeTargets.length === 1 // 한정 선택 소환은 단일 타겟만 의미
 
     const forcedTargetPickupIdx = isForcedFeaturedHardGuarantee
@@ -434,16 +491,12 @@ export function simulateMultiTargetDistribution(
               if (p === 0) continue
               const newCopies = tryIncrement(copies, pi)
               pullPickupHits[pi] += p
-              if (newCopies === successCopiesIdx && activeTargets.length > 0) {
-                pullSuccessMass += p
-              } else {
-                nxt[idx(lordNextPity, 0, newCopies)] += p
-              }
+              pullSuccessMass += emit(lordNextPity, 0, newCopies, p)
             }
             // 그룹 내 비-픽업 5성
             const pNon = prob * lordHit * lordNon
             if (pNon > 0) {
-              nxt[idx(lordNextPity, nextMiss, copies)] += pNon
+              pullSuccessMass += emit(lordNextPity, nextMiss, copies, pNon)
               pullNonRateUpLeg += pNon
             }
           }
@@ -456,15 +509,11 @@ export function simulateMultiTargetDistribution(
               if (p === 0) continue
               const newCopies = tryIncrement(copies, pi)
               pullPickupHits[pi] += p
-              if (newCopies === successCopiesIdx && activeTargets.length > 0) {
-                pullSuccessMass += p
-              } else {
-                nxt[idx(commonNextPity, 0, newCopies)] += p
-              }
+              pullSuccessMass += emit(commonNextPity, 0, newCopies, p)
             }
             const pNon = prob * commonHit * commonNon
             if (pNon > 0) {
-              nxt[idx(commonNextPity, nextMiss, copies)] += pNon
+              pullSuccessMass += emit(commonNextPity, nextMiss, copies, pNon)
               pullNonRateUpLeg += pNon
             }
           }
@@ -562,6 +611,7 @@ export function buildStrategyReport(
   selection: PickupSelection,
   start: SummonState,
   availablePulls: number,
+  mods: SummonModifiers = {},
 ): StrategyReport {
   const safeBudget = Math.max(0, Math.floor(availablePulls))
   const horizon = Math.min(
@@ -569,7 +619,7 @@ export function buildStrategyReport(
     Math.max(safeBudget, config.hardPity * 2, (config.featuredHardGuarantee ?? 0) + 20, 200),
   )
 
-  const dist = simulateMultiTargetDistribution(config, selection, horizon, start)
+  const dist = simulateMultiTargetDistribution(config, selection, horizon, start, mods)
   const budgetIdx = Math.min(safeBudget, dist.cdf.length - 1)
 
   const jointProbabilityWithBudget = safeBudget > 0 ? dist.cdf[budgetIdx] : dist.cdf[0] ?? 0
@@ -595,6 +645,11 @@ export function buildStrategyReport(
     }
   })
 
+  // 1회 소환 분포는 열광(base ×2) 반영한 config 로 계산 (1+1 은 분포 자체는 동일, 보너스는 별도 영웅)
+  const outcomeConfig: BannerConfig = mods.crazy
+    ? { ...config, lordGroupRate: config.lordGroupRate * 2, commonGroupRate: config.commonGroupRate * 2 }
+    : config
+
   return {
     availablePulls: safeBudget,
     selection,
@@ -602,8 +657,8 @@ export function buildStrategyReport(
     marginalProbabilityWithBudget,
     expectedHitsWithBudget,
     expectedNonRateUpLegendaryWithBudget,
-    outcomeNow: summonOutcomeAt(config, selection, start),
-    conditionalAnyPickup: conditionalAnyPickupGivenLegendary(config, selection, start),
+    outcomeNow: summonOutcomeAt(outcomeConfig, selection, start),
+    conditionalAnyPickup: conditionalAnyPickupGivenLegendary(outcomeConfig, selection, start),
     horizon,
     jointCdf: dist.cdf,
     activeTargets: dist.activeTargets,

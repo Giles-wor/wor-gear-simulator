@@ -66,6 +66,9 @@ export default function App() {
   const [rateUpMisses, setRateUpMisses] = useState(0)
   const [pullsOnBanner, setPullsOnBanner] = useState(0)
   const [availablePulls, setAvailablePulls] = useState(200)
+  // 배너 변종: 열광(5성 ×2) / 1+1(전설 나오면 1개 더)
+  const [crazy, setCrazy] = useState(false)
+  const [onePlusOne, setOnePlusOne] = useState(false)
 
   // 배너 변경 시 픽업 구성과 목표/보유 리셋
   useEffect(() => {
@@ -97,8 +100,8 @@ export default function App() {
   )
 
   const report = useMemo(
-    () => buildStrategyReport(config, selection, state, availablePulls),
-    [config, selection, state, availablePulls],
+    () => buildStrategyReport(config, selection, state, availablePulls, { crazy, onePlusOne }),
+    [config, selection, state, availablePulls, crazy, onePlusOne],
   )
 
   const updateConfig = (patch: Partial<BannerConfig>) =>
@@ -251,6 +254,33 @@ export default function App() {
           ))}
         </div>
         <p className="muted helperText">{config.notes}</p>
+
+        <div className="modRow">
+          <span className="modRowLabel">배너 이벤트</span>
+          <button
+            type="button"
+            className={crazy ? 'modChip active' : 'modChip'}
+            onClick={() => setCrazy((v) => !v)}
+          >
+            🔥 열광 (5성 확률 ×2)
+          </button>
+          <button
+            type="button"
+            className={onePlusOne ? 'modChip active' : 'modChip'}
+            onClick={() => setOnePlusOne((v) => !v)}
+          >
+            ➕ 1+1 (전설 나오면 1개 더)
+          </button>
+        </div>
+        <p className="muted helperText">
+          {crazy && onePlusOne
+            ? '열광 + 1+1 동시 적용 — 5성 확률 2배 + 전설마다 보너스 1개.'
+            : crazy
+              ? '열광: 모든 5성 base 확률이 2배 (예: 영주 0.04%→0.08%). 천장은 그대로.'
+              : onePlusOne
+                ? '1+1: 전설이 나올 때마다 같은 풀에서 보너스 5성 1개 추가 (천장/보정 무관).'
+                : '일반 배너. 두 이벤트를 켜서 어느 쪽이 픽업 확보에 유리한지 비교해 보세요.'}
+        </p>
       </section>
 
       <section className="card">

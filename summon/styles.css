@@ -38,6 +38,37 @@
   flex-wrap: wrap;
 }
 
+.modRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.modRowLabel {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.7;
+}
+.modChip {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.45);
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.modChip:hover {
+  background: rgba(56, 189, 248, 0.12);
+}
+.modChip.active {
+  background: rgba(251, 146, 60, 0.22);
+  border-color: rgba(251, 146, 60, 0.65);
+  color: #fed7aa;
+}
+
 .bannerTab {
   flex: 1 1 auto;
   min-width: 72px;
