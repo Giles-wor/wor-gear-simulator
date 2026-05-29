@@ -5,19 +5,29 @@ export function SiteCredit() {
       <div className="guildPromo">
         <div className="guildPromoHead">
           <span className="guildPromoTitle">🛡️ Time 길드 길드원 모집 중!</span>
-          <a
-            className="guildPromoYt"
-            href="https://www.youtube.com/@vrcreator2026"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            ▶ 길드 유튜브 채널 구독하기
-          </a>
+          <span className="guildPromoBtns">
+            <a
+              className="guildPromoYt"
+              href="https://www.youtube.com/@vrcreator2026"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              ▶ 길드 유튜브
+            </a>
+            <a
+              className="guildPromoKakao"
+              href="https://open.kakao.com/o/sAAVWMAg"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              💬 피드백 · 문의 (카톡 오픈채팅)
+            </a>
+          </span>
         </div>
         <p className="guildPromoBody">
           함께 성장할 길드원을 찾습니다! 공략 · 장비 세팅 · 소환 꿀팁을 나누는 활발한 길드예요.
-          가입 · 문의는 인게임에서 <strong>자일스</strong> 친구 추가 후 채팅 주세요. 본 사이트의 모든 계산기도
-          Time 길드가 직접 제작했습니다 — 더 많은 공략은{' '}
+          <strong> 버그 제보 · 개선 제안 · 길드 가입 문의는 위 카카오톡 오픈채팅</strong>으로 편하게 남겨주세요
+          (익명 OK). 본 사이트의 모든 계산기도 Time 길드가 직접 제작했습니다 — 더 많은 공략은{' '}
           <a href="https://www.youtube.com/@vrcreator2026" target="_blank" rel="noopener noreferrer">
             유튜브 채널
           </a>
