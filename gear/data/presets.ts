@@ -71,6 +71,12 @@ const TANK_TOP_RIGHT = ['guardian', 'tempered_will', 'unshaken_will', 'morale']
 const HEALER_TOP_RIGHT = ['wings_of_grace', 'invigoration', 'asclepius', 'morale', 'the_wisdom']
 const UTILITY_TOP_RIGHT = ['morale', 'invigoration', 'mana_spring']
 
+// ── 좌측(무기/방어구) 세트 그룹 — 빌드별 좌측 세트 지정용 ──
+// 전쟁셋 계열: 공%·공속·치피 등 공격 스탯 (전쟁의 주인/악의 복수/재앙/질풍/인멸)
+const LEFT_WAR_SETS = ['warlord', 'wicked_vengeance', 'calamity', 'whirlwind', 'annihilating_might']
+// 치유셋 계열: 치유효과/HP (빛의 은혜/구원/생기/천상의 수호 등)
+const LEFT_HEAL_SETS = ['lights_grace', 'salvation', 'life_force', 'astral_guardian']
+
 export const roles: RoleDef[] = [
   {
     id: 'attack_dps',
@@ -158,16 +164,18 @@ export type GranularRole =
   | 'tank'
   | 'hp_healer'
   | 'atk_healer'
+  | 'atk_healer_war'
   | 'inspiration'
 
 export const granularRoles: { id: GranularRole; label: string }[] = [
   { id: 'attack_dps', label: '공격 딜러' },
-  { id: 'hp_dps', label: 'HP 딜러' },
+  { id: 'hp_dps', label: '체비례 딜러' },
   { id: 'def_dps', label: '방어 딜러' },
   { id: 'tank', label: '탱커' },
   { id: 'hp_healer', label: 'HP 힐러' },
-  { id: 'atk_healer', label: '공격 힐러' },
-  { id: 'inspiration', label: '격려 힐러' },
+  { id: 'atk_healer', label: '공격 힐러 (치유셋)' },
+  { id: 'atk_healer_war', label: '공격 힐러 (전쟁셋)' },
+  { id: 'inspiration', label: '격려 힐러 (전쟁셋 필수)' },
 ]
 
 // flex 옵션 한글 라벨 (변환 미고려 딜러 규칙 이름용)
@@ -251,21 +259,32 @@ export function buildGranular(role: GranularRole, conversion = true): FilterRule
   }
 
   if (role === 'inspiration') {
-    // 격려 힐러: 공%·공격력 최우선. 공% 필수.
+    // 격려 힐러: 자기 공격력 비례로 아군 버프 → 무기/방어구 무조건 전쟁셋(공%·공속). 공% 필수.
     const HEAL = HEALER_TOP_RIGHT
-    add('무기', 'weapon', [], [], ['atk_pct', 'atk_spd', 'rage_regen', 'healing'], ['atk_pct'])
-    add('방어구', 'armor', [], [], ['atk_pct', 'atk_flat', 'atk_spd', 'rage_regen'], ['atk_pct'])
+    add('무기 (전쟁셋 필수)', 'weapon', LEFT_WAR_SETS, [], ['atk_pct', 'atk_spd', 'rage_regen', 'healing'], ['atk_pct'])
+    add('방어구 (전쟁셋 필수)', 'armor', LEFT_WAR_SETS, [], ['atk_pct', 'atk_flat', 'atk_spd', 'rage_regen'], ['atk_pct'])
     add('악세 공%메인', 'accessory', HEAL, ['atk_pct'], ['atk_flat', 'atk_spd', 'rage_regen', 'healing'], ['atk_flat'])
     add('악세 공격력메인', 'accessory', HEAL, ['atk_flat'], ['atk_pct', 'atk_spd', 'rage_regen', 'healing'], ['atk_pct'])
     return rules
   }
 
+  if (role === 'atk_healer_war') {
+    // 공격 힐러 전쟁셋 빌드: 무기/방어구 전쟁셋(공%·공속) 으로 딜·버프 겸용. 공%·공속 중심.
+    const HEAL = HEALER_TOP_RIGHT
+    add('무기 (전쟁셋)', 'weapon', LEFT_WAR_SETS, [], ['atk_pct', 'atk_spd', 'crit_rate', 'rage_regen'], ['atk_pct', 'atk_spd'])
+    add('방어구 (전쟁셋)', 'armor', LEFT_WAR_SETS, [], ['atk_pct', 'atk_spd', 'crit_rate', 'rage_regen'], ['atk_pct'])
+    add('악세 공%메인', 'accessory', HEAL, ['atk_pct'], ['atk_spd', 'rage_regen', 'healing'], ['atk_spd'])
+    add('악세 공속메인', 'accessory', HEAL, ['atk_spd'], ['atk_pct', 'rage_regen', 'healing'], [])
+    return rules
+  }
+
   if (role === 'hp_healer' || role === 'atk_healer') {
-    // 우선순위 주요>공속>치유>분노. 공속 필수.
+    // 치유셋 빌드 — 우선순위 주요>공속>치유>분노. 공속 필수.
     const HEAL = HEALER_TOP_RIGHT
     const core = role === 'hp_healer' ? 'hp_pct' : 'atk_pct'
-    add('무기', 'weapon', [], [], [core, 'atk_spd', 'healing', 'rage_regen'], ['atk_spd'])
-    add('방어구', 'armor', [], [], [core, 'atk_spd', 'healing', 'rage_regen'], ['atk_spd'])
+    // 치유셋 빌드라 좌측은 치유/HP 세트 위주 (무관도 허용하려면 [] 로 두면 됨)
+    add('무기', 'weapon', LEFT_HEAL_SETS, [], [core, 'atk_spd', 'healing', 'rage_regen'], ['atk_spd'])
+    add('방어구', 'armor', LEFT_HEAL_SETS, [], [core, 'atk_spd', 'healing', 'rage_regen'], ['atk_spd'])
     add(
       role === 'hp_healer' ? '악세 HP%메인' : '악세 공%메인',
       'accessory',

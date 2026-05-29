@@ -460,12 +460,14 @@ export default function App() {
               </div>
               <p className="muted helperText levelDesc">
                 {granularRole === 'hp_healer' || granularRole === 'atk_healer'
-                  ? '힐러 우선순위: 주요 > 공속 > 치유 > 분노. 공속 우선 포함 + 악세 공속메인 루트. (변환 고려)'
-                  : granularRole === 'inspiration'
-                    ? '격려 힐러: 아군 공격력 버프형 — 모든 장비에서 공%·공격력 최우선. (변환 고려)'
-                    : granularIsEstimated(granularRole)
-                      ? '⚠️ 메타 기반 추정. 인게임 확인 후 다듬어 쓰세요.'
-                      : '✓ 사용자 인게임 지침 기반 (변환 고려).'}
+                  ? '치유셋 빌드 — 우선순위 주요 > 공속 > 치유 > 분노. 무기/방어구는 치유/HP 세트, 공속 필수.'
+                  : granularRole === 'atk_healer_war'
+                    ? '전쟁셋 빌드 — 무기/방어구를 전쟁셋(공%·공속)으로 입혀 딜·버프 겸용. 공%·공속 중심.'
+                    : granularRole === 'inspiration'
+                      ? '격려 힐러: 아군 공격력 버프형 — 무기/방어구 무조건 전쟁셋 필수, 공%·공격력 최우선.'
+                      : granularIsEstimated(granularRole)
+                        ? '⚠️ 메타 기반 추정. 인게임 확인 후 다듬어 쓰세요.'
+                        : '✓ 사용자 인게임 지침 기반 (변환 고려).'}
               </p>
               <button type="button" className="addRuleBtn" onClick={applyGranularToCustom}>
                 이 역할로 정밀 규칙 채우기
