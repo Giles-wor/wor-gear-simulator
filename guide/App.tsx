@@ -5,7 +5,15 @@ import { guideCategories, hasAnyGuide, type GuideItem } from './data/guides'
 
 type Viewer = { item: GuideItem; index: number }
 
-function GuideCard({ item, onOpen }: { item: GuideItem; onOpen: () => void }) {
+function GuideCard({
+  item,
+  categoryLabel,
+  onOpen,
+}: {
+  item: GuideItem
+  categoryLabel: string
+  onOpen: () => void
+}) {
   const cover = item.images[0]
   const count = item.images.length
   const empty = count === 0
@@ -15,7 +23,7 @@ function GuideCard({ item, onOpen }: { item: GuideItem; onOpen: () => void }) {
       className={`guideCard${empty ? ' empty' : ''}`}
       onClick={empty ? undefined : onOpen}
       disabled={empty}
-      aria-label={`${item.name} 공략 보기 (이미지 ${count}장)`}
+      aria-label={`${categoryLabel} · ${item.name} 공략 보기 (이미지 ${count}장)`}
     >
       <span className="guideCardThumb">
         {cover ? (
@@ -23,6 +31,7 @@ function GuideCard({ item, onOpen }: { item: GuideItem; onOpen: () => void }) {
         ) : (
           <span className="guideCardPlaceholder">준비 중</span>
         )}
+        <span className="guideCardTag">{categoryLabel}</span>
         {count > 1 && <span className="guideCardCount">🖼 {count}</span>}
       </span>
       <span className="guideCardName">{item.name}</span>
@@ -150,6 +159,23 @@ export default function App() {
     [],
   )
 
+  // 모든 카드를 카테고리 라벨과 함께 평탄화 (바둑판 그리드용)
+  const allCards = useMemo(
+    () =>
+      guideCategories.flatMap((cat) =>
+        cat.items.map((item) => ({ item, categoryId: cat.id, categoryLabel: cat.label })),
+      ),
+    [],
+  )
+  // 카드가 있는 카테고리만 필터 칩으로 노출
+  const filterCats = useMemo(
+    () => guideCategories.filter((c) => c.items.length > 0).map((c) => ({ id: c.id, label: c.label })),
+    [],
+  )
+
+  const [activeCat, setActiveCat] = useState<string>('all')
+  const visibleCards = activeCat === 'all' ? allCards : allCards.filter((c) => c.categoryId === activeCat)
+
   return (
     <div className="app guideApp">
       <SiteCredit />
@@ -198,20 +224,38 @@ export default function App() {
           </p>
         </div>
       ) : (
-        guideCategories.map((cat) => (
-          <section className="guideSection" key={cat.id}>
-            <h2 className="guideSectionTitle">{cat.label}</h2>
-            {cat.items.length === 0 ? (
-              <p className="guideEmptyCat">준비 중인 카테고리입니다.</p>
-            ) : (
-              <div className="guideGrid">
-                {cat.items.map((item) => (
-                  <GuideCard key={item.key} item={item} onOpen={() => open(item)} />
-                ))}
-              </div>
-            )}
-          </section>
-        ))
+        <>
+          <div className="guideFilter" role="tablist" aria-label="카테고리 필터">
+            <button
+              type="button"
+              className={`guideChip${activeCat === 'all' ? ' active' : ''}`}
+              onClick={() => setActiveCat('all')}
+            >
+              전체
+            </button>
+            {filterCats.map((c) => (
+              <button
+                type="button"
+                key={c.id}
+                className={`guideChip${activeCat === c.id ? ' active' : ''}`}
+                onClick={() => setActiveCat(c.id)}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="guideGrid">
+            {visibleCards.map(({ item, categoryId, categoryLabel }) => (
+              <GuideCard
+                key={`${categoryId}/${item.key}`}
+                item={item}
+                categoryLabel={categoryLabel}
+                onOpen={() => open(item)}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       <footer className="guideFooter">총 {totalImages}장의 공략 이미지</footer>
