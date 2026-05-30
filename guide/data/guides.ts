@@ -57,9 +57,9 @@ const CREDITS: Record<string, string> = {
   '길드보스 (악몽·심연)': '9enie',
   '초보자 필독사항': '9enie',
   '장비 세팅 가이드': '9enie',
-  '타이탄 배치도': '9enie',
-  '길드전 배치 · 세팅 팁': '9enie',
-  '악의무리 팁': '9enie',
+  '타이탄 1·2 배치도': '9enie',
+  '타이탄 3 배치도': '9enie',
+  '귀속투력 팁': '9enie',
 }
 
 const stripExt = (name: string) => name.replace(/\.[^.]+$/, '')
