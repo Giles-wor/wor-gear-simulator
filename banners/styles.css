@@ -28,6 +28,147 @@
   font-weight: 600;
 }
 
+/* ── 달력 ── */
+.calendar {
+  background: rgba(34, 26, 22, 0.7);
+  border: 1px solid rgba(255, 214, 170, 0.16);
+  border-radius: 16px;
+  padding: 14px 14px 16px;
+  margin-bottom: 10px;
+}
+.calHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-bottom: 10px;
+}
+.calHead strong {
+  color: #ffe1b5;
+  font-size: 1rem;
+}
+.calLegend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  color: #c9b9a6;
+}
+.calLegend em {
+  font-style: normal;
+  color: #cfe8ff;
+}
+.calDot {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.calDot:not(:first-child) {
+  margin-left: 6px;
+}
+.calWeekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #9c8e7d;
+  text-align: center;
+  padding-bottom: 4px;
+}
+.calWeekdays span:first-child {
+  color: #e08a8a;
+}
+.calWeek {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  column-gap: 2px;
+}
+.calCell {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 2px 4px;
+  min-height: 100%;
+}
+.calCell.is-sun .calNum {
+  color: #e08a8a;
+}
+.calCell.is-past {
+  opacity: 0.45;
+}
+.calCell.is-today {
+  background: rgba(231, 166, 95, 0.13);
+  border-top-color: rgba(231, 166, 95, 0.6);
+}
+.calNum {
+  display: block;
+  text-align: right;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #d9cabb;
+}
+.calCell.is-today .calNum {
+  color: #ffe1b5;
+}
+.calBar {
+  align-self: center;
+  height: 14px;
+  margin: 1px 0;
+  border: 0;
+  border-radius: 3px;
+  padding: 0 5px;
+  font-size: 0.64rem;
+  font-weight: 800;
+  line-height: 14px;
+  color: #1a1208;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  z-index: 1;
+}
+.calBar:not(.is-start) {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.calBar:not(.is-end) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.calBar:hover {
+  filter: brightness(1.12);
+}
+.cal--invocation {
+  background: #e7a65f;
+}
+.cal--ancient {
+  background: #b58ae0;
+}
+.cal--limited {
+  background: #57c7bd;
+}
+.calBarLabel {
+  pointer-events: none;
+}
+.calHint {
+  margin: 0 0 14px;
+  font-size: 0.76rem;
+  color: #9c8e7d;
+  text-align: center;
+}
+.bannerCard--flash {
+  animation: bannerFlash 1.4s ease;
+}
+@keyframes bannerFlash {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(231, 166, 95, 0);
+  }
+  25% {
+    box-shadow: 0 0 0 3px rgba(231, 166, 95, 0.7);
+  }
+}
+
 .bannerList {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

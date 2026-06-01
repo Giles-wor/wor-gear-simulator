@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { heroNameKo } from '../src/data/heroNamesKo'
 import { GlobalNav } from './components/GlobalNav'
 import { SiteCredit } from './components/SiteCredit'
@@ -54,6 +54,141 @@ function typeKo(type: string): string {
   return type
 }
 
+const DAY_MS = 86_400_000
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
+
+/** 타임스탬프의 UTC 날짜(자정) 키 — 배너가 07:00Z 리셋 정렬이라 UTC 일 단위로 버킷팅 */
+const dayKeyUTC = (ts: number) => {
+  const d = new Date(ts)
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+}
+const shortType = (type: string) =>
+  /ancient/i.test(type) ? '고대' : /limited/i.test(type) ? '한정' : '일반'
+const typeColorClass = (type: string) =>
+  /ancient/i.test(type) ? 'cal--ancient' : /limited/i.test(type) ? 'cal--limited' : 'cal--invocation'
+const hasNewHero = (b: ScheduledBanner) =>
+  b.heroes.some((h) => !h.icon || /preview/i.test(h.icon))
+/** 스크롤 타겟용 안정적 DOM id */
+const bannerDomId = (b: ScheduledBanner) => `banner-${Date.parse(b.startUtc)}-${Date.parse(b.endUtc)}`
+
+function CalendarView({
+  banners,
+  todayTs,
+  onPick,
+}: {
+  banners: ScheduledBanner[]
+  todayTs: number
+  onPick: (id: string) => void
+}) {
+  const layout = useMemo(() => {
+    const items = banners
+      .map((b) => {
+        const start = dayKeyUTC(Date.parse(b.startUtc))
+        const endExcl = Math.max(dayKeyUTC(Date.parse(b.endUtc)), start + DAY_MS) // 리셋일=배타적
+        return { b, start, endExcl }
+      })
+      .sort((a, z) => a.start - z.start || a.endExcl - z.endExcl)
+
+    // 겹치지 않게 레인(행) 배정
+    const laneEnds: number[] = []
+    const withLane = items.map((it) => {
+      let lane = laneEnds.findIndex((e) => e <= it.start)
+      if (lane === -1) {
+        lane = laneEnds.length
+        laneEnds.push(0)
+      }
+      laneEnds[lane] = it.endExcl
+      return { ...it, lane }
+    })
+    const laneCount = Math.max(1, laneEnds.length)
+
+    // 오늘 주(일요일 시작)부터, 마지막 배너까지 덮도록 4~8주
+    const weekStart = todayTs - new Date(todayTs).getUTCDay() * DAY_MS
+    const lastDay = withLane.reduce((m, it) => Math.max(m, it.endExcl - DAY_MS), todayTs + 27 * DAY_MS)
+    const weeks = Math.min(8, Math.max(4, Math.ceil((lastDay - weekStart + DAY_MS) / (7 * DAY_MS))))
+    return { withLane, laneCount, weekStart, weeks }
+  }, [banners, todayTs])
+
+  const { withLane, laneCount, weekStart, weeks } = layout
+  const monthFmt = new Intl.DateTimeFormat('ko-KR', { timeZone: 'UTC', year: 'numeric', month: 'long' })
+
+  const weekRows = Array.from({ length: weeks }, (_, w) => {
+    const wkStart = weekStart + w * 7 * DAY_MS
+    const wkEndExcl = wkStart + 7 * DAY_MS
+    const bars = withLane
+      .filter((it) => it.start < wkEndExcl && it.endExcl > wkStart)
+      .map((it) => {
+        const segStart = Math.max(it.start, wkStart)
+        const segEnd = Math.min(it.endExcl, wkEndExcl)
+        return {
+          it,
+          colStart: Math.round((segStart - wkStart) / DAY_MS),
+          span: Math.round((segEnd - segStart) / DAY_MS),
+          isStart: segStart === it.start,
+          isEnd: segEnd === it.endExcl,
+        }
+      })
+    return { wkStart, bars }
+  })
+
+  return (
+    <section className="calendar" aria-label="배너 일정 달력">
+      <div className="calHead">
+        <strong>{monthFmt.format(new Date(todayTs))} 배너 일정</strong>
+        <span className="calLegend">
+          <i className="calDot cal--invocation" />일반
+          <i className="calDot cal--ancient" />고대
+          <i className="calDot cal--limited" />한정
+          <em>⭐ 신캐</em>
+        </span>
+      </div>
+      <div className="calWeekdays">
+        {WEEKDAYS.map((w) => (
+          <span key={w}>{w}</span>
+        ))}
+      </div>
+      {weekRows.map(({ wkStart, bars }) => (
+        <div
+          key={wkStart}
+          className="calWeek"
+          style={{ gridTemplateRows: `20px repeat(${laneCount}, 16px)` }}
+        >
+          {Array.from({ length: 7 }, (_, d) => {
+            const ts = wkStart + d * DAY_MS
+            const dt = new Date(ts)
+            const cls = ['calCell']
+            if (ts === todayTs) cls.push('is-today')
+            else if (ts < todayTs) cls.push('is-past')
+            if (d === 0) cls.push('is-sun')
+            return (
+              <div key={d} className={cls.join(' ')} style={{ gridColumn: d + 1, gridRow: `1 / -1` }}>
+                <span className="calNum">{dt.getUTCDate()}</span>
+              </div>
+            )
+          })}
+          {bars.map(({ it, colStart, span, isStart, isEnd }) => (
+            <button
+              key={bannerDomId(it.b)}
+              type="button"
+              className={`calBar ${typeColorClass(it.b.type)}${isStart ? ' is-start' : ''}${isEnd ? ' is-end' : ''}`}
+              style={{ gridColumn: `${colStart + 1} / span ${span}`, gridRow: it.lane + 2 }}
+              onClick={() => onPick(bannerDomId(it.b))}
+              title={`${shortType(it.b.type)} 소환 · ${it.b.heroes.map((h) => h.name).join(', ')}`}
+            >
+              {isStart && (
+                <span className="calBarLabel">
+                  {shortType(it.b.type)}
+                  {hasNewHero(it.b) ? ' ⭐' : ''}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      ))}
+    </section>
+  )
+}
+
 function BannerCard({ banner, now }: { banner: ScheduledBanner; now: number }) {
   const status = liveStatus(banner, now)
   const start = Date.parse(banner.startUtc)
@@ -69,7 +204,7 @@ function BannerCard({ banner, now }: { banner: ScheduledBanner; now: number }) {
       : `시작까지 ${fmtRemain(start - now)}`
 
   return (
-    <article className={`bannerCard bannerCard--${badge.cls}`}>
+    <article id={bannerDomId(banner)} className={`bannerCard bannerCard--${badge.cls}`}>
       <div className="bannerCardTop">
         <span className={`bannerBadge bannerBadge--${badge.cls}`}>{badge.label}</span>
         {banner.durationDays != null && (
@@ -136,6 +271,15 @@ export default function App() {
     [now],
   )
 
+  const todayTs = useMemo(() => dayKeyUTC(now), [now])
+  const scrollToBanner = useCallback((id: string) => {
+    const el = document.getElementById(id)
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.classList.add('bannerCard--flash')
+    window.setTimeout(() => el.classList.remove('bannerCard--flash'), 1400)
+  }, [])
+
   const updatedLabel = bannerSchedule.fetchedAt
     ? new Date(bannerSchedule.fetchedAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })
     : bannerSchedule.sourceModified
@@ -168,11 +312,15 @@ export default function App() {
           <p className="bannersEmptyHint">잠시 후 데이터가 갱신되면 자동으로 표시됩니다.</p>
         </div>
       ) : (
-        <div className="bannerList">
-          {visible.map((b) => (
-            <BannerCard key={`${b.type}-${b.startUtc}`} banner={b} now={now} />
-          ))}
-        </div>
+        <>
+          <CalendarView banners={visible} todayTs={todayTs} onPick={scrollToBanner} />
+          <p className="calHint">막대를 누르면 아래 해당 배너로 이동해요.</p>
+          <div className="bannerList">
+            {visible.map((b) => (
+              <BannerCard key={`${b.type}-${b.startUtc}`} banner={b} now={now} />
+            ))}
+          </div>
+        </>
       )}
 
       <a className="bannerSummonCta" href={`${BASE}summon/`}>
