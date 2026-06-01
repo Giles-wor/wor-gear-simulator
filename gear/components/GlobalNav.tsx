@@ -1,6 +1,6 @@
 /** DPS / 소환 / 장비 필터 3개 페이지 상단 탭 네비. */
 type GlobalNavProps = {
-  active: 'dps' | 'summon' | 'gear' | 'guide'
+  active: 'dps' | 'summon' | 'gear' | 'guide' | 'banners'
 }
 
 const BASE = '/wor-gear-simulator/'
@@ -10,6 +10,7 @@ const LINKS = [
   { id: 'summon' as const, label: '소환 확률 계산기', href: `${BASE}summon/` },
   { id: 'gear' as const, label: '장비 필터', href: `${BASE}gear/` },
   { id: 'guide' as const, label: '공략', href: `${BASE}guide/` },
+  { id: 'banners' as const, label: '다가오는 배너', href: `${BASE}banners/` },
 ]
 
 export function GlobalNav({ active }: GlobalNavProps) {

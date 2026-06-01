@@ -1,0 +1,197 @@
+/* 다가오는 배너 탭 — v0 톤(주황/다크) 재사용 + 배너 카드 */
+
+.globalNav {
+  flex-wrap: wrap;
+}
+
+.bannersHeader {
+  margin: 6px 2px 16px;
+}
+.bannersHeader h1 {
+  margin: 0 0 6px;
+  font-size: 1.45rem;
+  color: #ffe1b5;
+}
+.bannersIntro {
+  margin: 0;
+  color: #cdbfae;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.bannerList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.bannerCard {
+  background: rgba(34, 26, 22, 0.78);
+  border: 1px solid rgba(255, 214, 170, 0.16);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bannerCard--active {
+  border-color: rgba(231, 166, 95, 0.5);
+  background: rgba(231, 166, 95, 0.08);
+}
+
+.bannerCardTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.bannerBadge {
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+.bannerBadge--active {
+  background: #e7a65f;
+  color: #221610;
+}
+.bannerBadge--upcoming {
+  background: rgba(231, 166, 95, 0.18);
+  color: #ffd9a8;
+  border: 1px solid rgba(231, 166, 95, 0.45);
+}
+.bannerDuration {
+  font-size: 0.78rem;
+  color: #c9b9a6;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+.bannerCountdown {
+  margin-left: auto;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #ffd9a8;
+}
+
+.bannerType {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.35;
+  color: #f6ead8;
+}
+.bannerRange {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #cdbfae;
+}
+
+.bannerHeroes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 2px;
+}
+.bannerHero {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 5px 6px;
+  border-radius: 999px;
+  background: rgba(18, 15, 13, 0.6);
+  border: 1px solid rgba(231, 166, 95, 0.28);
+  color: #f3e7d5;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.bannerHero:hover {
+  background: rgba(231, 166, 95, 0.14);
+  border-color: rgba(231, 166, 95, 0.6);
+}
+.bannerHero img {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.bannerHero--legendary {
+  border-color: rgba(231, 166, 95, 0.7);
+}
+.bannerHero--epic {
+  border-color: rgba(170, 130, 230, 0.6);
+}
+
+.bannerSummonCta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 10px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  text-decoration: none;
+  background: linear-gradient(135deg, rgba(231, 166, 95, 0.22), rgba(231, 166, 95, 0.08));
+  border: 1px solid rgba(231, 166, 95, 0.5);
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+.bannerSummonCta:hover {
+  border-color: rgba(231, 166, 95, 0.85);
+  transform: translateY(-1px);
+}
+.bannerSummonCtaText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bannerSummonCtaText b {
+  color: #ffe1b5;
+  font-size: 1rem;
+}
+.bannerSummonCtaSub {
+  color: #cdbfae;
+  font-size: 0.82rem;
+}
+.bannerSummonCtaGo {
+  margin-left: auto;
+  font-weight: 800;
+  color: #ffd9a8;
+  white-space: nowrap;
+}
+
+.bannersEmpty {
+  text-align: center;
+  padding: 40px 16px;
+  color: #cdbfae;
+}
+.bannersEmptyHint {
+  font-size: 0.85rem;
+  color: #9c8e7d;
+}
+
+.bannersFooter {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 214, 170, 0.12);
+  font-size: 0.8rem;
+  color: #9c8e7d;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.bannersFooter a {
+  color: #e7a65f;
+}
+.bannersFooterNote {
+  color: #7d7160;
+}
+
+@media (max-width: 480px) {
+  .bannerCountdown {
+    margin-left: 0;
+    width: 100%;
+  }
+  .bannerSummonCtaGo {
+    margin-left: 0;
+  }
+}
