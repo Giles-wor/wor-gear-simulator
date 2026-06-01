@@ -1,8 +1,16 @@
 // prospector.gg "Upcoming Hero Banners" 크롤 → banners/data/schedule.generated.ts 갱신.
 // WP REST API(content.rendered)를 1순위로, 실패 시 페이지 HTML을 2순위로 파싱한다.
-// 각 배너 <article class="pgub-page-card" data-pgub-start/expire(유닉스초)> + /hero/{slug}/ 링크 기반.
-// 진단용: 파싱 실패/성공과 무관하게 banners/data/_debug_fetch.txt 에 원본 조각을 남긴다.
-import { writeFile } from 'node:fs/promises'
+//
+// 실제 구조(.pgub-layout-page):
+//   <article class="pgub-page-card" data-pgub-status data-pgub-start data-pgub-expire(유닉스초)>
+//     <div class="pgub-page-meta"><span>{배너 종류}</span><span>{N-day banner}</span>...</div>
+//     <div class="pgub-page-heroes"> <a class="pgub-hero-link" href=".../hero/{slug}/">
+//         <span class="pgub-hero-icon pgub-rarity-{등급}" title="{이름}"><img src="{아이콘}"></span></a> ... </div>
+//     <div class="pgub-page-names">{이름, 이름, ...}</div>   ← 영웅 목록의 정답(신캐 포함)
+//   </article>
+// 신캐(상세페이지 없음)는 /hero/ 링크가 없어 slug=undefined 로 둔다.
+import { writeFile, unlink } from 'node:fs/promises'
+import { pathToFileURL } from 'node:url'
 
 const REST_URL = 'https://prospector.gg/wp-json/wp/v2/pages/8803'
 const PAGE_URL = 'https://prospector.gg/upcoming-hero-banners/'
@@ -10,12 +18,6 @@ const OUTPUT_FILE = new URL('../banners/data/schedule.generated.ts', import.meta
 const DEBUG_FILE = new URL('../banners/data/_debug_fetch.txt', import.meta.url)
 const UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36 wor-gear-simulator'
-
-async function fetchText(url, accept) {
-  const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: accept } })
-  const text = await res.text()
-  return { ok: res.ok, status: res.status, text }
-}
 
 function decodeHtml(s) {
   return s
@@ -27,104 +29,79 @@ function decodeHtml(s) {
     .replace(/&#8211;/g, '–')
     .trim()
 }
-
 const stripTags = (s) => decodeHtml(s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' '))
 
-const titleCase = (slug) =>
-  slug
-    .split('-')
-    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
-    .join(' ')
-
-const attr = (tag, name) => {
-  const m = tag.match(new RegExp(`${name}="([^"]*)"`, 'i'))
-  return m ? m[1] : null
+/** 카드 종류: .pgub-page-meta 첫 span */
+function parseType(card) {
+  const meta = card.match(/<div class="pgub-page-meta">([\s\S]*?)<\/div>/i)
+  if (!meta) return ''
+  const span = meta[1].match(/<span[^>]*>([\s\S]*?)<\/span>/i)
+  return span ? stripTags(span[1]) : ''
 }
 
-/** HTML(content.rendered 또는 페이지) → 배너 배열 */
-function parseBanners(html) {
+/** 영웅 이름 목록(정답): .pgub-page-names 콤마 구분 */
+function parseNames(card) {
+  const m = card.match(/<div class="pgub-page-names">([\s\S]*?)<\/div>/i)
+  if (!m) return []
+  return stripTags(m[1])
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+/** 이름(소문자) → {slug?, rarity?, icon?} : hero-icon span(앞에 /hero/ 앵커 있으면 slug) */
+function parseHeroDetails(card) {
+  const re =
+    /(?:<a class="pgub-hero-link"[^>]*href="[^"]*\/hero\/([^/"]+)\/?"[^>]*>\s*)?<span class="pgub-hero-icon([^"]*)"[^>]*?title="([^"]*)"[^>]*>([\s\S]*?)<\/span>/gi
+  const map = new Map()
+  let m
+  while ((m = re.exec(card))) {
+    const slug = m[1] ? m[1].toLowerCase() : null
+    const cls = m[2] || ''
+    const name = decodeHtml(m[3])
+    const inner = m[4] || ''
+    if (!name) continue
+    const rarityM = cls.match(/pgub-rarity-(\w+)/i)
+    const imgM = inner.match(/<img[^>]*src="([^"]*)"/i)
+    const key = name.toLowerCase()
+    if (map.has(key) && !slug) continue // slug 있는 항목 우선
+    map.set(key, {
+      name,
+      ...(slug ? { slug } : {}),
+      ...(rarityM ? { rarity: rarityM[1].toLowerCase() } : {}),
+      ...(imgM ? { icon: imgM[1] } : {}),
+    })
+  }
+  return map
+}
+
+export function parseBanners(html) {
   const banners = []
-  // data-pgub-start 를 가진 <article ...> 단위로 분리 (class 명에 의존하지 않도록 완화)
   const articleRe = /<article([^>]*\bdata-pgub-start\b[^>]*)>([\s\S]*?)<\/article>/gi
   let am
   while ((am = articleRe.exec(html))) {
     const open = am[1]
-    const inner = am[2]
-
-    const startSec = Number(attr(open, 'data-pgub-start'))
-    const expireSec = Number(attr(open, 'data-pgub-expire'))
+    const card = am[2]
+    const startSec = Number((open.match(/data-pgub-start="(\d+)"/i) || [])[1])
+    const expireSec = Number((open.match(/data-pgub-expire="(\d+)"/i) || [])[1])
     if (!startSec || !expireSec) continue
+    const status = ((open.match(/data-pgub-status="([^"]*)"/i) || [])[1] || 'upcoming').toLowerCase()
 
-    const status = (attr(open, 'data-pgub-status') || 'upcoming').toLowerCase()
+    const durM = card.match(/(\d+)\s*-?\s*day/i)
+    const details = parseHeroDetails(card)
+    const names = parseNames(card)
 
-    let type = ''
-    const titleM =
-      inner.match(/class="[^"]*(?:title|name|heading)[^"]*"[^>]*>([\s\S]*?)</i) ||
-      inner.match(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/i)
-    if (titleM) type = stripTags(titleM[1])
-
-    const durM = inner.match(/(\d+)\s*-?\s*day/i)
-    const durationDays = durM ? Number(durM[1]) : null
-
-    // 영웅: pgub-hero 류 컨테이너(앵커/스팬) 단위 — 링크 없는 신캐도 포함
-    const heroes = []
-    const seen = new Set()
-    const heroRe =
-      /<(a|span|div)([^>]*\bpgub-(?:hero|rarity-\w+)\b[^>]*)>([\s\S]*?)<\/\1>/gi
-    let hm
-    while ((hm = heroRe.exec(inner))) {
-      const tagAttrs = hm[2]
-      const tagInner = hm[3]
-      const href = attr(tagAttrs, 'href') || ''
-      const slugM = href.match(/\/hero\/([^/"]+)\/?/i)
-      const slug = slugM ? slugM[1].toLowerCase() : null
-      const imgTag = tagInner.match(/<img[^>]*>/i)?.[0] || ''
-      const name =
-        attr(tagAttrs, 'aria-label') ||
-        attr(tagAttrs, 'title') ||
-        attr(imgTag, 'alt') ||
-        stripTags(tagInner) ||
-        (slug ? titleCase(slug) : '')
-      if (!name) continue
-      const dedupKey = (slug || name).toLowerCase()
-      if (seen.has(dedupKey)) continue
-      seen.add(dedupKey)
-      const rarityM = (tagAttrs + tagInner).match(/pgub-rarity-(\w+)/i)
-      const icon = attr(imgTag, 'src') || attr(imgTag, 'data-src') || undefined
-      heroes.push({
-        name: decodeHtml(name),
-        ...(slug ? { slug } : {}),
-        ...(rarityM ? { rarity: rarityM[1].toLowerCase() } : {}),
-        ...(icon ? { icon } : {}),
-      })
-    }
-
-    // 폴백: 클래스 매칭이 비면 /hero/{slug}/ 링크로 보강
-    const linkRe = /<a([^>]*href="[^"]*\/hero\/([^/"]+)\/?[^"]*"[^>]*)>([\s\S]*?)<\/a>/gi
-    let lm
-    while ((lm = linkRe.exec(inner))) {
-      const slug = lm[2].toLowerCase()
-      if (seen.has(slug)) continue
-      seen.add(slug)
-      const aInner = lm[3]
-      const imgTag = aInner.match(/<img[^>]*>/i)?.[0] || ''
-      const name =
-        attr(lm[1], 'aria-label') || attr(lm[1], 'title') || attr(imgTag, 'alt') ||
-        stripTags(aInner) || titleCase(slug)
-      const rarityM = (lm[1] + aInner).match(/pgub-rarity-(\w+)/i)
-      const icon = attr(imgTag, 'src') || attr(imgTag, 'data-src') || undefined
-      heroes.push({
-        name: decodeHtml(name),
-        slug,
-        ...(rarityM ? { rarity: rarityM[1].toLowerCase() } : {}),
-        ...(icon ? { icon } : {}),
-      })
+    let heroes
+    if (names.length) {
+      heroes = names.map((n) => details.get(n.toLowerCase()) ?? { name: n })
+    } else {
+      heroes = [...details.values()]
     }
 
     banners.push({
       status: ['active', 'next', 'upcoming'].includes(status) ? status : 'upcoming',
-      type: type || 'Hero Summoning',
-      durationDays,
+      type: parseType(card) || 'Hero Summoning',
+      durationDays: durM ? Number(durM[1]) : null,
       startUtc: new Date(startSec * 1000).toISOString(),
       endUtc: new Date(expireSec * 1000).toISOString(),
       heroes,
@@ -133,31 +110,32 @@ function parseBanners(html) {
   return banners
 }
 
-/** 디버그용: html 에서 배너 섹션 근처 조각을 추출 */
+async function fetchText(url, accept) {
+  const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: accept } })
+  return { ok: res.ok, status: res.status, text: await res.text() }
+}
+
 function debugSlice(label, html) {
   if (!html) return `--- ${label}: (empty) ---\n`
-  const idx = (() => {
-    for (const key of ['pg-upcoming-banners', 'data-pgub-start', 'pgub-page-card', 'pgub-hero']) {
-      const i = html.indexOf(key)
-      if (i >= 0) return Math.max(0, i - 200)
+  let idx = -1
+  for (const key of ['data-pgub-start', 'pgub-page-card', 'pg-upcoming-banners']) {
+    const i = html.indexOf(key)
+    if (i >= 0) {
+      idx = Math.max(0, i - 100)
+      break
     }
-    return -1
-  })()
+  }
   const head = `--- ${label}: len=${html.length}, marker@${idx} ---\n`
-  if (idx < 0) return head + html.slice(0, 2000) + '\n'
-  return head + html.slice(idx, idx + 24000) + '\n'
+  return head + (idx < 0 ? html.slice(0, 2000) : html.slice(idx, idx + 22000)) + '\n'
 }
 
 async function main() {
-  const debug = [`fetchedAt: ${new Date().toISOString()}`, `UA: ${UA}`, '']
-
-  // 1) REST
-  let rest = { ok: false, status: 0, text: '' }
+  const debug = [`fetchedAt: ${new Date().toISOString()}`, '']
   let restHtml = ''
   let sourceModified = null
   try {
-    rest = await fetchText(REST_URL, 'application/json')
-    debug.push(`REST ${REST_URL} → HTTP ${rest.status}, bytes=${rest.text.length}`)
+    const rest = await fetchText(REST_URL, 'application/json')
+    debug.push(`REST → HTTP ${rest.status}, bytes=${rest.text.length}`)
     if (rest.ok) {
       const json = JSON.parse(rest.text)
       restHtml = json?.content?.rendered ?? ''
@@ -167,26 +145,23 @@ async function main() {
     debug.push(`REST 예외: ${err.message}`)
   }
 
-  // 2) 페이지 HTML
-  let page = { ok: false, status: 0, text: '' }
+  let pageHtml = ''
   try {
-    page = await fetchText(PAGE_URL, 'text/html')
-    debug.push(`PAGE ${PAGE_URL} → HTTP ${page.status}, bytes=${page.text.length}`)
+    const page = await fetchText(PAGE_URL, 'text/html')
+    debug.push(`PAGE → HTTP ${page.status}, bytes=${page.text.length}`)
+    pageHtml = page.text
   } catch (err) {
     debug.push(`PAGE 예외: ${err.message}`)
   }
 
   const restBanners = parseBanners(restHtml)
-  const pageBanners = parseBanners(page.text)
-  debug.push(`parsed: REST=${restBanners.length}건, PAGE=${pageBanners.length}건`, '')
-  debug.push(debugSlice('REST content.rendered', restHtml))
-  debug.push(debugSlice('PAGE html', page.text))
-
-  // 디버그 파일은 항상 남긴다 (PR 로 확인용)
-  await writeFile(DEBUG_FILE, debug.join('\n'), 'utf8')
-
+  const pageBanners = parseBanners(pageHtml)
   const banners = restBanners.length >= pageBanners.length ? restBanners : pageBanners
+  debug.push(`parsed: REST=${restBanners.length}, PAGE=${pageBanners.length}`, '')
+
   if (!banners.length) {
+    debug.push(debugSlice('REST content.rendered', restHtml), debugSlice('PAGE html', pageHtml))
+    await writeFile(DEBUG_FILE, debug.join('\n'), 'utf8')
     throw new Error('배너 0건 파싱 — _debug_fetch.txt 확인. 기존 데이터 유지.')
   }
   banners.sort((a, b) => Date.parse(a.startUtc) - Date.parse(b.startUtc))
@@ -198,17 +173,20 @@ async function main() {
     sourceModified,
     banners,
   }
-
   const body = `// ⚠️ 이 파일은 scripts/sync-banners.mjs 크롤 결과로 자동 덮어쓰입니다 (직접 수정 금지).
 import type { BannerSchedule } from './types'
 
 export const generatedSchedule: BannerSchedule | null = ${JSON.stringify(schedule, null, 2)}
 `
   await writeFile(OUTPUT_FILE, body, 'utf8')
-  console.log(`✅ 배너 ${banners.length}건 갱신 → banners/data/schedule.generated.ts`)
+  await unlink(DEBUG_FILE).catch(() => {}) // 성공 시 디버그 파일 제거
+  const newCount = banners.reduce((n, b) => n + b.heroes.filter((h) => !h.slug).length, 0)
+  console.log(`✅ 배너 ${banners.length}건 갱신 (신캐 ${newCount}명) → schedule.generated.ts`)
 }
 
-main().catch((err) => {
-  console.error(err)
-  process.exit(1)
-})
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((err) => {
+    console.error(err)
+    process.exit(1)
+  })
+}
