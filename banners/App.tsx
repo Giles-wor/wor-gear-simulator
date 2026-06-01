@@ -85,8 +85,8 @@ function BannerCard({ banner, now }: { banner: ScheduledBanner; now: number }) {
 
       <div className="bannerHeroes">
         {banner.heroes.map((h) => {
-          // 슬러그(영웅 상세 페이지)가 없으면 정보 미등록 신규 영웅 = 신캐
-          const isNew = !h.slug
+          // 신캐 = 정식 포트레이트가 없는(미공개) 영웅: 아이콘이 없거나 'Preview' 이미지
+          const isNew = !h.icon || /preview/i.test(h.icon)
           const cls =
             `bannerHero${h.rarity ? ` bannerHero--${h.rarity}` : ''}` +
             (isNew ? ' bannerHero--new' : '')
@@ -97,11 +97,8 @@ function BannerCard({ banner, now }: { banner: ScheduledBanner; now: number }) {
               {isNew && <span className="bannerHeroNew">신캐</span>}
             </>
           )
-          return isNew ? (
-            <span key={h.name} className={cls} title={`${h.name} · 정보 미등록 신규 영웅`}>
-              {inner}
-            </span>
-          ) : (
+          // 상세페이지(slug) 있으면 링크, 없으면(신캐 등) 정적 칩
+          return h.slug ? (
             <a
               key={h.slug}
               className={cls}
@@ -112,6 +109,10 @@ function BannerCard({ banner, now }: { banner: ScheduledBanner; now: number }) {
             >
               {inner}
             </a>
+          ) : (
+            <span key={h.name} className={cls} title={isNew ? `${h.name} · 미공개 신규 영웅` : h.name}>
+              {inner}
+            </span>
           )
         })}
       </div>
