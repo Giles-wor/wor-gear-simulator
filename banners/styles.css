@@ -89,26 +89,35 @@
   border-top: 1px solid rgba(255, 255, 255, 0.07);
   padding: 2px 4px;
   min-height: 100%;
+  text-align: right;
 }
 .calCell.is-sun .calNum {
   color: #e08a8a;
 }
 .calCell.is-past {
-  opacity: 0.45;
+  opacity: 0.4;
 }
 .calCell.is-today {
-  background: rgba(231, 166, 95, 0.13);
-  border-top-color: rgba(231, 166, 95, 0.6);
+  background: rgba(231, 166, 95, 0.16);
+  box-shadow: inset 0 0 0 2px rgba(231, 166, 95, 0.7);
+  border-radius: 6px;
+  border-top-color: transparent;
 }
 .calNum {
-  display: block;
-  text-align: right;
+  display: inline-block;
+  min-width: 19px;
+  height: 19px;
+  line-height: 19px;
+  text-align: center;
   font-size: 0.74rem;
   font-weight: 700;
   color: #d9cabb;
 }
 .calCell.is-today .calNum {
-  color: #ffe1b5;
+  background: #e7a65f;
+  color: #1a1208;
+  border-radius: 999px;
+  font-weight: 900;
 }
 .calBar {
   align-self: center;
@@ -147,8 +156,21 @@
 .cal--limited {
   background: #57c7bd;
 }
+.calBar.is-live {
+  outline: 2px solid #5fce80;
+  outline-offset: -2px;
+  box-shadow: 0 0 7px rgba(95, 206, 128, 0.55);
+}
 .calBarLabel {
   pointer-events: none;
+}
+.calLiveTag {
+  font-style: normal;
+  color: #5fce80;
+  border: 1px solid #5fce80;
+  border-radius: 999px;
+  padding: 0 6px;
+  font-weight: 800;
 }
 .calHint {
   margin: 0 0 14px;
@@ -185,8 +207,8 @@
   gap: 10px;
 }
 .bannerCard--active {
-  border-color: rgba(231, 166, 95, 0.5);
-  background: rgba(231, 166, 95, 0.08);
+  border-color: rgba(95, 206, 128, 0.5);
+  background: rgba(95, 206, 128, 0.07);
 }
 
 .bannerCardTop {
@@ -202,13 +224,13 @@
   border-radius: 999px;
 }
 .bannerBadge--active {
-  background: #e7a65f;
-  color: #221610;
+  background: #5fce80;
+  color: #06240f;
 }
 .bannerBadge--upcoming {
-  background: rgba(231, 166, 95, 0.18);
-  color: #ffd9a8;
-  border: 1px solid rgba(231, 166, 95, 0.45);
+  background: rgba(255, 213, 120, 0.16);
+  color: #ffd978;
+  border: 1px solid rgba(255, 213, 120, 0.5);
 }
 .bannerDuration {
   font-size: 0.78rem;

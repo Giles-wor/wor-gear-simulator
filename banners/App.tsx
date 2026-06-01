@@ -68,16 +68,21 @@ const typeColorClass = (type: string) =>
   /ancient/i.test(type) ? 'cal--ancient' : /limited/i.test(type) ? 'cal--limited' : 'cal--invocation'
 const hasNewHero = (b: ScheduledBanner) =>
   b.heroes.some((h) => !h.icon || /preview/i.test(h.icon))
+/** 신캐(미공개) 영웅 이름 목록 — koName 적용 */
+const newHeroNames = (b: ScheduledBanner) =>
+  b.heroes.filter((h) => !h.icon || /preview/i.test(h.icon)).map((h) => koName(h))
 /** 스크롤 타겟용 안정적 DOM id */
 const bannerDomId = (b: ScheduledBanner) => `banner-${Date.parse(b.startUtc)}-${Date.parse(b.endUtc)}`
 
 function CalendarView({
   banners,
   todayTs,
+  now,
   onPick,
 }: {
   banners: ScheduledBanner[]
   todayTs: number
+  now: number
   onPick: (id: string) => void
 }) {
   const layout = useMemo(() => {
@@ -139,6 +144,7 @@ function CalendarView({
           <i className="calDot cal--invocation" />일반
           <i className="calDot cal--ancient" />고대
           <i className="calDot cal--limited" />한정
+          <em className="calLiveTag">진행 중</em>
           <em>⭐ 신캐</em>
         </span>
       </div>
@@ -166,23 +172,25 @@ function CalendarView({
               </div>
             )
           })}
-          {bars.map(({ it, colStart, span, isStart, isEnd }) => (
-            <button
-              key={bannerDomId(it.b)}
-              type="button"
-              className={`calBar ${typeColorClass(it.b.type)}${isStart ? ' is-start' : ''}${isEnd ? ' is-end' : ''}`}
-              style={{ gridColumn: `${colStart + 1} / span ${span}`, gridRow: it.lane + 2 }}
-              onClick={() => onPick(bannerDomId(it.b))}
-              title={`${shortType(it.b.type)} 소환 · ${it.b.heroes.map((h) => h.name).join(', ')}`}
-            >
-              {isStart && (
-                <span className="calBarLabel">
-                  {shortType(it.b.type)}
-                  {hasNewHero(it.b) ? ' ⭐' : ''}
-                </span>
-              )}
-            </button>
-          ))}
+          {bars.map(({ it, colStart, span, isStart, isEnd }) => {
+            const isLive = Date.parse(it.b.startUtc) <= now && now < Date.parse(it.b.endUtc)
+            const news = newHeroNames(it.b)
+            const label = news.length ? `⭐ ${news.join('·')}` : shortType(it.b.type)
+            return (
+              <button
+                key={bannerDomId(it.b)}
+                type="button"
+                className={`calBar ${typeColorClass(it.b.type)}${isStart ? ' is-start' : ''}${isEnd ? ' is-end' : ''}${isLive ? ' is-live' : ''}`}
+                style={{ gridColumn: `${colStart + 1} / span ${span}`, gridRow: it.lane + 2 }}
+                onClick={() => onPick(bannerDomId(it.b))}
+                title={`${shortType(it.b.type)} 소환${isLive ? ' (진행 중)' : ''} · ${it.b.heroes
+                  .map((h) => h.name)
+                  .join(', ')}`}
+              >
+                {isStart && <span className="calBarLabel">{label}</span>}
+              </button>
+            )
+          })}
         </div>
       ))}
     </section>
@@ -313,7 +321,7 @@ export default function App() {
         </div>
       ) : (
         <>
-          <CalendarView banners={visible} todayTs={todayTs} onPick={scrollToBanner} />
+          <CalendarView banners={visible} todayTs={todayTs} now={now} onPick={scrollToBanner} />
           <p className="calHint">막대를 누르면 아래 해당 배너로 이동해요.</p>
           <div className="bannerList">
             {visible.map((b) => (
