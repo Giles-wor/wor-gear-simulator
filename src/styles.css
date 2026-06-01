@@ -379,6 +379,7 @@ h3 {
 }
 .globalNav {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   padding: 8px;
   margin-bottom: 14px;

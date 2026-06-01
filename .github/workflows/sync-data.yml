@@ -37,10 +37,15 @@ jobs:
         run: npm run sync:summon
         continue-on-error: true
 
+      - name: Sync upcoming banners (prospector.gg crawl)
+        run: npm run sync:banners
+        continue-on-error: true
+
       - name: Typecheck
         run: |
           npm run typecheck
           npm run typecheck:summon
+          npm run typecheck:banners
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@v6
