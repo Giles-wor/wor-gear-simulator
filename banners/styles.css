@@ -132,6 +132,22 @@
   border-color: rgba(170, 130, 230, 0.6);
 }
 
+.bannerHero--new {
+  border-style: dashed;
+  border-color: rgba(120, 200, 255, 0.55);
+  color: #cfe8ff;
+  cursor: default;
+}
+.bannerHeroNew {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: #4ea3e0;
+  color: #08243a;
+}
+
 .bannerCredit {
   margin: 2px 0 0;
   text-align: right;

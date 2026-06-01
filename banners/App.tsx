@@ -46,6 +46,14 @@ function fmtRemain(ms: number): string {
 
 const HERO_PAGE = 'https://prospector.gg/hero/'
 
+/** 배너 종류 영문 → 한글 (변형에 견디도록 키워드 매칭, 미매칭은 원문). */
+function typeKo(type: string): string {
+  if (/ancient/i.test(type)) return '고대 소환'
+  if (/invocation|spirit|divine/i.test(type)) return '일반 소환'
+  if (/limited/i.test(type)) return '한정 소환'
+  return type
+}
+
 function BannerCard({ banner, now }: { banner: ScheduledBanner; now: number }) {
   const status = liveStatus(banner, now)
   const start = Date.parse(banner.startUtc)
@@ -70,23 +78,42 @@ function BannerCard({ banner, now }: { banner: ScheduledBanner; now: number }) {
         <span className="bannerCountdown">⏳ {countdown}</span>
       </div>
 
-      <h2 className="bannerType">{banner.type}</h2>
+      <h2 className="bannerType" title={banner.type}>
+        {typeKo(banner.type)}
+      </h2>
       <p className="bannerRange">📅 {fmtRange(banner.startUtc, banner.endUtc)}</p>
 
       <div className="bannerHeroes">
-        {banner.heroes.map((h) => (
-          <a
-            key={h.slug ?? h.name}
-            className={`bannerHero${h.rarity ? ` bannerHero--${h.rarity}` : ''}`}
-            href={h.slug ? `${HERO_PAGE}${h.slug}/` : undefined}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={`${h.name} 정보 (prospector.gg)`}
-          >
-            {h.icon && <img src={h.icon} alt="" loading="lazy" />}
-            <span>{koName(h)}</span>
-          </a>
-        ))}
+        {banner.heroes.map((h) => {
+          // 슬러그(영웅 상세 페이지)가 없으면 정보 미등록 신규 영웅 = 신캐
+          const isNew = !h.slug
+          const cls =
+            `bannerHero${h.rarity ? ` bannerHero--${h.rarity}` : ''}` +
+            (isNew ? ' bannerHero--new' : '')
+          const inner = (
+            <>
+              {h.icon && <img src={h.icon} alt="" loading="lazy" />}
+              <span>{koName(h)}</span>
+              {isNew && <span className="bannerHeroNew">신캐</span>}
+            </>
+          )
+          return isNew ? (
+            <span key={h.name} className={cls} title={`${h.name} · 정보 미등록 신규 영웅`}>
+              {inner}
+            </span>
+          ) : (
+            <a
+              key={h.slug}
+              className={cls}
+              href={`${HERO_PAGE}${h.slug}/`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`${h.name} 정보 (prospector.gg)`}
+            >
+              {inner}
+            </a>
+          )
+        })}
       </div>
       <p className="bannerCredit">출처 · prospector.gg</p>
     </article>
