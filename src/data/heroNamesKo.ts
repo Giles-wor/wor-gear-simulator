@@ -111,6 +111,18 @@ export const heroNameKo: Record<string, string> = {
   sergei: '세르게이',
   gretchen: '그레첸',
   guldrak: '굴드락',
+
+  // ─────── prospector 배너 추가분 ───────
+  theowin: '디오웬',
+  dalyn: '달린',
+  elddr: '에르드',
+  ardea: '알다이야',
+  estrid: '이스트리드',
+  midan: '미덴',
+  iovar: '이보엘',
+  voroth: '워로스',
+  nazeem: '나짐',
+  olague: '오라그',
 }
 
 /** Hero id → 한글 이름. 매핑 없으면 undefined. */
