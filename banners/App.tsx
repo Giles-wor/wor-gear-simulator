@@ -1,9 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
+import { heroNameKo } from '../src/data/heroNamesKo'
 import { GlobalNav } from './components/GlobalNav'
 import { SiteCredit } from './components/SiteCredit'
-import { bannerSchedule, liveStatus, sortedBanners, type ScheduledBanner } from './data/schedule'
+import {
+  bannerSchedule,
+  liveStatus,
+  sortedBanners,
+  type BannerHero,
+  type ScheduledBanner,
+} from './data/schedule'
 
 const BASE = '/wor-gear-simulator/'
+
+/** prospector 슬러그(kebab) → 한글명. 매핑 없으면 원본 영문 표기. */
+function koName(h: BannerHero): string {
+  const key = (h.slug ?? h.name).replace(/-/g, '_').toLowerCase()
+  return heroNameKo[key] ?? h.name
+}
 
 const KST = new Intl.DateTimeFormat('ko-KR', {
   timeZone: 'Asia/Seoul',
@@ -71,10 +84,11 @@ function BannerCard({ banner, now }: { banner: ScheduledBanner; now: number }) {
             title={`${h.name} 정보 (prospector.gg)`}
           >
             {h.icon && <img src={h.icon} alt="" loading="lazy" />}
-            <span>{h.name}</span>
+            <span>{koName(h)}</span>
           </a>
         ))}
       </div>
+      <p className="bannerCredit">출처 · prospector.gg</p>
     </article>
   )
 }
@@ -110,6 +124,13 @@ export default function App() {
         <p className="bannersIntro">
           현재 진행 중이거나 곧 등장할 소환 배너와 픽업 영웅 일정입니다. 시간은 한국 시간(KST) 기준이며,
           남은 시간은 1분마다 자동 갱신돼요.
+        </p>
+        <p className="bannersSource">
+          데이터 출처 ·{' '}
+          <a href={bannerSchedule.sourceUrl} target="_blank" rel="noopener noreferrer">
+            prospector.gg
+          </a>{' '}
+          · 영웅명은 인게임 한글 표기로 변환(미등록 영웅은 영문)
         </p>
       </header>
 
