@@ -1,0 +1,50 @@
+name: Fetch YT transcript
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: YouTube URL
+        required: true
+        default: "https://youtu.be/a6SDc9I6yGs"
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install yt-dlp
+        run: pip install -U yt-dlp
+
+      - name: Download subtitles
+        env:
+          URL: ${{ inputs.url }}
+        run: |
+          yt-dlp --skip-download --write-auto-subs --write-subs \
+            --sub-langs "ko.*,en.*" --sub-format vtt \
+            -o "cap.%(ext)s" "$URL" || true
+          echo "== vtt files =="
+          ls -la *.vtt 2>/dev/null || echo "(none)"
+
+      - name: Print transcript (plain text)
+        run: |
+          python3 - <<'PY'
+          import glob, re, html
+          files = sorted(glob.glob("*.vtt"))
+          if not files:
+              print("NO SUBTITLE FILES — captions unavailable or blocked.")
+          for f in files:
+              print(f"=====BEGIN {f}=====")
+              out, prev = [], None
+              for ln in open(f, encoding="utf-8"):
+                  ln = ln.rstrip("\n")
+                  if ("-->" in ln or not ln.strip() or ln.startswith("WEBVTT")
+                          or ln.startswith("Kind:") or ln.startswith("Language:")):
+                      continue
+                  ln = re.sub(r"<[^>]+>", "", ln)
+                  ln = html.unescape(ln).strip()
+                  if ln and ln != prev:
+                      out.append(ln)
+                      prev = ln
+              print("\n".join(out))
+              print(f"=====END {f}=====")
+          PY
