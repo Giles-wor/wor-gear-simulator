@@ -10,7 +10,6 @@ import {
   buildAllRolesPreset,
   buildGranular,
   granularRoles,
-  granularIsEstimated,
   type ProgressionLevel,
   type GranularRole,
 } from './data/presets'
@@ -228,7 +227,7 @@ type View = 'basic' | 'custom'
 
 export default function App() {
   const [view, setView] = useState<View>('basic')
-  const [level, setLevel] = useState<ProgressionLevel>('late')
+  const [level, setLevel] = useState<ProgressionLevel>('lvl2')
   const [granularRole, setGranularRole] = useState<GranularRole>('attack_dps')
   // 변환 고려(true, 평소 수집) / 변환 미고려(false, 골드 정리 — 풀옵만 남김)
   const [conversion, setConversion] = useState(true)
@@ -237,7 +236,7 @@ export default function App() {
   const basicRules = useMemo(() => buildAllRolesPreset(level, conversion), [level, conversion])
 
   // 개인화 뷰: 사용자가 편집하는 규칙 셋
-  const [customRules, setCustomRules] = useState<FilterRule[]>(() => buildGranular('attack_dps', true))
+  const [customRules, setCustomRules] = useState<FilterRule[]>(() => buildGranular('attack_dps', 'lvl2', true))
 
   const activeRules = view === 'basic' ? basicRules : customRules
 
@@ -249,7 +248,7 @@ export default function App() {
     const built = buildRolePreset(roleId, level, conversion)
     if (built.length) setCustomRules(built)
   }
-  const applyGranularToCustom = () => setCustomRules(buildGranular(granularRole, conversion))
+  const applyGranularToCustom = () => setCustomRules(buildGranular(granularRole, level, conversion))
   const clearAll = () => setCustomRules([{ ...emptyRule('새 규칙'), id: newRuleId() }])
 
   // 필수옵션 체크 → 자동 규칙 (무기/방어구)
@@ -444,7 +443,7 @@ export default function App() {
             </div>
 
             <div className="granularBlock">
-              <p className="eyebrow">역할 정밀 세팅 (최상급 · 변환 고려)</p>
+              <p className="eyebrow">역할 정밀 세팅 (선택한 레벨 기준)</p>
               <div className="levelRow">
                 <span className="levelRowLabel">역할</span>
                 {granularRoles.map((r) => (
@@ -459,15 +458,8 @@ export default function App() {
                 ))}
               </div>
               <p className="muted helperText levelDesc">
-                {granularRole === 'hp_healer' || granularRole === 'atk_healer'
-                  ? '치유셋 빌드 — 우선순위 주요 > 공속 > 치유 > 분노. 무기/방어구는 치유/HP 세트, 공속 필수.'
-                  : granularRole === 'atk_healer_war'
-                    ? '전쟁셋 빌드 — 무기/방어구를 전쟁셋(공%·공속)으로 입혀 딜·버프 겸용. 공%·공속 중심.'
-                    : granularRole === 'inspiration'
-                      ? '격려 힐러: 아군 공격력 버프형 — 무기/방어구 무조건 전쟁셋 필수, 공%·공격력 최우선.'
-                      : granularIsEstimated(granularRole)
-                        ? '⚠️ 메타 기반 추정. 인게임 확인 후 다듬어 쓰세요.'
-                        : '✓ 사용자 인게임 지침 기반 (변환 고려).'}
+                ✓ fidus/9enie 추천 시트({progressionLevels.find((l) => l.id === level)?.label}) 그대로 —
+                필수옵·부옵 매칭 반영. 위 레벨 칩으로 강도 조절.
               </p>
               <button type="button" className="addRuleBtn" onClick={applyGranularToCustom}>
                 이 역할로 정밀 규칙 채우기
