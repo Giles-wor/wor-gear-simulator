@@ -1,0 +1,63 @@
+name: Fetch WoR wiki
+
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: "Wiki full-text search query"
+        required: true
+        default: "Fixed Damage"
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Search wiki + dump matching skill lines
+        env:
+          Q: ${{ inputs.query }}
+        run: |
+          python3 - <<'PY'
+          import os, json, re, time, urllib.parse, urllib.request
+          API = "https://watcher-of-realms.fandom.com/api.php"
+          UA = {"User-Agent": "wor-gear-simulator/0.1 (+github actions)"}
+
+          def get(params):
+              params = {**params, "format": "json"}
+              url = API + "?" + urllib.parse.urlencode(params)
+              req = urllib.request.Request(url, headers=UA)
+              return json.load(urllib.request.urlopen(req, timeout=30))
+
+          q = os.environ.get("Q", "Fixed Damage")
+          res = get({"action": "query", "list": "search",
+                     "srsearch": q, "srnamespace": 0, "srlimit": 120})
+          hits = res.get("query", {}).get("search", [])
+          titles = [h["title"] for h in hits]
+          print(f"SEARCH '{q}' → {len(titles)} pages")
+          print(titles)
+
+          pat = re.compile(re.escape(q.split()[0]), re.I)  # first word, loose
+          def clean(s):
+              s = re.sub(r"\[\[(?:[^\]|]*\|)?([^\]]+)\]\]", r"\1", s)  # delink
+              s = re.sub(r"\{\{[^}]*\}\}", "", s)
+              s = re.sub(r"'''?|<[^>]+>", "", s)
+              return re.sub(r"\s+", " ", s).strip()
+
+          for t in titles:
+              try:
+                  r = get({"action": "parse", "page": t, "prop": "wikitext"})
+                  wt = r.get("parse", {}).get("wikitext", {}).get("*", "")
+              except Exception as e:
+                  print(f"\n#### {t}  (ERR {e})")
+                  continue
+              lines, seen = [], set()
+              for raw in re.split(r"[\n]", wt):
+                  if re.search(r"fixed damage", raw, re.I):
+                      c = clean(raw)
+                      if c and c not in seen and len(c) > 6:
+                          seen.add(c); lines.append(c[:320])
+              if lines:
+                  print(f"\n#### {t}")
+                  for l in lines[:8]:
+                      print("  -", l)
+              time.sleep(0.15)
+          PY
