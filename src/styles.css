@@ -613,3 +613,7 @@ ul { padding-left: 20px; }
     font-size: 0.92rem;
   }
 }
+
+/* 고정피해(True Damage) 행 — 치명타·방어 무시 */
+.statList .fixedDamageRow strong { color: #c39be8; }
+.fixedDamageRow em { font-style: normal; color: #9c8e7d; font-size: 0.85em; }

@@ -38,6 +38,12 @@ export function BuildResultCard({ title, result, recommendation, compareAgainst 
         <div><span>아이템 적용 최대 데미지 (중 방어)</span><strong className={compareClass(result.itemMaxDamageMidDefense, compareAgainst.itemMaxDamageMidDefense)}>{result.itemMaxDamageMidDefense.toLocaleString()}</strong></div>
         <div><span>일반 공격 최대 데미지</span><strong className={compareClass(result.basicAttackItemMaxDamage, compareAgainst.basicAttackItemMaxDamage)}>{result.basicAttackItemMaxDamage.toLocaleString()}</strong></div>
         <div><span>궁극기 공격 최대 데미지</span><strong className={compareClass(result.ultimateAttackItemMaxDamage, compareAgainst.ultimateAttackItemMaxDamage)}>{result.ultimateAttackItemMaxDamage.toLocaleString()}</strong></div>
+        {result.fixedDamageRows.map((fd) => (
+          <div key={fd.label} className="fixedDamageRow" title={`고정피해(True Damage) · 치명타·방어 무시 · ATK의 ${Math.round(fd.atkPct * 100)}%${fd.note ? ` · ${fd.note}` : ''}`}>
+            <span>🟣 고정피해 · {fd.label} <em>(ATK {Math.round(fd.atkPct * 100)}%)</em></span>
+            <strong>{fd.value.toLocaleString()}</strong>
+          </div>
+        ))}
         <div><span>아이템 적용 최대 30초 누적</span><strong className={compareClass(result.itemMaxCumulative30s, compareAgainst.itemMaxCumulative30s)}>{result.itemMaxCumulative30s.toLocaleString()}</strong></div>
         <div><span>아이템 적용 최대 DPS(30s)</span><strong className={compareClass(result.itemMaxDps30s, compareAgainst.itemMaxDps30s)}>{result.itemMaxDps30s.toLocaleString()}</strong></div>
         <div><span>최종 공격력</span><strong>{result.finalAtk.toLocaleString()}</strong></div>

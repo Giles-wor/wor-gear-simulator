@@ -58,6 +58,8 @@ export type DamageResult = {
   itemMaxCumulative30s: number
   itemMaxDps30s: number
   timeline30s: { second: number; cumulativeDamage: number }[]
+  /** 직접 고정피해(True Damage) — 치명타·방어 무시. 영웅별 발동 1회 값. */
+  fixedDamageRows: { label: string; value: number; atkPct: number; note?: string }[]
   appliedEffects: string[]
   formula: {
     defense: number
@@ -434,6 +436,14 @@ export function calculateBuild(
     ...(lordEffect ? [`${lordEffect.sourceName}: ${lordEffect.summary}`] : []),
   ]
 
+  // 직접 고정피해(True Damage): ATK × 계수 × (1+피증). 치명타·방어·마방 무시.
+  const fixedDamageRows = (hero.fixedDamage ?? []).map((fd) => ({
+    label: fd.label,
+    atkPct: fd.atkPct,
+    note: fd.note,
+    value: Math.round(finalAtk * fd.atkPct * (1 + statDamageBonus)),
+  }))
+
   return {
     finalAtk,
     finalCritRate,
@@ -471,6 +481,7 @@ export function calculateBuild(
     itemMaxCumulative30s,
     itemMaxDps30s: Math.round(itemMaxCumulative30s / 30),
     timeline30s,
+    fixedDamageRows,
     appliedEffects,
     formula: {
       defense: effectiveMidDefense,
