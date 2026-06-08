@@ -3,12 +3,8 @@ name: Fetch WoR wiki
 on:
   workflow_dispatch:
     inputs:
-      query:
-        description: "Wiki full-text search query"
-        required: true
-        default: "Fixed Damage"
       pages:
-        description: "추가로 본문을 강제로 뜯을 페이지(쉼표구분, 선택)"
+        description: "본문을 뜯을 페이지(쉼표구분)"
         required: false
         default: "Fixed Damage,Count Dracula,Hellfire Emperor,Gretchen,Faelin,Dolores,Sun Wukong,Xaris,Beatrix,Kria"
 
@@ -16,9 +12,8 @@ jobs:
   fetch:
     runs-on: ubuntu-latest
     steps:
-      - name: Search + dump rendered skill text
+      - name: Dump rendered text around fixed-dmg mentions
         env:
-          Q: ${{ inputs.query }}
           PAGES: ${{ inputs.pages }}
         run: |
           python3 - <<'PY'
@@ -31,44 +26,49 @@ jobs:
               url = API + "?" + urllib.parse.urlencode(params)
               return json.load(urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=30))
 
-          q = os.environ.get("Q", "Fixed Damage")
-          res = get({"action": "query", "list": "search", "srsearch": q, "srnamespace": 0, "srlimit": 120})
-          found = [h["title"] for h in res.get("query", {}).get("search", [])]
-          print(f"SEARCH '{q}' → {len(found)} pages\n{found}\n")
-
+          # 검색(여러 표기) → 후보 페이지
+          found = []
+          for q in ("Fixed DMG", "Fixed Damage"):
+              r = get({"action": "query", "list": "search", "srsearch": q, "srnamespace": 0, "srlimit": 60})
+              found += [h["title"] for h in r.get("query", {}).get("search", [])]
           extra = [p.strip() for p in os.environ.get("PAGES", "").split(",") if p.strip()]
-          # 검색결과의 /Labs,/Builds 는 베이스 영웅 페이지로 환원해서 합침
           bases = {t.split("/")[0] for t in found}
-          titles = []
-          for t in list(dict.fromkeys(extra + found + sorted(bases))):
-              if t not in titles:
-                  titles.append(t)
+          titles = list(dict.fromkeys(extra + sorted(bases) + found))
+          print("PAGES:", titles, "\n")
 
           def rendered(t):
               r = get({"action": "parse", "page": t, "prop": "text", "redirects": 1})
               h = r.get("parse", {}).get("text", {}).get("*", "")
-              h = re.sub(r"(?is)<(script|style|table class=\"navbox).*?</\1>", " ", h)
+              h = re.sub(r"(?is)<(script|style).*?</\1>", " ", h)
               h = re.sub(r"(?s)<[^>]+>", " ", h)
-              h = html.unescape(h)
-              return re.sub(r"\s+", " ", h)
+              return re.sub(r"\s+", " ", html.unescape(h))
 
-          KEY = re.compile(r"fixed damage", re.I)
+          PHRASE = re.compile(r"fixed[\s \-]*(?:dmg|damage)", re.I)
+          DIAG = re.compile(r"\bfixed\b|ignore[sd]?\s+(?:def|defen)|cannot\s+(?:crit|deal\s+crit)|true\s+dmg", re.I)
+
+          def windows(text, rx, n=6, pad=170):
+              out, seen = [], set()
+              for m in rx.finditer(text):
+                  a = max(0, m.start() - pad); b = min(len(text), m.end() + pad)
+                  s = text[a:b].strip()
+                  if s[:45] not in seen:
+                      seen.add(s[:45]); out.append(s)
+                  if len(out) >= n: break
+              return out
+
           for t in titles:
               try:
                   text = rendered(t)
               except Exception as e:
-                  print(f"#### {t}  (ERR {e})")
-                  continue
-              wins, seen = [], set()
-              for m in KEY.finditer(text):
-                  a = max(0, m.start() - 160); b = min(len(text), m.end() + 160)
-                  snip = text[a:b].strip()
-                  key = snip[:40]
-                  if key not in seen:
-                      seen.add(key); wins.append(snip)
-              if wins:
-                  print(f"\n#### {t}  ({len(wins)} hit)")
-                  for w in wins[:6]:
-                      print("  …", w)
+                  print(f"#### {t}  (ERR {e})"); continue
+              w = windows(text, PHRASE)
+              if w:
+                  print(f"\n#### {t}  ({len(w)}+)")
+                  for s in w: print("  …", s)
+              else:
+                  d = windows(text, DIAG, n=3)
+                  tag = "diag" if d else f"none (len={len(text)})"
+                  print(f"\n#### {t}  [{tag}]")
+                  for s in d: print("  ·", s)
               time.sleep(0.15)
           PY
