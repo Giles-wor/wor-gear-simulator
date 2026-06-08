@@ -3,48 +3,84 @@ name: Fetch YT transcript
 on:
   workflow_dispatch:
     inputs:
-      url:
-        description: YouTube URL
+      ids:
+        description: "YouTube video IDs (comma-separated)"
         required: true
-        default: "https://youtu.be/a6SDc9I6yGs"
+        default: "a6SDc9I6yGs,eck0bji1K0M"
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
     steps:
-      - name: Install yt-dlp
-        run: pip install -U yt-dlp
+      - name: Install libs
+        run: pip install -U "youtube-transcript-api==0.6.2" yt-dlp
 
-      - name: Download subtitles
+      - name: Fetch transcripts
         env:
-          URL: ${{ inputs.url }}
-        run: |
-          yt-dlp --skip-download --write-auto-subs --write-subs \
-            --sub-langs "ko.*,en.*" --sub-format vtt \
-            -o "cap.%(ext)s" "$URL" || true
-          echo "== vtt files =="
-          ls -la *.vtt 2>/dev/null || echo "(none)"
-
-      - name: Print transcript (plain text)
+          IDS: ${{ inputs.ids }}
         run: |
           python3 - <<'PY'
-          import glob, re, html
-          files = sorted(glob.glob("*.vtt"))
-          if not files:
-              print("NO SUBTITLE FILES — captions unavailable or blocked.")
-          for f in files:
-              print(f"=====BEGIN {f}=====")
-              out, prev = [], None
-              for ln in open(f, encoding="utf-8"):
-                  ln = ln.rstrip("\n")
-                  if ("-->" in ln or not ln.strip() or ln.startswith("WEBVTT")
-                          or ln.startswith("Kind:") or ln.startswith("Language:")):
-                      continue
-                  ln = re.sub(r"<[^>]+>", "", ln)
-                  ln = html.unescape(ln).strip()
-                  if ln and ln != prev:
-                      out.append(ln)
-                      prev = ln
-              print("\n".join(out))
-              print(f"=====END {f}=====")
+          import os, re, html, subprocess, glob
+          from youtube_transcript_api import YouTubeTranscriptApi as A
+
+          ids = [s.strip() for s in os.environ["IDS"].split(",") if s.strip()]
+
+          def via_api(vid):
+              tl = A.list_transcripts(vid)
+              t = None
+              for langs in (["ko"], ["ko-KR"], ["en"], ["en-US"]):
+                  try:
+                      t = tl.find_transcript(langs); break
+                  except Exception:
+                      pass
+              if t is None:
+                  try:
+                      t = tl.find_generated_transcript(["ko", "ko-KR", "en", "en-US"])
+                  except Exception:
+                      allt = list(tl)
+                      t = allt[0] if allt else None
+              if t is None:
+                  return None, None
+              return t.language_code, " ".join(x["text"].replace("\n", " ") for x in t.fetch())
+
+          def via_ytdlp(vid):
+              for f in glob.glob("cap*.vtt"):
+                  os.remove(f)
+              subprocess.run(
+                  ["yt-dlp", "--skip-download", "--write-auto-subs", "--write-subs",
+                   "--sub-langs", "ko.*,en.*", "--sub-format", "vtt",
+                   "--extractor-args", "youtube:player_client=web_safari,mweb",
+                   "-o", "cap.%(ext)s", f"https://www.youtube.com/watch?v={vid}"],
+                  check=False)
+              out = []
+              for f in sorted(glob.glob("cap*.vtt")):
+                  prev = None
+                  for ln in open(f, encoding="utf-8"):
+                      ln = ln.rstrip("\n")
+                      if "-->" in ln or not ln.strip() or ln.startswith(("WEBVTT", "Kind:", "Language:")):
+                          continue
+                      ln = html.unescape(re.sub(r"<[^>]+>", "", ln)).strip()
+                      if ln and ln != prev:
+                          out.append(ln); prev = ln
+                  if out:
+                      return f, " ".join(out)
+              return None, None
+
+          for vid in ids:
+              print(f"########## VIDEO {vid} ##########")
+              try:
+                  lang, txt = via_api(vid)
+                  if txt:
+                      print(f"[api lang={lang}]"); print(txt); print(); continue
+                  print("[api] no transcript, trying yt-dlp ...")
+              except Exception as e:
+                  print(f"[api ERROR] {e!r} — trying yt-dlp ...")
+              try:
+                  f, txt = via_ytdlp(vid)
+                  if txt:
+                      print(f"[yt-dlp {f}]"); print(txt); print(); continue
+                  print("FAILED: no captions via either method")
+              except Exception as e:
+                  print(f"[yt-dlp ERROR] {e!r}")
+              print()
           PY
