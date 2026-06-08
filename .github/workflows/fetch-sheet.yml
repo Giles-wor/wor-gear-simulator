@@ -15,27 +15,82 @@ jobs:
       - name: Install deps
         run: pip install -U openpyxl requests
 
-      - name: Dump all sheets
+      - name: Dump REC SETTINGS as structured JSON
         env:
           SID: ${{ inputs.sheet_id }}
         run: |
           python3 - <<'PY'
-          import os, io, requests, openpyxl
+          import os, io, re, json, requests, openpyxl
           sid = os.environ["SID"]
           url = f"https://docs.google.com/spreadsheets/d/{sid}/export?format=xlsx"
           r = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
-          print("HTTP", r.status_code, "bytes", len(r.content))
           r.raise_for_status()
-          wb = openpyxl.load_workbook(io.BytesIO(r.content), data_only=True, read_only=True)
-          print("SHEETS:", wb.sheetnames)
-          for ws in wb.worksheets:
-              print(f"\n########## SHEET: {ws.title} ({ws.max_row}x{ws.max_column}) ##########")
-              for row in ws.iter_rows(values_only=True):
-                  cells = ["" if c is None else str(c).replace("\n", " ").strip() for c in row]
-                  if not any(cells):
-                      continue
-                  # 우측 빈 셀 제거
-                  while cells and cells[-1] == "":
-                      cells.pop()
-                  print(" | ".join(cells))
+          wb = openpyxl.load_workbook(io.BytesIO(r.content), data_only=True)
+          ws = wb["REC SETTINGS"]
+          # full matrix
+          M = []
+          for row in ws.iter_rows(values_only=True):
+              M.append(["" if c is None else str(c).replace("\n", " ").strip() for c in row])
+          ncol = max(len(r) for r in M)
+          for r in M:
+              r += [""] * (ncol - len(r))
+
+          LABELS = {"FOR", "PRIMARY", "NAME", "SETS", "ESSENTIAL", "SECONDARY"}
+          def is_label(v):
+              v = v.strip().upper()
+              return v in LABELS or bool(re.match(r"^LVL\s*\d+\s*REQ$", v))
+          # label columns = columns with >=4 label cells
+          label_cols = [c for c in range(ncol) if sum(is_label(M[r][c]) for r in range(len(M))) >= 4]
+          label_cols.sort()
+          blocks = []
+          for i, lc in enumerate(label_cols):
+              end = label_cols[i + 1] if i + 1 < len(label_cols) else ncol
+              blocks.append((lc, lc + 1, end))
+
+          out = []
+          for (lc, dstart, dend) in blocks:
+              # gather per-column accumulators
+              cols = {c: {"name": "", "primary": "", "sets": "", "levels": {}} for c in range(dstart, dend)}
+              level = None
+              kind = None
+              for r in range(len(M)):
+                  lbl = M[r][lc].strip().upper()
+                  mreq = re.match(r"^LVL\s*(\d+)\s*REQ$", lbl)
+                  if lbl == "NAME":
+                      for c in range(dstart, dend): cols[c]["name"] = M[r][c]
+                      kind = None
+                  elif lbl == "PRIMARY":
+                      for c in range(dstart, dend): cols[c]["primary"] = M[r][c]
+                      kind = None
+                  elif lbl == "SETS":
+                      for c in range(dstart, dend): cols[c]["sets"] = M[r][c]
+                      kind = None
+                  elif mreq:
+                      level = int(mreq.group(1)); kind = "req"
+                      for c in range(dstart, dend):
+                          cols[c]["levels"].setdefault(level, {"req": M[r][c], "essential": [], "secondary": []})
+                          cols[c]["levels"][level]["req"] = M[r][c]
+                  elif lbl == "ESSENTIAL":
+                      kind = "essential"
+                      for c in range(dstart, dend):
+                          if level is not None and M[r][c]:
+                              cols[c]["levels"].setdefault(level, {"req": "", "essential": [], "secondary": []})["essential"].append(M[r][c])
+                  elif lbl == "SECONDARY":
+                      kind = "secondary"
+                      for c in range(dstart, dend):
+                          if level is not None and M[r][c]:
+                              cols[c]["levels"].setdefault(level, {"req": "", "essential": [], "secondary": []})["secondary"].append(M[r][c])
+                  elif lbl == "" and kind in ("essential", "secondary") and level is not None:
+                      for c in range(dstart, dend):
+                          if M[r][c]:
+                              cols[c]["levels"][level][kind].append(M[r][c])
+                  else:
+                      kind = None
+              for c in range(dstart, dend):
+                  if cols[c]["name"]:
+                      out.append(cols[c])
+
+          print("JSON_BEGIN")
+          print(json.dumps(out, ensure_ascii=False))
+          print("JSON_END")
           PY
