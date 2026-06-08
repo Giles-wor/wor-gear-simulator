@@ -28,6 +28,16 @@ export type AwakeningTier = {
   note?: string
 }
 
+/** 직접 고정피해(True Damage) 1회 분량. 치명타·방어·마방 무시, ATK 비례. */
+export type FixedDamageEntry = {
+  /** 스킬/발동 라벨 */
+  label: string
+  /** ATK 대비 계수 (예: 3.0 = ATK의 300%) */
+  atkPct: number
+  /** 발동 조건/주석 (선택) */
+  note?: string
+}
+
 export type Hero = {
   id: string
   name: string
@@ -64,6 +74,8 @@ export type Hero = {
   awakeningTiers?: AwakeningTier[]
   attackSpeedProfileBaseIntervalOverride?: number
   burstAtkBonusPer100Aspd?: number
+  /** 직접 고정피해(True Damage) 발동 목록. 선택 시 결과 카드에 별도 행으로 표시. */
+  fixedDamage?: FixedDamageEntry[]
 }
 
 /** WoR Legendary 등급의 표준 각성 패턴 (정량화 가능한 부분만).
@@ -84,6 +96,28 @@ function defaultLegendaryAwakeningTiers(awakeningAtkBonus: number): AwakeningTie
 }
 
 const heroOverrides: Partial<Record<string, Partial<Hero>>> = {
+  // ── 직접 고정피해(True Damage) 영웅 — ATK 비례, 치명타·방어 무시 ──
+  nocturne: {
+    fixedDamage: [{ label: 'Dark Sacrifice (평타 15% 확률)', atkPct: 3.0, note: '평타마다 15% 확률 발동' }],
+  },
+  beelzebub: {
+    fixedDamage: [{ label: 'Plague of Ruin (2중첩 시)', atkPct: 1.0, note: '3초 내 역병 2중첩 조건' }],
+  },
+  ne_zha: {
+    fixedDamage: [{ label: '궁극 중 4타마다', atkPct: 2.0, note: '궁극기 지속 중' }],
+  },
+  init: {
+    fixedDamage: [{ label: 'Shackles of Grace (20% 확률)', atkPct: 0.2, note: 'Ancient Core당, 공격 시' }],
+  },
+  xena: {
+    fixedDamage: [{ label: 'Callous Flames (Burning 대상)', atkPct: 0.2, note: 'Burning 중첩 시 최대 0.4' }],
+  },
+  nastya: {
+    fixedDamage: [{ label: 'Macabre Fate (중독 시)', atkPct: 0.1, note: '중독 스택당 증가, 최대 +20%' }],
+  },
+  numera: {
+    fixedDamage: [{ label: 'Grimthorn Roots (초당·최대 6중첩)', atkPct: 0.21, note: '지속 고정피해' }],
+  },
   oren: {
     description: 'Supreme Arbiter Lord. 3각 = 치피의 10%만큼 관통 (derived).',
     awakeningAtkBonus: 300,
@@ -110,6 +144,7 @@ const heroOverrides: Partial<Record<string, Partial<Hero>>> = {
       { level: 4, label: '4각: 관통 +8%', penetrationBonus: 0.08 },
       { level: 5, label: '5각: Solar Flare 마법 저항 25% 무시', note: '마저 무시 (현재 DPS 식 미반영)' },
     ],
+    fixedDamage: [{ label: 'Solar Flare 추가타', atkPct: 1.0, note: '스킬 레벨로 +20~30%' }],
   },
   count_dracula: {
     description: '보너스 공속이 피해 증가와 연결되는 특수 딜러.',
