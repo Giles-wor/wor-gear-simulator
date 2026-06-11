@@ -379,7 +379,8 @@ export function calculateBuild(
 
   const critRateRatio = Math.min(finalCritRate, 100) / 100
   const critMultiplier = 1 + critRateRatio * (finalCritDmg / 100 - 1)
-  const draculaBurstBonus = hero.burstAtkBonusPer100Aspd ? (totalAspd / 100) * hero.burstAtkBonusPer100Aspd : 0
+  // 드라큘라류: "모든 공속이 피해 보정" → 판테온/영주 공속 포함한 finalAspd 기준 (인게임 검증)
+  const draculaBurstBonus = hero.burstAtkBonusPer100Aspd ? (finalAspd / 100) * hero.burstAtkBonusPer100Aspd : 0
   const automaticHeroDamageBonus = draculaBurstBonus + awakening.damageBonus
   const statDamageBonus = leftSetDamagePct + automaticHeroDamageBonus + factionDamageBonus + lordDamageBonus
   const itemDamageBonus = maxSetBonus.damageBonus + leftSetDamagePct + automaticHeroDamageBonus + factionDamageBonus + lordDamageBonus
