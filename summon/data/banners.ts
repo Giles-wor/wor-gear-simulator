@@ -56,6 +56,10 @@ const placeholderBanners: Record<BannerConfig['id'], BannerConfig> = {
     softPityIncrement: 0.08,
     hardPity: 200,
     pityFocus: 'lord',
+    // 일반 레전더리(영주·알수없는자 제외) 독립 천장: 130회 미획득 후 +5%/회, 150픽 확정.
+    commonSoftPityStart: 131,
+    commonSoftPityIncrement: 0.05,
+    commonHardPity: 150,
     featuredMultiplier: 20,
     rateUpStackingMultiplier: 2,
     defaultPickups: [
@@ -65,7 +69,7 @@ const placeholderBanners: Record<BannerConfig['id'], BannerConfig> = {
     defaultGoals: [1, 0],
     placeholder: false,
     notes:
-      '고대 소환: 5성 영주(알 수 없는 자 포함) 전용 천장. 영주 0.72% / 일반 1%, 185회 영주 미획득 후 +8%/회, 200픽 영주 확정. ×20 픽업 + ×2 stacking. 보통 영주+일반 각 1명씩 픽업하는 경우가 많음.',
+      '고대 소환: 보장 천장 2개(독립 카운터). ① 영주(알수없는자 포함) 0.72%, 185회 미획득 후 +8%/회, 200픽 확정. ② 일반 레전더리(영주·알수없는자 제외) 1%, 130회 미획득 후 +5%/회, 150픽 확정. ×20 픽업 + ×2 stacking. 보통 영주+일반 각 1명씩 픽업.',
   },
   divine: {
     id: 'divine',
