@@ -459,6 +459,25 @@ export default function App() {
           <div className="heroNumber">{pctSharp(report.jointProbabilityWithBudget)}</div>
         ) : null}
 
+        {numActiveTargets > 0
+          ? (() => {
+              const curLeg =
+                report.outcomeNow.pickupProbs.reduce((s, p) => s + p, 0) +
+                report.outcomeNow.nonRateUpLegendary
+              const guard =
+                config.commonHardPity != null
+                  ? `영주 ${config.hardPity}픽 / 일반레전더리 ${config.commonHardPity}픽 보장`
+                  : `${config.hardPity}픽 ${isLordOnlyPity ? '영주' : '5성'} 보장`
+              return (
+                <p className="muted helperText" style={{ marginTop: 6 }}>
+                  ✓ 천장 보정 반영 — 현재 스택 {Math.max(0, pity)} 기준 이번 소환 5성 확률{' '}
+                  <strong>{pct(curLeg)}</strong> · {guard}. 단, 천장은 <strong>5성 1개</strong>를 보장할 뿐
+                  특정 픽업을 직접 보장하진 않습니다(스택 올리면 위 확률이 오르는 걸로 반영 확인).
+                </p>
+              )
+            })()
+          : null}
+
         {numActiveTargets > 1 ? (
           <div className="marginalGrid">
             <div className="marginalHead">개별 픽업 단독 달성 확률 (각자 목표만 충족)</div>
