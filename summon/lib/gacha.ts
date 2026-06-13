@@ -41,6 +41,11 @@ export type BannerConfig = {
   softPityIncrement?: number
   hardPity: number
   pityFocus?: 'anyLegendary' | 'lord'
+  /** (고대 전용) 일반 레전더리(영주·알수없는자 제외) 독립 천장. 영주 천장과 별도 카운터.
+   *  설정 시 commonGroup 에 별도 소프트/하드 천장이 적용된다. */
+  commonSoftPityStart?: number
+  commonSoftPityIncrement?: number
+  commonHardPity?: number
   featuredMultiplier: number
   rateUpStackingMultiplier?: number
   /** 한정 선택 소환: 이 배너 누적 소환 N번째에서 타겟 픽업 자체 확정 (단일 타겟 한정) */
@@ -101,6 +106,33 @@ export function groupHitRatesAt(
   const lord = scaledTotal * (baseLord / baseTotal)
   const common = scaledTotal - lord
   return { lord, common, legendary: scaledTotal }
+}
+
+/** 고대 2트랙 그룹 hit 확률: 영주 천장(softPityStart/hardPity) + 일반 레전더리 독립 천장
+ *  (commonSoftPityStart/commonHardPity). lordPity/commonPity 는 각 트랙의 직전 미획득 누적. */
+export function groupHitRates2D(
+  config: BannerConfig,
+  lordPityBefore: number,
+  commonPityBefore: number,
+): { lord: number; common: number } {
+  const nL = lordPityBefore + 1
+  const nC = commonPityBefore + 1
+  const lInc = config.softPityIncrement ?? 0
+  const lSoftStart = config.softPityStart
+  const lordHard = nL >= config.hardPity
+  const lordSoft = lSoftStart != null && nL >= lSoftStart ? (nL - lSoftStart + 1) * lInc : 0
+  const cInc = config.commonSoftPityIncrement ?? 0
+  const cSoftStart = config.commonSoftPityStart
+  const cHard = config.commonHardPity ?? Infinity
+  const commonHard = nC >= cHard
+  const commonSoft = cSoftStart != null && nC >= cSoftStart ? (nC - cSoftStart + 1) * cInc : 0
+
+  if (lordHard) return { lord: 1, common: 0 }
+  if (commonHard) return { lord: 0, common: 1 }
+  const lord = clampProb(config.lordGroupRate + lordSoft)
+  let common = clampProb(config.commonGroupRate + commonSoft)
+  if (lord + common > 1) common = Math.max(0, 1 - lord)
+  return { lord, common }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -591,6 +623,223 @@ export function simulateMultiTargetDistribution(
 }
 
 // ─────────────────────────────────────────────────────────────
+// 몬테카를로 — 2트랙 천장(고대)처럼 DP 차원이 폭발하는 경우용. 고정 시드(결정론적).
+// ─────────────────────────────────────────────────────────────
+
+function mulberry32(seed: number) {
+  let a = seed >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+export function simulateMonteCarlo(
+  config: BannerConfig,
+  selection: PickupSelection,
+  pulls: number,
+  start: SummonState,
+  mods: SummonModifiers = {},
+  trials = 240000,
+): MultiTargetDistribution {
+  const crazy = !!mods.crazy
+  const onePlusOne = !!mods.onePlusOne
+  const effConfig: BannerConfig = crazy
+    ? { ...config, lordGroupRate: config.lordGroupRate * 2, commonGroupRate: config.commonGroupRate * 2 }
+    : config
+  const hard = Math.max(1, Math.floor(effConfig.hardPity))
+  const cpEnabled = effConfig.commonHardPity != null
+  const cpHard = cpEnabled ? Math.max(1, Math.floor(effConfig.commonHardPity as number)) : 1
+  const pickups = selection.pickups
+  const n = pickups.length
+  const MAXMISS = 40
+
+  const goals = pickups.map((_, i) => Math.max(0, Math.floor(selection.goals[i] ?? 0)))
+  const owned = pickups.map((_, i) => Math.max(0, Math.floor(selection.ownedCopies[i] ?? 0)))
+  const activeIdx = pickups.map((_, i) => i).filter((i) => goals[i] > 0)
+  const startObtained = owned.some((c) => c > 0)
+  const commonResetsLord = (effConfig.pityFocus ?? 'anyLegendary') !== 'lord'
+  const baseTotal = effConfig.lordGroupRate + effConfig.commonGroupRate
+  const lordGroupShare = baseTotal > 0 ? effConfig.lordGroupRate / baseTotal : 0
+
+  // rate 테이블 (lordPity × commonPity)
+  const lordRate = new Float64Array(hard * cpHard)
+  const commonRate = new Float64Array(hard * cpHard)
+  for (let lp = 0; lp < hard; lp += 1) {
+    for (let cp = 0; cp < cpHard; cp += 1) {
+      const r = cpEnabled ? groupHitRates2D(effConfig, lp, cp) : groupHitRatesAt(effConfig, lp)
+      lordRate[lp * cpHard + cp] = r.lord
+      commonRate[lp * cpHard + cp] = r.common
+    }
+  }
+  // breakdown by miss
+  const lordPer = new Float64Array(MAXMISS + 1)
+  const lordNon = new Float64Array(MAXMISS + 1)
+  const commonPer = new Float64Array(MAXMISS + 1)
+  const commonNon = new Float64Array(MAXMISS + 1)
+  for (let m = 0; m <= MAXMISS; m += 1) {
+    const b = groupBreakdownAt(effConfig, pickups, m)
+    lordPer[m] = b.lord.perPickupShare
+    lordNon[m] = b.lord.nonRateUpShare
+    commonPer[m] = b.common.perPickupShare
+    commonNon[m] = b.common.nonRateUpShare
+  }
+  const lordPickIdx = pickups.map((p, i) => (p.group === 'lord' ? i : -1)).filter((i) => i >= 0)
+  const commonPickIdx = pickups.map((p, i) => (p.group === 'common' ? i : -1)).filter((i) => i >= 0)
+
+  // 누적 컨테이너
+  const successCount = new Float64Array(pulls + 1) // 첫 성공 도달 pull 카운트
+  const marginalFirst: Record<number, Float64Array> = {}
+  for (const i of activeIdx) marginalFirst[i] = new Float64Array(pulls + 1)
+  const sumHits: Record<number, Float64Array> = {}
+  for (let i = 0; i < n; i += 1) sumHits[i] = new Float64Array(pulls + 1)
+  const sumNon = new Float64Array(pulls + 1)
+
+  const rng = mulberry32(0x9e3779b9)
+  const startLordPity = Math.min(start.pity, hard - 1)
+  const startMiss = startObtained ? 0 : Math.min(start.rateUpMisses, MAXMISS)
+
+  const cumHits = new Float64Array(n)
+
+  for (let tr = 0; tr < trials; tr += 1) {
+    let lordPity = startLordPity
+    let commonPity = 0
+    let misses = startMiss
+    let obtained = startObtained
+    cumHits.fill(0)
+    let cumNon = 0
+    const have = pickups.map((_, i) => owned[i]) // owned + hits, goal 판정용
+    const met = activeIdx.map((i) => have[i] >= goals[i])
+    const allMet = met.every(Boolean)
+    let recordedSuccess = allMet
+    if (allMet) successCount[0] += 1
+    activeIdx.forEach((i, j) => {
+      if (met[j]) marginalFirst[i][0] += 1
+    })
+
+    const applyPickupHit = (pi: number) => {
+      cumHits[pi] += 1
+      have[pi] += 1
+      obtained = true
+      misses = 0
+    }
+
+    // 시작부터 성공이면 더 안 뽑음 (흡수)
+    if (!allMet) for (let pull = 1; pull <= pulls; pull += 1) {
+      const rates = lordPity * cpHard + commonPity
+      const lord = lordRate[rates]
+      const common = commonRate[rates]
+      const m = obtained ? 0 : misses
+      const r = rng()
+      let mainPickup = false
+
+      if (r < lord) {
+        // 영주 그룹: 그룹 내 분배는 별도 난수로
+        const per = lordPer[m]
+        const r2 = rng()
+        let acc = 0
+        let hit = -1
+        for (const pi of lordPickIdx) {
+          acc += per
+          if (r2 < acc) { hit = pi; break }
+        }
+        if (hit >= 0) { applyPickupHit(hit); mainPickup = true }
+        else { cumNon += 1; if (!obtained) misses = Math.min(misses + 1, MAXMISS) }
+        lordPity = 0
+        if (cpEnabled) commonPity = Math.min(commonPity + 1, cpHard - 1)
+      } else if (r < lord + common) {
+        // 일반 그룹
+        const per = commonPer[m]
+        const r2 = rng()
+        let acc = 0
+        let hit = -1
+        for (const pi of commonPickIdx) {
+          acc += per
+          if (r2 < acc) { hit = pi; break }
+        }
+        if (hit >= 0) { applyPickupHit(hit); mainPickup = true }
+        else { cumNon += 1; if (!obtained) misses = Math.min(misses + 1, MAXMISS) }
+        if (cpEnabled) commonPity = 0
+        lordPity = commonResetsLord ? 0 : Math.min(lordPity + 1, hard - 1)
+      } else {
+        // 미획득
+        lordPity = Math.min(lordPity + 1, hard - 1)
+        if (cpEnabled) commonPity = Math.min(commonPity + 1, cpHard - 1)
+      }
+
+      // 1+1 보너스: 전설 1개당 보너스 5성 1개 (pity·stack 무관, base 그룹비율, 활성 타겟만 영향·기대hit 미집계)
+      if (onePlusOne && r < lord + common) {
+        const shareMiss = mainPickup ? 0 : m
+        const r3 = rng()
+        let acc = 0
+        for (const ti of activeIdx) {
+          const gShare = pickups[ti].group === 'lord' ? lordGroupShare : 1 - lordGroupShare
+          const per = pickups[ti].group === 'lord' ? lordPer[shareMiss] : commonPer[shareMiss]
+          acc += gShare * per
+          if (r3 < acc) { if (have[ti] < goals[ti]) have[ti] += 1; obtained = true; misses = 0; break }
+        }
+      }
+
+      // 기록
+      for (let i = 0; i < n; i += 1) sumHits[i][pull] += cumHits[i]
+      sumNon[pull] += cumNon
+      activeIdx.forEach((i, j) => {
+        if (!met[j] && have[i] >= goals[i]) { met[j] = true; marginalFirst[i][pull] += 1 }
+      })
+      if (!recordedSuccess) {
+        let ok = true
+        for (let j = 0; j < activeIdx.length; j += 1) if (have[activeIdx[j]] < goals[activeIdx[j]]) { ok = false; break }
+        if (ok) {
+          successCount[pull] += 1
+          recordedSuccess = true
+          // 흡수: 이후 누적값 동결 전파
+          for (let f = pull + 1; f <= pulls; f += 1) {
+            for (let i = 0; i < n; i += 1) sumHits[i][f] += cumHits[i]
+            sumNon[f] += cumNon
+          }
+          break
+        }
+      }
+    }
+  }
+
+  // 누적 → 분포
+  const cdf = new Array(pulls + 1).fill(0)
+  const pmf = new Array(pulls + 1).fill(0)
+  const expectedNonRateUpLegendary = new Array(pulls + 1).fill(0)
+  const marginalCdf: Record<number, number[]> = {}
+  const expectedHitsByPickup: Record<number, number[]> = {}
+  for (let i = 0; i < n; i += 1) expectedHitsByPickup[i] = new Array(pulls + 1).fill(0)
+  for (const i of activeIdx) marginalCdf[i] = new Array(pulls + 1).fill(0)
+
+  let cumSucc = 0
+  const cumMarg: Record<number, number> = {}
+  for (const i of activeIdx) cumMarg[i] = 0
+  for (let k = 0; k <= pulls; k += 1) {
+    cumSucc += successCount[k]
+    cdf[k] = cumSucc / trials
+    pmf[k] = successCount[k] / trials
+    expectedNonRateUpLegendary[k] = sumNon[k] / trials
+    for (let i = 0; i < n; i += 1) expectedHitsByPickup[i][k] = sumHits[i][k] / trials
+    for (const i of activeIdx) {
+      cumMarg[i] += marginalFirst[i][k]
+      marginalCdf[i][k] = cumMarg[i] / trials
+    }
+  }
+
+  const activeTargets: ActiveTarget[] = activeIdx.map((i) => ({
+    pickupIdx: i,
+    goal: goals[i],
+    group: pickups[i].group,
+    owned: Math.min(owned[i], goals[i]),
+  }))
+
+  return { cdf, pmf, marginalCdf, expectedHitsByPickup, expectedNonRateUpLegendary, activeTargets }
+}
+
+// ─────────────────────────────────────────────────────────────
 // 결과 보고서
 // ─────────────────────────────────────────────────────────────
 
@@ -642,7 +891,11 @@ export function buildStrategyReport(
     Math.max(safeBudget, config.hardPity * 2, (config.featuredHardGuarantee ?? 0) + 20, 200),
   )
 
-  const dist = simulateMultiTargetDistribution(config, selection, horizon, start, mods)
+  // 일반 레전더리 독립 천장(고대 2트랙)은 DP 차원이 커서 결정론적 몬테카를로로 계산. 그 외는 정확 DP.
+  const dist =
+    config.commonHardPity != null
+      ? simulateMonteCarlo(config, selection, horizon, start, mods)
+      : simulateMultiTargetDistribution(config, selection, horizon, start, mods)
   const budgetIdx = Math.min(safeBudget, dist.cdf.length - 1)
 
   const jointProbabilityWithBudget = safeBudget > 0 ? dist.cdf[budgetIdx] : dist.cdf[0] ?? 0
