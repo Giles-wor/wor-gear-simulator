@@ -132,3 +132,108 @@ export function buildGranular(role: GranularRole, level: ProgressionLevel, conve
 export function granularIsEstimated(_role: GranularRole): boolean {
   return false
 }
+
+// ──────────────────────────────────────────────────────────────────────────
+// 무손실 압축: ① 동일 조건 무기+방어구 → 「무기/방어구」 한 룰로 통합,
+//             ② 다른 룰에 KEEP 범위가 완전히 포함되는 잉여 룰 제거.
+// 두 변환 모두 보관(KEEP)되는 장비 집합을 정확히 보존한다(무손실).
+// ──────────────────────────────────────────────────────────────────────────
+
+const sortedJoin = (a: (string | number)[]) => [...a].map(String).sort().join(',')
+
+/** 부옵 조건(필수+매칭)이 같은지 비교하는 키 (부위/이름 제외). */
+function condKey(r: FilterRule): string {
+  return [
+    sortedJoin(r.tiers),
+    sortedJoin(r.sets),
+    sortedJoin(r.mainStats),
+    sortedJoin(r.subStats),
+    r.requiredSubMatches,
+    sortedJoin(r.requiredSubs),
+  ].join('|')
+}
+
+/** 구조(부위·Tier·세트·주옵)가 같아 서로 비교 가능한 그룹 키. */
+function structKey(r: FilterRule): string {
+  return [r.side, sortedJoin(r.tiers), sortedJoin(r.sets), sortedJoin(r.mainStats)].join('|')
+}
+
+// 장비의 가능한 부옵 조합(0~4개) — KEEP 시그니처 계산용 (모듈 로드 시 1회).
+const ITEM_SUBSETS: Set<string>[] = (() => {
+  const out: Set<string>[] = []
+  const rec = (start: number, cur: string[]) => {
+    out.push(new Set(cur))
+    if (cur.length === 4) return
+    for (let i = start; i < ALL_SUB_IDS.length; i += 1) {
+      cur.push(ALL_SUB_IDS[i])
+      rec(i + 1, cur)
+      cur.pop()
+    }
+  }
+  rec(0, [])
+  return out
+})()
+
+function keepsItem(r: FilterRule, item: Set<string>): boolean {
+  if (r.requiredSubs.length && !r.requiredSubs.every((s) => item.has(s))) return false
+  if (r.subStats.length) {
+    let m = 0
+    for (const s of r.subStats) if (item.has(s)) m += 1
+    if (m < r.requiredSubMatches) return false
+  }
+  return true
+}
+
+/** 부옵 조건이 KEEP 하는 장비 집합을 비트열로 (구조 같은 룰끼리만 비교). */
+function keepSig(r: FilterRule): string {
+  let s = ''
+  for (const it of ITEM_SUBSETS) s += keepsItem(r, it) ? '1' : '0'
+  return s
+}
+
+/** a 의 KEEP 집합이 b 를 모두 포함하는가 (a ⊇ b). */
+function superset(a: string, b: string): boolean {
+  for (let i = 0; i < b.length; i += 1) if (b[i] === '1' && a[i] !== '1') return false
+  return true
+}
+
+/** ① 조건이 완전히 같은 무기+방어구 쌍을 「무기/방어구」(left) 한 룰로 통합. */
+function mergeWeaponArmor(rules: FilterRule[]): FilterRule[] {
+  const armorUsed = new Set<number>()
+  const armorRemoved = new Set<number>()
+  const replace = new Map<number, FilterRule>()
+  rules.forEach((w, wi) => {
+    if (w.side !== 'weapon') return
+    const wk = condKey(w)
+    const ai = rules.findIndex((a, i) => a.side === 'armor' && !armorUsed.has(i) && condKey(a) === wk)
+    if (ai >= 0) {
+      armorUsed.add(ai)
+      armorRemoved.add(ai)
+      replace.set(wi, { ...w, side: 'left', name: w.name.replace('무기', '무기/방어구') })
+    }
+  })
+  return rules.map((r, i) => replace.get(i) ?? r).filter((_, i) => !armorRemoved.has(i))
+}
+
+/** ② 같은 구조 그룹 안에서 다른 룰에 완전히 포함되는 잉여 룰 제거. */
+function dropSubsumed(rules: FilterRule[]): FilterRule[] {
+  const sig = rules.map(keepSig)
+  const key = rules.map(structKey)
+  const removed = new Array(rules.length).fill(false)
+  for (let b = 0; b < rules.length; b += 1) {
+    if (removed[b]) continue
+    for (let a = 0; a < rules.length; a += 1) {
+      if (a === b || removed[a] || removed[b]) continue
+      if (key[a] !== key[b]) continue
+      if (!superset(sig[a], sig[b])) continue
+      // a ⊇ b: b 제거. 단 완전히 같으면 앞선 것만 남긴다.
+      if (sig[a] !== sig[b] || a < b) removed[b] = true
+    }
+  }
+  return rules.filter((_, i) => !removed[i])
+}
+
+/** 무손실 압축 적용 (①→②). */
+export function compressRules(rules: FilterRule[]): FilterRule[] {
+  return dropSubsumed(mergeWeaponArmor(rules))
+}

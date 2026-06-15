@@ -9,6 +9,7 @@ import {
   buildRolePreset,
   buildAllRolesPreset,
   buildGranular,
+  compressRules,
   granularRoles,
   type ProgressionLevel,
   type GranularRole,
@@ -231,9 +232,15 @@ export default function App() {
   const [granularRole, setGranularRole] = useState<GranularRole>('attack_dps')
   // 변환 고려(true, 평소 수집) / 변환 미고려(false, 골드 정리 — 풀옵만 남김)
   const [conversion, setConversion] = useState(true)
+  // 무손실 압축: 동일 무기+방어구 통합 + 잉여 룰 제거 (KEEP 범위 동일)
+  const [compress, setCompress] = useState(false)
 
   // 기본 뷰: 진행도 + 변환토글만 고르면 모든 역할 규칙이 한 방에 생성됨 (메모이즈)
-  const basicRules = useMemo(() => buildAllRolesPreset(level, conversion), [level, conversion])
+  const basicRaw = useMemo(() => buildAllRolesPreset(level, conversion), [level, conversion])
+  const basicRules = useMemo(
+    () => (compress ? compressRules(basicRaw) : basicRaw),
+    [basicRaw, compress],
+  )
 
   // 개인화 뷰: 사용자가 편집하는 규칙 셋
   const [customRules, setCustomRules] = useState<FilterRule[]>(() => buildGranular('attack_dps', 'lvl2', true))
@@ -343,6 +350,22 @@ export default function App() {
             <p className="muted helperText levelDesc">
               {progressionLevels.find((l) => l.id === level)?.desc}
             </p>
+            <label className="compressToggle">
+              <input
+                type="checkbox"
+                checked={compress}
+                onChange={(e) => setCompress(e.target.checked)}
+              />
+              <span>
+                무손실 압축
+                <small>
+                  {' '}· 동일 무기+방어구 통합 · 중복 룰 제거 (보관 범위 동일)
+                  {compress && basicRules.length < basicRaw.length
+                    ? ` — ${basicRaw.length} → ${basicRules.length}개`
+                    : ''}
+                </small>
+              </span>
+            </label>
           </>
         ) : null}
 
