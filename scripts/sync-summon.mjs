@@ -98,8 +98,9 @@ function buildGenerated(text) {
   return {
     normal: {
       ...rareTrack,
-      featuredMultiplier: 1,
-      notes: `기본 Rare 배너. Banner wiki Rare Summoning Pity 적용 (soft ${rareTrack.softPityStart}, hard ${rareTrack.hardPity}).`,
+      featuredMultiplier: 20,
+      rateUpStackingMultiplier: specialRateUpMultiplier,
+      notes: `특정 스피릿 소환 이벤트: 확률UP ×20 + ×${specialRateUpMultiplier} stacking(첫 픽업 전까지). soft ${rareTrack.softPityStart}, hard ${rareTrack.hardPity}(통합 5성 보장). 픽업 확정 없음.`,
     },
     limited: {
       ...rareTrack,

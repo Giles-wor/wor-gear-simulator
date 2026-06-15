@@ -10,8 +10,9 @@ export const generatedBanners: Partial<
     "softPityStart": 181,
     "softPityIncrement": 0.05,
     "hardPity": 200,
-    "featuredMultiplier": 1,
-    "notes": "기본 Rare 배너. Banner wiki Rare Summoning Pity 적용 (soft 181, hard 200)."
+    "featuredMultiplier": 20,
+    "rateUpStackingMultiplier": 10,
+    "notes": "특정 스피릿 소환 이벤트: 확률UP ×20 + ×10 stacking(첫 픽업 전까지). soft 181, hard 200(통합 5성 보장). 픽업 확정 없음."
   },
   "limited": {
     "softPityStart": 181,
