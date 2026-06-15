@@ -54,12 +54,12 @@ function CdfChart({ cdf, budget }: { cdf: number[]; budget: number }) {
 }
 
 export default function App() {
-  const [bannerId, setBannerId] = useState<BannerConfig['id']>('limited')
-  const [config, setConfig] = useState<BannerConfig>(banners.limited)
-  const [pickups, setPickups] = useState<FeaturedHero[]>(banners.limited.defaultPickups)
-  const [goals, setGoals] = useState<number[]>(banners.limited.defaultGoals)
+  const [bannerId, setBannerId] = useState<BannerConfig['id']>('normal')
+  const [config, setConfig] = useState<BannerConfig>(banners.normal)
+  const [pickups, setPickups] = useState<FeaturedHero[]>(banners.normal.defaultPickups)
+  const [goals, setGoals] = useState<number[]>(banners.normal.defaultGoals)
   const [ownedCopies, setOwnedCopies] = useState<number[]>(
-    banners.limited.defaultPickups.map(() => 0),
+    banners.normal.defaultPickups.map(() => 0),
   )
 
   const [pity, setPity] = useState(0)
