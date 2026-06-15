@@ -325,6 +325,27 @@ export default function App() {
           </button>
         </div>
 
+        {view === 'basic' ? (
+          <>
+            <div className="levelRow" style={{ marginTop: 14 }}>
+              <span className="levelRowLabel">진행도</span>
+              {progressionLevels.map((lv) => (
+                <button
+                  key={lv.id}
+                  type="button"
+                  className={level === lv.id ? 'levelChip active' : 'levelChip'}
+                  onClick={() => setLevel(lv.id)}
+                >
+                  {lv.label}
+                </button>
+              ))}
+            </div>
+            <p className="muted helperText levelDesc">
+              {progressionLevels.find((l) => l.id === level)?.desc}
+            </p>
+          </>
+        ) : null}
+
         <div className="convToggleRow">
           <span className="convToggleLabel">모드</span>
           <button
@@ -378,25 +399,10 @@ export default function App() {
         <section className="card">
           <div className="sectionHeading">
             <div>
-              <p className="eyebrow">진행도 선택</p>
-              <h2>내 진행도에 맞는 프리셋</h2>
+              <p className="eyebrow">미리보기</p>
+              <h2>적용된 규칙 ({basicRules.length}개)</h2>
             </div>
           </div>
-          <div className="levelRow">
-            {progressionLevels.map((lv) => (
-              <button
-                key={lv.id}
-                type="button"
-                className={level === lv.id ? 'levelChip active' : 'levelChip'}
-                onClick={() => setLevel(lv.id)}
-              >
-                {lv.label}
-              </button>
-            ))}
-          </div>
-          <p className="muted helperText levelDesc">
-            {progressionLevels.find((l) => l.id === level)?.desc}
-          </p>
           <p className="muted helperText">
             진행도만 고르면 모든 역할(딜러·탱커·힐러·격려·유틸)의 규칙이 위 내보내기에 한 번에 담깁니다.
             세밀하게 손보려면 <strong>개인화</strong> 탭으로 가세요.
