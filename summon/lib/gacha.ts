@@ -642,7 +642,7 @@ export function simulateMonteCarlo(
   pulls: number,
   start: SummonState,
   mods: SummonModifiers = {},
-  trials = 240000,
+  trials = 60000,
 ): MultiTargetDistribution {
   const crazy = !!mods.crazy
   const onePlusOne = !!mods.onePlusOne
@@ -696,12 +696,19 @@ export function simulateMonteCarlo(
   const sumHits: Record<number, Float64Array> = {}
   for (let i = 0; i < n; i += 1) sumHits[i] = new Float64Array(pulls + 1)
   const sumNon = new Float64Array(pulls + 1)
+  // 흡수(성공 후) 동결분: 성공 pull s 에서 1회만 기록 → 끝에서 suffix-sum 으로 전파 (O(N·pulls) 루프 제거)
+  const tailHits: Record<number, Float64Array> = {}
+  for (let i = 0; i < n; i += 1) tailHits[i] = new Float64Array(pulls + 2)
+  const tailNon = new Float64Array(pulls + 2)
 
   const rng = mulberry32(0x9e3779b9)
   const startLordPity = Math.min(start.pity, hard - 1)
   const startMiss = startObtained ? 0 : Math.min(start.rateUpMisses, MAXMISS)
 
   const cumHits = new Float64Array(n)
+  const have = new Float64Array(n) // owned + hits, goal 판정용 (시행마다 재사용)
+  const na = activeIdx.length
+  const met = new Uint8Array(na)
 
   for (let tr = 0; tr < trials; tr += 1) {
     let lordPity = startLordPity
@@ -710,21 +717,16 @@ export function simulateMonteCarlo(
     let obtained = startObtained
     cumHits.fill(0)
     let cumNon = 0
-    const have = pickups.map((_, i) => owned[i]) // owned + hits, goal 판정용
-    const met = activeIdx.map((i) => have[i] >= goals[i])
-    const allMet = met.every(Boolean)
+    for (let i = 0; i < n; i += 1) have[i] = owned[i]
+    let allMet = true
+    for (let j = 0; j < na; j += 1) {
+      const ok = have[activeIdx[j]] >= goals[activeIdx[j]]
+      met[j] = ok ? 1 : 0
+      if (ok) marginalFirst[activeIdx[j]][0] += 1
+      else allMet = false
+    }
     let recordedSuccess = allMet
     if (allMet) successCount[0] += 1
-    activeIdx.forEach((i, j) => {
-      if (met[j]) marginalFirst[i][0] += 1
-    })
-
-    const applyPickupHit = (pi: number) => {
-      cumHits[pi] += 1
-      have[pi] += 1
-      obtained = true
-      misses = 0
-    }
 
     // 시작부터 성공이면 더 안 뽑음 (흡수)
     if (!allMet) for (let pull = 1; pull <= pulls; pull += 1) {
@@ -745,7 +747,7 @@ export function simulateMonteCarlo(
           acc += per
           if (r2 < acc) { hit = pi; break }
         }
-        if (hit >= 0) { applyPickupHit(hit); mainPickup = true }
+        if (hit >= 0) { cumHits[hit] += 1; have[hit] += 1; obtained = true; misses = 0; mainPickup = true }
         else { cumNon += 1; if (!obtained) misses = Math.min(misses + 1, MAXMISS) }
         lordPity = 0
         if (cpEnabled) commonPity = Math.min(commonPity + 1, cpHard - 1)
@@ -759,7 +761,7 @@ export function simulateMonteCarlo(
           acc += per
           if (r2 < acc) { hit = pi; break }
         }
-        if (hit >= 0) { applyPickupHit(hit); mainPickup = true }
+        if (hit >= 0) { cumHits[hit] += 1; have[hit] += 1; obtained = true; misses = 0; mainPickup = true }
         else { cumNon += 1; if (!obtained) misses = Math.min(misses + 1, MAXMISS) }
         if (cpEnabled) commonPity = 0
         lordPity = commonResetsLord ? 0 : Math.min(lordPity + 1, hard - 1)
@@ -785,22 +787,38 @@ export function simulateMonteCarlo(
       // 기록
       for (let i = 0; i < n; i += 1) sumHits[i][pull] += cumHits[i]
       sumNon[pull] += cumNon
-      activeIdx.forEach((i, j) => {
-        if (!met[j] && have[i] >= goals[i]) { met[j] = true; marginalFirst[i][pull] += 1 }
-      })
-      if (!recordedSuccess) {
-        let ok = true
-        for (let j = 0; j < activeIdx.length; j += 1) if (have[activeIdx[j]] < goals[activeIdx[j]]) { ok = false; break }
-        if (ok) {
-          successCount[pull] += 1
-          recordedSuccess = true
-          // 흡수: 이후 누적값 동결 전파
-          for (let f = pull + 1; f <= pulls; f += 1) {
-            for (let i = 0; i < n; i += 1) sumHits[i][f] += cumHits[i]
-            sumNon[f] += cumNon
-          }
-          break
-        }
+      let ok = true
+      for (let j = 0; j < na; j += 1) {
+        const ti = activeIdx[j]
+        if (met[j] === 0 && have[ti] >= goals[ti]) { met[j] = 1; marginalFirst[ti][pull] += 1 }
+        if (have[ti] < goals[ti]) ok = false
+      }
+      if (!recordedSuccess && ok) {
+        successCount[pull] += 1
+        recordedSuccess = true
+        // 흡수: 동결분은 1회만 기록 (끝에서 suffix-sum 전파)
+        const f = pull + 1
+        for (let i = 0; i < n; i += 1) tailHits[i][f] += cumHits[i]
+        tailNon[f] += cumNon
+        break
+      }
+    }
+  }
+
+  // 흡수 동결분 전파: 성공 pull s 에서 index s+1 에 1회 기록 → 정방향 prefix-sum 으로 [s+1, pulls] 구간에 더함
+  {
+    let run = 0
+    for (let k = 1; k <= pulls; k += 1) {
+      run += tailNon[k]
+      sumNon[k] += run
+    }
+    for (let i = 0; i < n; i += 1) {
+      let r2 = 0
+      const th = tailHits[i]
+      const sh = sumHits[i]
+      for (let k = 1; k <= pulls; k += 1) {
+        r2 += th[k]
+        sh[k] += r2
       }
     }
   }
