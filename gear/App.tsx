@@ -263,6 +263,11 @@ export default function App() {
     if (built.length) setCustomRules(built)
   }
   const applyGranularToCustom = () => setCustomRules(buildGranular(granularRole, level, conversion))
+  // 기본 뷰의 현재 진행도 규칙을 그대로 개인화 편집기로 가져가 시작점으로 삼는다.
+  const startCustomFromBasic = () => {
+    setCustomRules(cloneRulesForLoad(basicRules))
+    setView('custom')
+  }
   const clearAll = () => setCustomRules([{ ...emptyRule('새 규칙'), id: newRuleId() }])
 
   // 필수옵션 체크 → 자동 규칙 (무기/방어구)
@@ -474,6 +479,9 @@ export default function App() {
             진행도만 고르면 모든 역할(딜러·탱커·힐러·격려·유틸)의 규칙이 위 내보내기에 한 번에 담깁니다.
             세밀하게 손보려면 <strong>개인화</strong> 탭으로 가세요.
           </p>
+          <button type="button" className="addRuleBtn startCustomBtn" onClick={startCustomFromBasic}>
+            ✎ 이 규칙을 시작점으로 개인화에서 편집하기
+          </button>
           <div className="ruleList readonly">
             {basicRules.map((rule, i) => (
               <div key={rule.id} className="ruleSummaryRow">
