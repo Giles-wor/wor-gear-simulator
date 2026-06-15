@@ -191,6 +191,30 @@
   width: 16px;
   height: 16px;
 }
+.compressToggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 2px 0 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(231, 166, 95, 0.25);
+  background: rgba(18, 15, 13, 0.4);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #e7c89f;
+  cursor: pointer;
+}
+.compressToggle input {
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+.compressToggle small {
+  font-weight: 400;
+  opacity: 0.7;
+}
 
 /* ── 프리셋 ── */
 .presetRow {
