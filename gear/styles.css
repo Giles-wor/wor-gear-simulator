@@ -216,6 +216,73 @@
   opacity: 0.7;
 }
 
+/* ── 내 프리셋 (저장/불러오기) ── */
+.savePresetRow {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  flex-wrap: wrap;
+  margin: 4px 0 12px;
+}
+.presetNameInput {
+  flex: 1 1 240px;
+  min-width: 0;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(231, 166, 95, 0.35);
+  background: rgba(12, 10, 9, 0.6);
+  color: #f1e4d2;
+  font-size: 0.9rem;
+}
+.presetNameInput::placeholder {
+  color: #8a7c6b;
+}
+.savePresetBtn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.myPresetList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.myPresetRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(231, 166, 95, 0.22);
+  background: rgba(231, 166, 95, 0.05);
+}
+.myPresetInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.myPresetInfo strong {
+  font-size: 0.98rem;
+  color: #ffe1b5;
+}
+.myPresetMeta {
+  font-size: 0.78rem;
+  color: #b6a791;
+}
+.myPresetActions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ghostBtn.danger {
+  color: #e79a8c;
+  border-color: rgba(231, 120, 100, 0.4);
+}
+.ghostBtn.danger:hover {
+  background: rgba(231, 120, 100, 0.14);
+}
+
 /* ── 프리셋 ── */
 .presetRow {
   display: grid;

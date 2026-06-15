@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { GlobalNav } from './components/GlobalNav'
 import { SiteCredit } from './components/SiteCredit'
 import { gearSetsBySide, gearSetDisplayName } from './data/gearSets'
@@ -24,6 +24,13 @@ import {
   type FilterRule,
   type RuleSide,
 } from './lib/filter'
+import {
+  loadMyPresets,
+  persistMyPresets,
+  newPresetId,
+  cloneRulesForLoad,
+  type SavedPreset,
+} from './lib/myPresets'
 
 const setLabelOf = (id: string) => gearSetDisplayName(id)
 const mainLabelOf = (id: string) => statLabel(mainStats, id)
@@ -283,6 +290,43 @@ export default function App() {
     ])
   }
 
+  // ── 내 프리셋 (localStorage) ──
+  const [myPresets, setMyPresets] = useState<SavedPreset[]>(() => loadMyPresets())
+  const [presetName, setPresetName] = useState('')
+  useEffect(() => {
+    persistMyPresets(myPresets)
+  }, [myPresets])
+
+  const saveCurrentPreset = () => {
+    const name = presetName.trim() || `내 프리셋 ${myPresets.length + 1}`
+    setMyPresets((prev) => [
+      {
+        id: newPresetId(),
+        name,
+        rules: customRules.map((r) => ({ ...r })),
+        conversion,
+        savedAt: Date.now(),
+      },
+      ...prev,
+    ])
+    setPresetName('')
+  }
+  const loadPreset = (p: SavedPreset) => {
+    setCustomRules(cloneRulesForLoad(p.rules))
+    setConversion(p.conversion)
+    setView('custom')
+  }
+  const deletePreset = (id: string) =>
+    setMyPresets((prev) => prev.filter((p) => p.id !== id))
+  const overwritePreset = (id: string) =>
+    setMyPresets((prev) =>
+      prev.map((p) =>
+        p.id === id
+          ? { ...p, rules: customRules.map((r) => ({ ...r })), conversion, savedAt: Date.now() }
+          : p,
+      ),
+    )
+
   const exportText = useMemo(() => {
     const lines = activeRules.map(
       (r, i) => `규칙 ${i + 1}. ${r.name}\n  ${ruleSummary(r, setLabelOf, mainLabelOf, subLabelOf)}`,
@@ -444,6 +488,69 @@ export default function App() {
         </section>
       ) : (
         <>
+          <section className="card">
+            <div className="sectionHeading">
+              <div>
+                <p className="eyebrow">내 프리셋</p>
+                <h2>내가 저장한 프리셋 ({myPresets.length}개)</h2>
+              </div>
+            </div>
+            <p className="muted helperText">
+              아래에서 역할 프리셋을 불러와 내 취향대로 고친 뒤, 이름을 붙여 저장하세요. 이 브라우저에
+              보관됩니다(localStorage). 불러오면 변환 모드까지 함께 복원돼요.
+            </p>
+            <div className="savePresetRow">
+              <input
+                className="presetNameInput"
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+                placeholder={`예: 내 공딜용 (현재 규칙 ${customRules.length}개)`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveCurrentPreset()
+                }}
+              />
+              <button type="button" className="addRuleBtn savePresetBtn" onClick={saveCurrentPreset}>
+                + 현재 규칙 저장
+              </button>
+            </div>
+            {myPresets.length === 0 ? (
+              <p className="muted helperText">아직 저장한 프리셋이 없어요.</p>
+            ) : (
+              <div className="myPresetList">
+                {myPresets.map((p) => (
+                  <div key={p.id} className="myPresetRow">
+                    <div className="myPresetInfo">
+                      <strong>{p.name}</strong>
+                      <span className="myPresetMeta">
+                        규칙 {p.rules.length}개 · {p.conversion ? '변환 고려' : '변환 미고려'}
+                      </span>
+                    </div>
+                    <div className="myPresetActions">
+                      <button type="button" className="ghostBtn" onClick={() => loadPreset(p)}>
+                        불러오기
+                      </button>
+                      <button
+                        type="button"
+                        className="ghostBtn"
+                        title="현재 편집 중인 규칙으로 이 프리셋을 덮어씁니다"
+                        onClick={() => overwritePreset(p.id)}
+                      >
+                        덮어쓰기
+                      </button>
+                      <button
+                        type="button"
+                        className="ghostBtn danger"
+                        onClick={() => deletePreset(p.id)}
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
           <section className="card">
             <div className="sectionHeading">
               <div>
