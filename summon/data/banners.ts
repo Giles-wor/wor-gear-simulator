@@ -11,7 +11,7 @@ import { generatedBanners, generatedSource } from './banners.generated'
 const placeholderBanners: Record<BannerConfig['id'], BannerConfig> = {
   normal: {
     id: 'normal',
-    name: '일반 스피릿',
+    name: '일반 스피릿 (확률UP)',
     lordGroupRate: 0.0004,
     commonGroupRate: 0.0046,
     lordPoolSize: 8,
@@ -19,12 +19,13 @@ const placeholderBanners: Record<BannerConfig['id'], BannerConfig> = {
     softPityStart: 181,
     softPityIncrement: 0.05,
     hardPity: 200,
-    featuredMultiplier: 1,
-    defaultPickups: [{ label: '타겟 영웅', group: 'common' }],
+    featuredMultiplier: 20,
+    rateUpStackingMultiplier: 10,
+    defaultPickups: [{ label: '확률UP 영웅', group: 'common' }],
     defaultGoals: [1],
     placeholder: false,
     notes:
-      '기본 스피릿 배너 (Invocation of Spirits). 픽업 가중치 없음 → 풀에서 특정 1명만 노릴 때. 스피릿 천장 공유.',
+      '특정 스피릿 소환 이벤트: 확률 UP 영웅 ×20(동일 등급 대비) + 비-픽업 레전더리 뽑을 때마다 ×10 stacking(첫 픽업 획득 전까지). 180회 미획득 후 +5%/회, 200픽 5성 보장(통합). 픽업 자체 확정은 없음(=한정 선택 소환만 200픽 픽업 확정). 픽업 여러 명이면 행 추가.',
   },
   limited: {
     id: 'limited',
