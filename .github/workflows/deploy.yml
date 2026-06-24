@@ -49,6 +49,9 @@ jobs:
       - name: Build (다가오는 배너)
         run: npm run build:banners
 
+      - name: Build (유출정보)
+        run: npm run build:leaks
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
