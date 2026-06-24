@@ -1,0 +1,354 @@
+/* 유출정보 페이지 전용 스타일 (전역 src/styles.css 위에 얹음) */
+
+.leakHeader {
+  margin: 8px 0 18px;
+}
+.leakHeader h1 {
+  margin: 0 0 6px;
+  font-size: 1.7rem;
+  color: #ffe1b5;
+  letter-spacing: -0.5px;
+}
+.leakIntro {
+  margin: 0 0 12px;
+  color: #c9b9a6;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+.leakDisclaimer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 80, 80, 0.08);
+  border: 1px solid rgba(255, 120, 100, 0.35);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: #e7d6c6;
+}
+.leakDisclaimer strong {
+  color: #ff9a8c;
+}
+
+.leakJump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.leakJumpLink {
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(231, 166, 95, 0.1);
+  border: 1px solid rgba(231, 166, 95, 0.35);
+  color: #ffe1b5;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.leakJumpLink:hover {
+  background: rgba(231, 166, 95, 0.22);
+}
+
+.leakList {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.leakHero {
+  background: rgba(34, 26, 22, 0.78);
+  border: 1px solid rgba(255, 214, 170, 0.16);
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+  scroll-margin-top: 14px;
+}
+
+.leakHeroTop {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+.leakPortrait {
+  flex: 0 0 260px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(231, 166, 95, 0.3);
+  background: #0d0b0a;
+}
+.leakPortrait img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.leakHeroHead {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+.leakNameRow {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.leakName {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #ffe1b5;
+}
+.leakNameRu {
+  font-size: 0.9rem;
+  color: #9c8c79;
+}
+.leakTitle {
+  margin: 2px 0 10px;
+  color: #e7a65f;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+.leakMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.leakBadge {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(231, 166, 95, 0.08);
+  border: 1px solid rgba(231, 166, 95, 0.25);
+  color: #d8c6b2;
+  font-size: 0.78rem;
+}
+.leakBadge.rarity {
+  background: rgba(255, 170, 60, 0.16);
+  border-color: rgba(255, 170, 60, 0.5);
+  color: #ffd79a;
+  font-weight: 800;
+}
+.leakTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+.leakTag {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(120, 170, 255, 0.12);
+  border: 1px solid rgba(120, 170, 255, 0.3);
+  color: #bcd4ff;
+  font-size: 0.76rem;
+}
+.leakStory {
+  margin: 0 0 12px;
+  color: #b6a791;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  font-style: italic;
+}
+.leakStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 8px;
+}
+.leakStat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(12, 10, 9, 0.5);
+  border: 1px solid rgba(231, 166, 95, 0.18);
+}
+.leakStatLabel {
+  font-size: 0.72rem;
+  color: #9c8c79;
+}
+.leakStatValue {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #ffe1b5;
+}
+
+.leakBlock {
+  margin-top: 16px;
+}
+.leakBlockTitle {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  color: #e7a65f;
+  border-bottom: 1px solid rgba(231, 166, 95, 0.22);
+  padding-bottom: 5px;
+}
+.leakTalent {
+  margin: 0;
+  color: #ddcdba;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.leakSkills {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.leakSkill {
+  padding: 11px 13px;
+  border-radius: 12px;
+  background: rgba(12, 10, 9, 0.4);
+  border: 1px solid rgba(231, 166, 95, 0.16);
+}
+.leakSkillHead {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.leakSkillName {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #ffe1b5;
+}
+.leakSkillKind {
+  font-size: 0.74rem;
+  color: #c79a6a;
+  background: rgba(231, 166, 95, 0.1);
+  border: 1px solid rgba(231, 166, 95, 0.25);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.leakSkillDesc {
+  margin: 0;
+  color: #d4c4b1;
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.leakAwaken {
+  margin: 0;
+  padding-left: 1.3em;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.leakAwaken li {
+  color: #d4c4b1;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.leakGlossary {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.leakGlossaryRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.leakGlossaryRow dt {
+  flex: 0 0 auto;
+  font-weight: 800;
+  color: #ffd79a;
+  font-size: 0.84rem;
+}
+.leakGlossaryRow dd {
+  margin: 0;
+  flex: 1 1 200px;
+  color: #c4b5a2;
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+
+.leakShots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.leakShotThumb {
+  position: relative;
+  display: block;
+  width: 200px;
+  max-width: 100%;
+  padding: 0;
+  border: 1px solid rgba(231, 166, 95, 0.3);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: zoom-in;
+  background: #0d0b0a;
+}
+.leakShotThumb img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.leakShotHint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 5px;
+  font-size: 0.74rem;
+  text-align: center;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.leakFooter {
+  margin: 24px 0 12px;
+  text-align: center;
+  color: #8a7c6b;
+  font-size: 0.82rem;
+}
+
+/* 원문 스크린샷 라이트박스 */
+.leakOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.leakOverlayBox {
+  position: relative;
+  max-width: 96vw;
+  max-height: 92vh;
+}
+.leakOverlayImg {
+  display: block;
+  max-width: 96vw;
+  max-height: 92vh;
+  border-radius: 8px;
+}
+.leakOverlayClose {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid rgba(231, 166, 95, 0.5);
+  background: #221b16;
+  color: #ffe1b5;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .leakHeroTop {
+    flex-direction: column;
+  }
+  .leakPortrait {
+    flex-basis: auto;
+    width: 100%;
+  }
+}
