@@ -17,7 +17,18 @@ export type BuildInput = {
   leftSetId: string
   rightSetId: string
   setUptime: number
+  /** 보석(이화) 효과 — 건방: 공격력 +400 (스탯스틱) */
+  gemGunbangOn?: boolean
+  /** 보석(이화) 효과 — 거침없는힘 기본 패시브: 공격력 +5% */
+  gemGeochimOn?: boolean
+  /** 미동 장비 보유 영웅 배치 시: 피해 +5% (거침없는힘 켜졌을 때만 곱연산 적용) */
+  gemMidongOn?: boolean
 }
+
+/** 보석(이화) 효과 수치 — 인게임 딜테스트로 검증한 값 (역산 오차 ~0.3%). */
+export const GEM_GUNBANG_ATK = 400
+export const GEM_GEOCHIM_ATK_PCT = 0.05
+export const GEM_MIDONG_DAMAGE = 0.05
 
 export type DamageResult = {
   finalAtk: number
@@ -365,9 +376,14 @@ export function calculateBuild(
   const { normalDamageBonus, totalDamageBonus, bonusCritDmg } = damageMultiplier(rightSet, build.setUptime)
   const maxSetBonus = getMaxSetBonus(rightSet)
 
+  // 보석(이화) 효과: 건방(+공격력 flat) / 거침없는힘(+공격력%) / 미동 배치(+피해%, 거침 전제)
+  const gemAtkFlat = build.gemGunbangOn ? GEM_GUNBANG_ATK : 0
+  const gemAtkPct = build.gemGeochimOn ? GEM_GEOCHIM_ATK_PCT : 0
+  const gemDamageBonus = build.gemGeochimOn && build.gemMidongOn ? GEM_MIDONG_DAMAGE : 0
+
   const finalAtk = Math.round(
-    build.totalAtk + awakeningBonus +
-    build.totalAtk * (factionAtkPctBonus + lordAtkPctBonus + awakening.atkPctBonus),
+    build.totalAtk + awakeningBonus + gemAtkFlat +
+    build.totalAtk * (factionAtkPctBonus + lordAtkPctBonus + awakening.atkPctBonus + gemAtkPct),
   )
   const finalCritRate = Math.min(100, build.critRate + awakening.critRateBonus)
   const baseFinalCritDmg = build.critDmg + factionCritDmgBonus + lordCritDmgBonus + awakening.critDmgBonus
@@ -382,8 +398,8 @@ export function calculateBuild(
   // 드라큘라류: "모든 공속이 피해 보정" → 판테온/영주 공속 포함한 finalAspd 기준 (인게임 검증)
   const draculaBurstBonus = hero.burstAtkBonusPer100Aspd ? (finalAspd / 100) * hero.burstAtkBonusPer100Aspd : 0
   const automaticHeroDamageBonus = draculaBurstBonus + awakening.damageBonus
-  const statDamageBonus = leftSetDamagePct + automaticHeroDamageBonus + factionDamageBonus + lordDamageBonus
-  const itemDamageBonus = maxSetBonus.damageBonus + leftSetDamagePct + automaticHeroDamageBonus + factionDamageBonus + lordDamageBonus
+  const statDamageBonus = leftSetDamagePct + automaticHeroDamageBonus + factionDamageBonus + lordDamageBonus + gemDamageBonus
+  const itemDamageBonus = maxSetBonus.damageBonus + leftSetDamagePct + automaticHeroDamageBonus + factionDamageBonus + lordDamageBonus + gemDamageBonus
   // Derived: 치피 → 관통. baseFinalCritDmg (%) 의 비율만큼 관통 추가 (예: 치피 270 × 0.1 = 27%p 관통)
   const derivedPenetrationFromCritDmg = (awakening.penetrationFromCritDmgRatio ?? 0) * (baseFinalCritDmg / 100)
   const totalPenetrationApplied = Math.min(
@@ -413,6 +429,7 @@ export function calculateBuild(
     { label: factionAccessory?.sourceName ?? '진영 악세서리', value: factionDamageBonus },
     { label: lordEffect?.sourceName ?? '영주 피해', value: lordDamageBonus },
     { label: lordEffect ? `${lordEffect.name} 기본 공격` : '영주 기본 공격', value: lordBasicDamageBonus },
+    { label: '미동 배치(피해)', value: gemDamageBonus },
   ].filter((part) => Math.abs(part.value) > 1e-9)
   const awakeningNoteLines = awakening.tiers
     .map((tier) => {
@@ -435,6 +452,9 @@ export function calculateBuild(
     ...(hero.burstAtkBonusPer100Aspd ? [`${hero.name}: 공속 100당 피해 +${Math.round(hero.burstAtkBonusPer100Aspd * 100)}% 자동 적용`] : []),
     ...(factionAccessory ? [`${factionAccessory.sourceName}: ${factionAccessory.summary}`] : []),
     ...(lordEffect ? [`${lordEffect.sourceName}: ${lordEffect.summary}`] : []),
+    ...(gemAtkFlat ? [`보석 건방: 공격력 +${gemAtkFlat}`] : []),
+    ...(gemAtkPct ? [`보석 거침없는힘: 공격력 +${Math.round(gemAtkPct * 100)}%`] : []),
+    ...(gemDamageBonus ? [`미동 배치: 피해 +${Math.round(gemDamageBonus * 100)}% (거침없는힘 곱연산)`] : []),
   ]
 
   // 직접 고정피해(True Damage): ATK × 계수 × (1+피증). 치명타·방어·마방 무시.
