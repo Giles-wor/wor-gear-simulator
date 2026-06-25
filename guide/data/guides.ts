@@ -66,6 +66,7 @@ const CREDITS: Record<string, string> = {
   '악의무리 팁': '9enie',
   '귀속 투력 팁': '9enie',
   '여명의 날개': '9enie',
+  '거침없는힘 보석 딜 실험': 'Time 길드',
 }
 
 const stripExt = (name: string) => name.replace(/\.[^.]+$/, '')
