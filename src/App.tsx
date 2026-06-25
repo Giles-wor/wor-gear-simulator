@@ -39,7 +39,10 @@ const defaultBuild: BuildInput = {
   lordEffectId: 'none',
   leftSetId: 'warlord',
   rightSetId: 'infernal_roar',
-  setUptime: 1
+  setUptime: 1,
+  gemGunbangOn: false,
+  gemGeochimOn: false,
+  gemMidongOn: false
 }
 
 export default function App() {

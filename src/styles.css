@@ -353,6 +353,31 @@ h3 {
   line-height: 1.45;
   word-break: keep-all;
 }
+.gemToggles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.gemToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.86rem;
+  color: #e7d6c6;
+  cursor: pointer;
+}
+.gemToggle small {
+  color: #b18a5f;
+  font-size: 0.76rem;
+}
+.gemToggle.gemToggleChild {
+  padding-left: 12px;
+}
+.gemToggle.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .awakeningPicker {
   display: flex;
   gap: 4px;

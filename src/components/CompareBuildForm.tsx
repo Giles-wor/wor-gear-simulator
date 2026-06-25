@@ -74,6 +74,38 @@ function lordSelect(
   )
 }
 
+function gemToggles(build: BuildInput, onChange: (next: BuildInput) => void) {
+  return (
+    <div className="gemToggles">
+      <label className="gemToggle">
+        <input
+          type="checkbox"
+          checked={!!build.gemGunbangOn}
+          onChange={(e) => onChange({ ...build, gemGunbangOn: e.target.checked })}
+        />
+        건방 <small>공격력 +400</small>
+      </label>
+      <label className="gemToggle">
+        <input
+          type="checkbox"
+          checked={!!build.gemGeochimOn}
+          onChange={(e) => onChange({ ...build, gemGeochimOn: e.target.checked })}
+        />
+        거침없는힘 <small>공격력 +5%</small>
+      </label>
+      <label className={`gemToggle gemToggleChild${build.gemGeochimOn ? '' : ' disabled'}`}>
+        <input
+          type="checkbox"
+          disabled={!build.gemGeochimOn}
+          checked={!!build.gemGeochimOn && !!build.gemMidongOn}
+          onChange={(e) => onChange({ ...build, gemMidongOn: e.target.checked })}
+        />
+        └ 미동 배치 <small>피해 +5%</small>
+      </label>
+    </div>
+  )
+}
+
 export function CompareBuildForm({ hero, buildA, buildB, accessoryOptions, lordOptions, onChangeA, onChangeB, showLeftSet = true }: CompareBuildFormProps) {
   return (
     <section className="card compareFormCard">
@@ -183,6 +215,11 @@ export function CompareBuildForm({ hero, buildA, buildB, accessoryOptions, lordO
           label="진영 3세트 악세서리"
           left={accessorySelect(buildA, accessoryOptions, onChangeA)}
           right={accessorySelect(buildB, accessoryOptions, onChangeB)}
+        />
+        <Row
+          label="보석(이화) 효과"
+          left={gemToggles(buildA, onChangeA)}
+          right={gemToggles(buildB, onChangeB)}
         />
       </div>
     </section>
