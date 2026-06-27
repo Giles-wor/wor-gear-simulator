@@ -5,6 +5,12 @@
 /** 표의 한 칸. 문자열이거나, 강조(주황) 표시가 필요하면 객체로. */
 export type GuildCell = string | { v: string; hi?: boolean }
 
+/** 행(길드원)별 메타데이터. rows 와 같은 인덱스로 정렬. */
+export type RowMeta = {
+  /** 이 행이 마지막으로 수정된 날짜 (YYYY-MM-DD) */
+  updatedAt?: string
+}
+
 /** 진행 현황 등 표 형태 데이터. */
 export type GuildTable = {
   title?: string
@@ -12,6 +18,8 @@ export type GuildTable = {
   note?: string
   headers: string[]
   rows: GuildCell[][]
+  /** 행별 최종 수정일 (rows 와 같은 순서). 저장 시 변경된 행만 갱신. */
+  rowMeta?: RowMeta[]
 }
 
 export type GuildLink = { label: string; url: string; desc?: string }

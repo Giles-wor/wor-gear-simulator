@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent } from 'react'
-import type { GuildContent, GuildTable } from '../types'
+import type { GuildCell, GuildContent, GuildTable, RowMeta } from '../types'
 import { cellOf, titleColIndex, useIsMobile } from './ResponsiveTable'
 
 type Props = {
@@ -64,7 +64,22 @@ export function ContentEditor({ initial, onSave, onCancel, busy, error, canPubli
 
   const save = () => {
     const today = new Date().toISOString().slice(0, 10)
-    onSave({ ...draft, updatedAt: today })
+    // 변경된 행만 오늘 날짜로 갱신(캐릭명 기준 매칭). 안 바뀐 행은 기존 날짜 유지.
+    const tables = draft.tables.map((t, ti) => {
+      const init = initial.tables[ti]
+      const titleCol = titleColIndex(t.headers)
+      const prev = new Map<string, { row: GuildCell[]; meta?: RowMeta }>()
+      init?.rows.forEach((r, i) => {
+        prev.set(cellOf(r[titleCol] ?? '').v, { row: r, meta: init.rowMeta?.[i] })
+      })
+      const rowMeta: RowMeta[] = t.rows.map((r) => {
+        const p = prev.get(cellOf(r[titleCol] ?? '').v)
+        const changed = !p || JSON.stringify(p.row) !== JSON.stringify(r)
+        return changed ? { updatedAt: today } : (p.meta ?? {})
+      })
+      return { ...t, rowMeta }
+    })
+    onSave({ ...draft, updatedAt: today, tables })
   }
 
   // 모바일: 멤버별 카드 입력폼 (가로 스크롤 없이 한 명씩 입력)

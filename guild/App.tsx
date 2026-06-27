@@ -135,7 +135,7 @@ function ReadView({ content, onShot }: { content: GuildContent; onShot: (src: st
 
       {content.tables.length > 0 ? (
         content.tables.map((table, ti) => (
-          <section className="guildBlock" key={ti}>
+          <section className="guildBlock guildTableBlock" key={ti}>
             <h2 className="guildBlockTitle">📊 {table.title || '진행 현황'}</h2>
             <ResponsiveTable table={table} />
             {table.note && <p className="guildTableNote">{table.note}</p>}

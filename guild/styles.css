@@ -163,12 +163,12 @@
 .guildTable {
   border-collapse: collapse;
   width: 100%;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   white-space: nowrap;
 }
 .guildTable th,
 .guildTable td {
-  padding: 7px 10px;
+  padding: 5px 7px;
   border: 1px solid rgba(231, 166, 95, 0.14);
   text-align: center;
   color: #d4c4b1;
@@ -179,6 +179,34 @@
   font-weight: 800;
   position: sticky;
   top: 0;
+  /* 긴 헤더는 2줄로 접어서 열 폭을 줄임 → 마지막 열까지 보이게 */
+  white-space: normal;
+  line-height: 1.2;
+  min-width: 38px;
+  word-break: keep-all;
+}
+
+/* 진행 현황 표 블록만 좌우로 넓게(뷰포트 기준) → 마지막 열(지하성3·최근 업데이트)까지 보이게 */
+.guildTableBlock {
+  width: min(1480px, 96vw);
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
+
+/* 최근 업데이트 열 */
+.guildUpdCol {
+  color: #c9b9a6;
+}
+.guildUpd {
+  color: #9c8c79;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+.guildCardUpd {
+  margin-left: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #9c8c79;
 }
 .guildTable tbody tr:nth-child(even) td {
   background: rgba(12, 10, 9, 0.32);
@@ -601,5 +629,11 @@
   }
   .guildEditLink input {
     flex-basis: 100%;
+  }
+  /* 모바일은 카드뷰라 표 블록 확장 불필요 */
+  .guildTableBlock {
+    width: auto;
+    margin-left: 0;
+    transform: none;
   }
 }

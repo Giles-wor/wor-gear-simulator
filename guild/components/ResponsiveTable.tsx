@@ -25,6 +25,22 @@ export function titleColIndex(headers: string[]): number {
   return i >= 0 ? i : 0
 }
 
+/** YYYY-MM-DD → "오늘 / 어제 / N일 전". 없으면 빈 문자열. */
+export function daysAgoLabel(iso?: string): string {
+  if (!iso) return ''
+  const then = new Date(`${iso}T00:00:00`)
+  if (Number.isNaN(then.getTime())) return ''
+  const now = new Date()
+  const a = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+  const b = Date.UTC(then.getFullYear(), then.getMonth(), then.getDate())
+  const diff = Math.round((a - b) / 86400000)
+  if (diff <= 0) return '오늘'
+  if (diff === 1) return '어제'
+  return `${diff}일 전`
+}
+
+const UPDATED_HEADER = '최근 업데이트'
+
 /** 데스크톱: 가로 스크롤 표 / 모바일: 멤버별 카드(값 있는 항목만 → 한눈에). */
 export function ResponsiveTable({ table }: { table: GuildTable }) {
   const mobile = useIsMobile()
@@ -42,9 +58,13 @@ export function ResponsiveTable({ table }: { table: GuildTable }) {
               return { label, v, hi: hi || belowCut(label, v), ci }
             })
             .filter((f) => f.ci !== titleCol && f.v.trim() !== '')
+          const upd = daysAgoLabel(table.rowMeta?.[ri]?.updatedAt)
           return (
             <div key={ri} className="guildCard">
-              <div className="guildCardName">{title}</div>
+              <div className="guildCardName">
+                {title}
+                {upd && <span className="guildCardUpd">업데이트 {upd}</span>}
+              </div>
               {fields.length > 0 ? (
                 <dl className="guildCardGrid">
                   {fields.map((f) => (
@@ -74,6 +94,7 @@ export function ResponsiveTable({ table }: { table: GuildTable }) {
                 {h}
               </th>
             ))}
+            <th className="guildUpdCol">{UPDATED_HEADER}</th>
           </tr>
         </thead>
         <tbody>
@@ -91,6 +112,7 @@ export function ResponsiveTable({ table }: { table: GuildTable }) {
                   </td>
                 )
               })}
+              <td className="guildUpd">{daysAgoLabel(table.rowMeta?.[ri]?.updatedAt) || '—'}</td>
             </tr>
           ))}
         </tbody>
