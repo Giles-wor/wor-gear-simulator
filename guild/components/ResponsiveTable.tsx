@@ -41,10 +41,21 @@ export function daysAgoLabel(iso?: string): string {
 
 const UPDATED_HEADER = '최근 업데이트'
 
+/** 캐릭명/구분 외 수치 칸에 값이 하나라도 있으면 true. */
+function rowHasData(row: GuildCell[], headers: string[], titleCol: number): boolean {
+  return row.some(
+    (cell, ci) => ci !== titleCol && !/구분/.test(headers[ci] ?? '') && cellOf(cell).v.trim() !== '',
+  )
+}
+
 /** 데스크톱: 가로 스크롤 표 / 모바일: 멤버별 카드(값 있는 항목만 → 한눈에). */
-export function ResponsiveTable({ table }: { table: GuildTable }) {
+export function ResponsiveTable({ table, fallbackDate }: { table: GuildTable; fallbackDate?: string }) {
   const mobile = useIsMobile()
   const titleCol = titleColIndex(table.headers)
+
+  // 행별 최종 수정일: rowMeta 우선, 없으면 값이 있는 행은 콘텐츠 마지막 저장일로 대체.
+  const rowDate = (ri: number, row: GuildCell[]): string | undefined =>
+    table.rowMeta?.[ri]?.updatedAt ?? (rowHasData(row, table.headers, titleCol) ? fallbackDate : undefined)
 
   if (mobile) {
     return (
@@ -59,7 +70,7 @@ export function ResponsiveTable({ table }: { table: GuildTable }) {
             })
             // 캐릭명/구분 제외한 수치 열은 값이 없어도 NaN 으로 표시
             .filter((f) => f.ci !== titleCol && !/구분/.test(f.label))
-          const upd = daysAgoLabel(table.rowMeta?.[ri]?.updatedAt)
+          const upd = daysAgoLabel(rowDate(ri, row))
           return (
             <div key={ri} className="guildCard">
               <div className="guildCardName">
@@ -123,7 +134,7 @@ export function ResponsiveTable({ table }: { table: GuildTable }) {
                   </td>
                 )
               })}
-              <td className="guildUpd">{daysAgoLabel(table.rowMeta?.[ri]?.updatedAt) || '—'}</td>
+              <td className="guildUpd">{daysAgoLabel(rowDate(ri, row)) || '—'}</td>
             </tr>
           ))}
         </tbody>

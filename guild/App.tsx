@@ -137,7 +137,7 @@ function ReadView({ content, onShot }: { content: GuildContent; onShot: (src: st
         content.tables.map((table, ti) => (
           <section className="guildBlock guildTableBlock" key={ti}>
             <h2 className="guildBlockTitle">📊 {table.title || '진행 현황'}</h2>
-            <ResponsiveTable table={table} />
+            <ResponsiveTable table={table} fallbackDate={content.updatedAt} />
             {table.note && <p className="guildTableNote">{table.note}</p>}
           </section>
         ))
