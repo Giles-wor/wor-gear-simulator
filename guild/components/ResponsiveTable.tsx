@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import type { GuildCell, GuildTable } from '../types'
 import { belowCut, parseNum } from '../thresholds'
 
@@ -66,11 +66,14 @@ export function ResponsiveTable({
   table,
   fallbackDate,
   headerIcon,
+  memberExtra,
 }: {
   table: GuildTable
   fallbackDate?: string
   /** 헤더명 → 아이콘 URL(있으면 텍스트 대신 아이콘 표시). */
   headerIcon?: (header: string) => string | undefined
+  /** 멤버(캐릭명)별 추가 표시(카드 하단 / 표 행 아래 한 줄). 마병 strip 등. */
+  memberExtra?: (memberName: string) => ReactNode
 }) {
   const mobile = useIsMobile()
   const titleCol = titleColIndex(table.headers)
@@ -128,6 +131,7 @@ export function ResponsiveTable({
               ) : (
                 <p className="guildCardEmpty">기록 없음</p>
               )}
+              {memberExtra && <div className="guildCardExtra">{memberExtra(title)}</div>}
             </div>
           )
         })}
@@ -155,8 +159,11 @@ export function ResponsiveTable({
           </tr>
         </thead>
         <tbody>
-          {table.rows.map((row, ri) => (
-            <tr key={ri}>
+          {table.rows.map((row, ri) => {
+            const memberName = cellOf(row[titleCol] ?? '').v
+            return (
+              <Fragment key={ri}>
+                <tr>
               {row.map((cell, ci) => {
                 const { v, hi } = cellOf(cell)
                 const header = table.headers[ci] ?? ''
@@ -180,8 +187,17 @@ export function ResponsiveTable({
               <td className={isStale(rowDate(ri, row)) ? 'guildUpd stale' : 'guildUpd'}>
                 {daysAgoLabel(rowDate(ri, row)) || '—'}
               </td>
-            </tr>
-          ))}
+                </tr>
+                {memberExtra && (
+                  <tr className="guildExtraRow">
+                    <td colSpan={table.headers.length + (table.sumColumn ? 1 : 0) + 1}>
+                      {memberExtra(memberName)}
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            )
+          })}
         </tbody>
       </table>
     </div>

@@ -225,6 +225,69 @@
   font-size: 0.76rem;
   font-weight: 800;
 }
+/* 길드원 패널 안 마병 한 줄 strip */
+.guildCardExtra {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(231, 166, 95, 0.22);
+}
+.guildExtraRow td {
+  padding: 3px 7px 7px;
+  background: rgba(12, 10, 9, 0.28);
+  text-align: left;
+}
+.marStrip {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.marItem {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 24px;
+}
+.marItem img {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  object-fit: cover;
+  border: 1px solid rgba(231, 166, 95, 0.25);
+}
+.marItem .marAbbr {
+  height: 22px;
+  display: flex;
+  align-items: center;
+  font-size: 0.58rem;
+  color: #9c8c79;
+}
+.marLv {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #ffe1b5;
+  line-height: 1.5;
+}
+.marLv.empty {
+  color: #6b5f51;
+  font-weight: 600;
+}
+.marSum {
+  flex: 0 0 auto;
+  align-self: center;
+  margin-left: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(231, 166, 95, 0.16);
+  border: 1px solid rgba(231, 166, 95, 0.35);
+  color: #ffe1b5;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 /* 마병 등 헤더 아이콘 */
 .guildHeaderIcon {
   display: block;

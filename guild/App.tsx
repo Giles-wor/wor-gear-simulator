@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { GlobalNav } from './components/GlobalNav'
 import { SiteCredit } from './components/SiteCredit'
-import { ResponsiveTable } from './components/ResponsiveTable'
+import { ResponsiveTable, cellOf, titleColIndex } from './components/ResponsiveTable'
 import { ContentEditor } from './components/ContentEditor'
 import { decryptContent, encryptContent } from './crypto'
-import { ensureSoldierTable, soldierIcon } from './soldiers'
+import { ensureSoldierTable, soldierIcon, SOLDIERS, SOLDIER_TABLE_TITLE } from './soldiers'
 import { migrateMainTable } from './migrate'
+import { parseNum } from './thresholds'
 import { loadRemoteBlob, saveRemoteBlob, supabaseEnabled } from './supabase'
-import type { EncryptedBlob, GuildContent } from './types'
+import type { EncryptedBlob, GuildContent, GuildTable } from './types'
 import bundledBlob from './data/content.encrypted.json'
 
 const SEED = bundledBlob as EncryptedBlob
@@ -151,7 +152,55 @@ function LockScreen({ onSubmit, busy, error }: { onSubmit: (code: string) => voi
   )
 }
 
+/** 마병 표에서 멤버별 레벨 맵 추출. */
+function buildSoldierLevels(soldierTable?: GuildTable): Map<string, Record<string, string>> {
+  const map = new Map<string, Record<string, string>>()
+  if (!soldierTable) return map
+  const tc = titleColIndex(soldierTable.headers)
+  soldierTable.rows.forEach((r) => {
+    const name = cellOf(r[tc] ?? '').v
+    const lv: Record<string, string> = {}
+    soldierTable.headers.forEach((h, ci) => {
+      if (ci !== tc) lv[h] = cellOf(r[ci] ?? '').v
+    })
+    map.set(name, lv)
+  })
+  return map
+}
+
+/** 길드원 패널 안에 들어가는 마병 한 줄 strip(아이콘 + 레벨, 끝에 계). */
+function MarStrip({ levels }: { levels?: Record<string, string> }) {
+  const sum = SOLDIERS.reduce((acc, s) => acc + (parseNum(levels?.[s] ?? '') ?? 0), 0)
+  return (
+    <div className="marStrip">
+      {SOLDIERS.map((s) => {
+        const icon = soldierIcon(s)
+        const v = (levels?.[s] ?? '').trim()
+        return (
+          <span key={s} className="marItem" title={s}>
+            {icon ? (
+              <img src={icon} alt={s} loading="lazy" />
+            ) : (
+              <span className="marAbbr">{s.slice(0, 3)}</span>
+            )}
+            <b className={v === '' ? 'marLv empty' : 'marLv'}>{v === '' ? '0' : v}</b>
+          </span>
+        )
+      })}
+      <span className="marSum">계 {sum}</span>
+    </div>
+  )
+}
+
 function ReadView({ content, onShot }: { content: GuildContent; onShot: (src: string, alt: string) => void }) {
+  const soldierTable = content.tables.find((t) => t.title === SOLDIER_TABLE_TITLE)
+  const levels = buildSoldierLevels(soldierTable)
+  // 마병 표는 별도 표로 보여주지 않고, 각 멤버 패널 안에 strip 으로 삽입.
+  const tables = content.tables.filter((t) => t.title !== SOLDIER_TABLE_TITLE)
+  const marExtra = soldierTable
+    ? (name: string) => <MarStrip levels={levels.get(name)} />
+    : undefined
+
   return (
     <>
       <section className="guildBlock">
@@ -163,11 +212,16 @@ function ReadView({ content, onShot }: { content: GuildContent; onShot: (src: st
         )}
       </section>
 
-      {content.tables.length > 0 ? (
-        content.tables.map((table, ti) => (
+      {tables.length > 0 ? (
+        tables.map((table, ti) => (
           <section className="guildBlock guildTableBlock" key={ti}>
             <h2 className="guildBlockTitle">📊 {table.title || '진행 현황'}</h2>
-            <ResponsiveTable table={table} fallbackDate={content.updatedAt} headerIcon={soldierIcon} />
+            <ResponsiveTable
+              table={table}
+              fallbackDate={content.updatedAt}
+              headerIcon={soldierIcon}
+              memberExtra={marExtra}
+            />
             {table.note && <p className="guildTableNote">{table.note}</p>}
           </section>
         ))
