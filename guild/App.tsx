@@ -4,7 +4,7 @@ import { SiteCredit } from './components/SiteCredit'
 import { ResponsiveTable } from './components/ResponsiveTable'
 import { ContentEditor } from './components/ContentEditor'
 import { decryptContent, encryptContent } from './crypto'
-import { ensureSoldierTable } from './soldiers'
+import { ensureSoldierTable, soldierIcon } from './soldiers'
 import { migrateMainTable } from './migrate'
 import { loadRemoteBlob, saveRemoteBlob, supabaseEnabled } from './supabase'
 import type { EncryptedBlob, GuildContent } from './types'
@@ -167,7 +167,7 @@ function ReadView({ content, onShot }: { content: GuildContent; onShot: (src: st
         content.tables.map((table, ti) => (
           <section className="guildBlock guildTableBlock" key={ti}>
             <h2 className="guildBlockTitle">📊 {table.title || '진행 현황'}</h2>
-            <ResponsiveTable table={table} fallbackDate={content.updatedAt} />
+            <ResponsiveTable table={table} fallbackDate={content.updatedAt} headerIcon={soldierIcon} />
             {table.note && <p className="guildTableNote">{table.note}</p>}
           </section>
         ))

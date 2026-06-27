@@ -225,6 +225,23 @@
   font-size: 0.76rem;
   font-weight: 800;
 }
+/* 마병 등 헤더 아이콘 */
+.guildHeaderIcon {
+  display: block;
+  width: 36px;
+  height: 36px;
+  margin: 0 auto;
+  border-radius: 7px;
+  object-fit: cover;
+  border: 1px solid rgba(231, 166, 95, 0.3);
+}
+.guildHeaderIcon.sm {
+  width: 22px;
+  height: 22px;
+  display: inline-block;
+  vertical-align: middle;
+  border-radius: 5px;
+}
 /* 30일 초과 갱신 지연 경고색 */
 .guildUpd.stale,
 .guildCardUpd.stale {
