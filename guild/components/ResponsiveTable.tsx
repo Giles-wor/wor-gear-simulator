@@ -19,7 +19,7 @@ export function useIsMobile(breakpoint = 640): boolean {
 }
 
 /** 카드 제목으로 쓸 열 인덱스(캐릭명/이름 우선, 없으면 첫 열). */
-function titleColIndex(headers: string[]): number {
+export function titleColIndex(headers: string[]): number {
   const i = headers.findIndex((h) => /캐릭명|이름|닉/.test(h))
   return i >= 0 ? i : 0
 }
