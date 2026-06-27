@@ -5,6 +5,7 @@ import { ResponsiveTable } from './components/ResponsiveTable'
 import { ContentEditor } from './components/ContentEditor'
 import { decryptContent, encryptContent } from './crypto'
 import { ensureSoldierTable } from './soldiers'
+import { migrateMainTable } from './migrate'
 import { loadRemoteBlob, saveRemoteBlob, supabaseEnabled } from './supabase'
 import type { EncryptedBlob, GuildContent } from './types'
 import bundledBlob from './data/content.encrypted.json'
@@ -75,7 +76,8 @@ async function loadContent(code: string): Promise<GuildContent> {
   let lastErr: unknown = null
   for (const blob of candidates) {
     try {
-      return ensureSoldierTable(await decryptContent(code, blob))
+      const decrypted = await decryptContent(code, blob)
+      return ensureSoldierTable({ ...decrypted, tables: decrypted.tables.map(migrateMainTable) })
     } catch (e) {
       lastErr = e
     }
