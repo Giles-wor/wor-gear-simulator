@@ -9,8 +9,35 @@ import type { EncryptedBlob, GuildContent } from './types'
 import bundledBlob from './data/content.encrypted.json'
 
 const SEED = bundledBlob as EncryptedBlob
-const SESSION_CODE = 'guildUnlockCode'
+const UNLOCK_KEY = 'guildUnlock'
+const UNLOCK_TTL = 24 * 60 * 60 * 1000 // 잠금 해제 유효기간: 1일(이후 코드 재입력)
 const LOCAL_BLOB = 'guildContentBlob'
+
+function readUnlock(): { code: string; ts: number } | null {
+  try {
+    const raw = localStorage.getItem(UNLOCK_KEY)
+    const o = raw ? JSON.parse(raw) : null
+    return o && typeof o.code === 'string' && typeof o.ts === 'number' ? o : null
+  } catch {
+    return null
+  }
+}
+
+function writeUnlock(code: string, ts: number) {
+  try {
+    localStorage.setItem(UNLOCK_KEY, JSON.stringify({ code, ts }))
+  } catch {
+    /* noop */
+  }
+}
+
+function clearUnlock() {
+  try {
+    localStorage.removeItem(UNLOCK_KEY)
+  } catch {
+    /* noop */
+  }
+}
 
 function readLocalBlob(): EncryptedBlob | null {
   try {
@@ -203,6 +230,7 @@ export default function App() {
   const [status, setStatus] = useState('')
   const [shot, setShot] = useState<{ src: string; alt: string } | null>(null)
   const statusTimer = useRef<number | undefined>(undefined)
+  const lockTimer = useRef<number | undefined>(undefined)
 
   const flashStatus = useCallback((msg: string) => {
     setStatus(msg)
@@ -210,51 +238,43 @@ export default function App() {
     statusTimer.current = window.setTimeout(() => setStatus(''), 4000)
   }, [])
 
-  const tryUnlock = useCallback(async (c: string, silent: boolean) => {
-    setBusy(true)
-    setError('')
-    try {
-      const data = await loadContent(c)
-      setContent(data)
-      setCode(c)
-      try {
-        sessionStorage.setItem(SESSION_CODE, c)
-      } catch {
-        /* noop */
-      }
-    } catch {
-      try {
-        sessionStorage.removeItem(SESSION_CODE)
-      } catch {
-        /* noop */
-      }
-      if (!silent) setError('코드가 올바르지 않습니다. 다시 확인해 주세요.')
-    } finally {
-      setBusy(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    let saved: string | null = null
-    try {
-      saved = sessionStorage.getItem(SESSION_CODE)
-    } catch {
-      saved = null
-    }
-    if (saved) void tryUnlock(saved, true)
-  }, [tryUnlock])
-
   const lock = useCallback(() => {
+    window.clearTimeout(lockTimer.current)
     setContent(null)
     setCode('')
     setEditing(false)
     setError('')
-    try {
-      sessionStorage.removeItem(SESSION_CODE)
-    } catch {
-      /* noop */
-    }
+    clearUnlock()
   }, [])
+
+  // ts = 잠금 해제 기준 시각(수동 입력=지금, 자동복원=저장된 시각). ts+1일에 자동 잠금.
+  const tryUnlock = useCallback(
+    async (c: string, ts: number, silent: boolean) => {
+      setBusy(true)
+      setError('')
+      try {
+        const data = await loadContent(c)
+        setContent(data)
+        setCode(c)
+        writeUnlock(c, ts)
+        window.clearTimeout(lockTimer.current)
+        lockTimer.current = window.setTimeout(lock, Math.max(0, ts + UNLOCK_TTL - Date.now()))
+      } catch {
+        clearUnlock()
+        if (!silent) setError('코드가 올바르지 않습니다. 다시 확인해 주세요.')
+      } finally {
+        setBusy(false)
+      }
+    },
+    [lock],
+  )
+
+  // 1일 이내 해제 기록이 있으면 자동 입장, 아니면 코드 재입력.
+  useEffect(() => {
+    const u = readUnlock()
+    if (u && Date.now() - u.ts < UNLOCK_TTL) void tryUnlock(u.code, u.ts, true)
+    else clearUnlock()
+  }, [tryUnlock])
 
   const handleSave = useCallback(
     async (next: GuildContent) => {
@@ -282,7 +302,7 @@ export default function App() {
       <GlobalNav active="guild" />
 
       {!content ? (
-        <LockScreen onSubmit={(c) => void tryUnlock(c, false)} busy={busy} error={error} />
+        <LockScreen onSubmit={(c) => void tryUnlock(c, Date.now(), false)} busy={busy} error={error} />
       ) : (
         <>
           <header className="guildHeader">
