@@ -24,6 +24,9 @@ create policy "guild_content read" on public.guild_content
 -- (insert/update 정책 없음 → anon 직접 쓰기 불가, 아래 함수로만)
 
 -- 저장 함수: id 가 코드 해시와 일치할 때만 upsert
+-- (옛 함수와 인자 이름이 달라 create or replace 가 안 되므로 먼저 drop. 시그니처 text,jsonb,text 동일)
+drop function if exists public.save_guild_content(text, jsonb, text);
+
 create or replace function public.save_guild_content(p_id text, p_blob jsonb, p_code text)
 returns void
 language plpgsql
