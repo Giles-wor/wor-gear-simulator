@@ -208,6 +208,12 @@
   font-weight: 600;
   color: #9c8c79;
 }
+/* 30일 초과 갱신 지연 경고색 */
+.guildUpd.stale,
+.guildCardUpd.stale {
+  color: #ff7a4d;
+  font-weight: 800;
+}
 .guildTable tbody tr:nth-child(even) td {
   background: rgba(12, 10, 9, 0.32);
 }

@@ -25,18 +25,31 @@ export function titleColIndex(headers: string[]): number {
   return i >= 0 ? i : 0
 }
 
-/** YYYY-MM-DD → "오늘 / 어제 / N일 전". 없으면 빈 문자열. */
-export function daysAgoLabel(iso?: string): string {
-  if (!iso) return ''
+/** YYYY-MM-DD → 오늘로부터 며칠 지났는지. 없으면 null. */
+export function daysSince(iso?: string): number | null {
+  if (!iso) return null
   const then = new Date(`${iso}T00:00:00`)
-  if (Number.isNaN(then.getTime())) return ''
+  if (Number.isNaN(then.getTime())) return null
   const now = new Date()
   const a = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
   const b = Date.UTC(then.getFullYear(), then.getMonth(), then.getDate())
-  const diff = Math.round((a - b) / 86400000)
-  if (diff <= 0) return '오늘'
-  if (diff === 1) return '어제'
-  return `${diff}일 전`
+  return Math.round((a - b) / 86400000)
+}
+
+/** "오늘 / 어제 / N일 전". 없으면 빈 문자열. */
+export function daysAgoLabel(iso?: string): string {
+  const d = daysSince(iso)
+  if (d == null) return ''
+  if (d <= 0) return '오늘'
+  if (d === 1) return '어제'
+  return `${d}일 전`
+}
+
+/** 30일 초과 = 갱신 지연 경고. */
+export const STALE_DAYS = 30
+export function isStale(iso?: string): boolean {
+  const d = daysSince(iso)
+  return d != null && d > STALE_DAYS
 }
 
 const UPDATED_HEADER = '최근 업데이트'
@@ -70,12 +83,15 @@ export function ResponsiveTable({ table, fallbackDate }: { table: GuildTable; fa
             })
             // 캐릭명/구분 제외한 수치 열은 값이 없어도 NaN 으로 표시
             .filter((f) => f.ci !== titleCol && !/구분/.test(f.label))
-          const upd = daysAgoLabel(rowDate(ri, row))
+          const date = rowDate(ri, row)
+          const upd = daysAgoLabel(date)
           return (
             <div key={ri} className="guildCard">
               <div className="guildCardName">
                 {title}
-                {upd && <span className="guildCardUpd">업데이트 {upd}</span>}
+                {upd && (
+                  <span className={isStale(date) ? 'guildCardUpd stale' : 'guildCardUpd'}>업데이트 {upd}</span>
+                )}
               </div>
               {fields.length > 0 ? (
                 <dl className="guildCardGrid">
@@ -134,7 +150,9 @@ export function ResponsiveTable({ table, fallbackDate }: { table: GuildTable; fa
                   </td>
                 )
               })}
-              <td className="guildUpd">{daysAgoLabel(rowDate(ri, row)) || '—'}</td>
+              <td className={isStale(rowDate(ri, row)) ? 'guildUpd stale' : 'guildUpd'}>
+                {daysAgoLabel(rowDate(ri, row)) || '—'}
+              </td>
             </tr>
           ))}
         </tbody>
