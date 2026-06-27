@@ -216,6 +216,15 @@
   color: #fff !important;
   font-weight: 800;
 }
+/* 값 없는 수치 칸: NaN(까만 글씨), 강조 없음 */
+.guildTable td.guildNaN {
+  color: #000;
+  font-weight: 700;
+}
+.guildCardItem dd.guildNaN {
+  color: #000;
+  font-weight: 700;
+}
 .guildTableNote {
   margin: 8px 0 0;
   color: #9c8c79;
