@@ -2,8 +2,15 @@
 // 실제 내용은 암호화되어 guild/data/content.encrypted.json 에 저장됩니다.
 // 평문 원본(guild/content.source.json)은 .gitignore 처리되어 리포에 올라가지 않습니다.
 
-/** 표의 한 칸. 문자열이거나, 강조(주황) 표시가 필요하면 객체로. */
-export type GuildCell = string | { v: string; hi?: boolean }
+/**
+ * 표의 한 칸. 문자열이거나 객체.
+ * - hi: 강조(주황)
+ * - raw/lord/awaken: 길전 투력 칸 전용. v 는 산식 적용된 최종값(표시용),
+ *   raw=입력 투력, lord=영주 여부, awaken=각성(0~5). 재편집 위해 함께 저장.
+ */
+export type GuildCell =
+  | string
+  | { v: string; hi?: boolean; raw?: string; lord?: boolean; awaken?: number }
 
 /** 행(길드원)별 메타데이터. rows 와 같은 인덱스로 정렬. */
 export type RowMeta = {

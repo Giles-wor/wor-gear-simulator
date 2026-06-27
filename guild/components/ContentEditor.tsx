@@ -1,6 +1,25 @@
 import { useState, type ChangeEvent } from 'react'
 import type { GuildCell, GuildContent, GuildTable, RowMeta } from '../types'
 import { cellOf, titleColIndex } from './ResponsiveTable'
+import { parseNum } from '../thresholds'
+
+/** 길전 투력 칸인지(영주/각성 산식 적용 대상). */
+const isLordHeader = (h: string) => /길전\s*투력/.test(h)
+
+/** 셀에서 편집용 입력값(투력/영주/각성) 복원. 옛 평문 셀은 그 값을 raw 로. */
+function lordCellOf(cell: GuildCell): { raw: string; lord: boolean; awaken: number } {
+  if (typeof cell === 'string') return { raw: cell, lord: false, awaken: 0 }
+  return { raw: cell.raw ?? cell.v ?? '', lord: !!cell.lord, awaken: cell.awaken ?? 0 }
+}
+
+/** 영주면 투력×(1.1+0.01×각성), 비영주면 그대로. */
+function computeLordValue(raw: string, lord: boolean, awaken: number): string {
+  const r = raw.trim()
+  if (!lord || r === '') return r
+  const n = parseNum(r)
+  if (n == null) return r
+  return String(Math.round(n * (1.1 + 0.01 * awaken)))
+}
 
 type Props = {
   initial: GuildContent
@@ -52,6 +71,28 @@ export function ContentEditor({
               if (c !== ci) return cell
               const prev = cellOf(cell)
               return prev.hi ? { v: value, hi: true } : value
+            }),
+      ),
+    }))
+
+  // 길전 투력 칸: 투력/영주/각성 입력 → v(최종) 계산해 구조화 셀로 저장.
+  const setLordCell = (
+    ti: number,
+    ri: number,
+    ci: number,
+    patch: Partial<{ raw: string; lord: boolean; awaken: number }>,
+  ) =>
+    updateTable(ti, (t) => ({
+      ...t,
+      rows: t.rows.map((row, r) =>
+        r !== ri
+          ? row
+          : row.map((cell, c) => {
+              if (c !== ci) return cell
+              const next = { ...lordCellOf(cell), ...patch }
+              const v = computeLordValue(next.raw, next.lord, next.awaken)
+              if (next.raw.trim() === '' && !next.lord && next.awaken === 0) return ''
+              return { v, raw: next.raw, lord: next.lord, awaken: next.awaken }
             }),
       ),
     }))
@@ -214,8 +255,55 @@ export function ContentEditor({
                   <div className={table.sumColumn ? 'guildEditMemberGrid soldiers' : 'guildEditMemberGrid'}>
                     {table.headers.map((h, ci) => {
                       if (ci === tc) return null
+                      const cell = table.rows[ri][ci] ?? ''
+
+                      // 길전 투력: 투력 + 영주 체크 + 각성(0~5) → 자동 계산
+                      if (isLordHeader(h)) {
+                        const { raw, lord, awaken } = lordCellOf(cell)
+                        const result = cellOf(cell).v
+                        return (
+                          <div key={ci} className="guildLordField">
+                            <span className="guildEditFieldLabel">{h}</span>
+                            <input
+                              className="guildLordRaw"
+                              value={raw}
+                              onChange={(e) => setLordCell(ti, ri, ci, { raw: e.target.value })}
+                              inputMode="numeric"
+                              placeholder="투력"
+                              aria-label={`${selected} ${h} 투력`}
+                            />
+                            <div className="guildLordOpts">
+                              <label className="guildLordCheck">
+                                <input
+                                  type="checkbox"
+                                  checked={lord}
+                                  onChange={(e) => setLordCell(ti, ri, ci, { lord: e.target.checked })}
+                                />
+                                영주
+                              </label>
+                              <label className="guildLordAwk">
+                                각성
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={5}
+                                  value={awaken}
+                                  onChange={(e) =>
+                                    setLordCell(ti, ri, ci, {
+                                      awaken: Math.max(0, Math.min(5, Math.floor(Number(e.target.value) || 0))),
+                                    })
+                                  }
+                                  aria-label={`${h} 각성`}
+                                />
+                              </label>
+                              {lord && raw.trim() !== '' && <span className="guildLordResult">→ {result}</span>}
+                            </div>
+                          </div>
+                        )
+                      }
+
                       const icon = headerIcon?.(h)
-                      const v = cellOf(table.rows[ri][ci] ?? '').v
+                      const v = cellOf(cell).v
                       return (
                         <label key={ci} className="guildEditField" title={icon ? h : undefined}>
                           <span className="guildEditFieldLabel">
