@@ -858,6 +858,12 @@ td.guildColName .guildMemberLink {
   font-weight: 800;
   color: #ffd79a;
 }
+/* 읽기 화면 길전 투력 꼬리표 (각성/x) */
+.guildLordTag {
+  font-size: 0.78em;
+  font-weight: 600;
+  color: #9c8c79;
+}
 .guildEditMemberGrid.soldiers .guildEditField input {
   padding: 6px 4px;
   text-align: center;
