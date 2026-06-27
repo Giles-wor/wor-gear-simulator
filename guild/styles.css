@@ -1,0 +1,257 @@
+/* 길드원 전용 페이지 스타일 (전역 src/styles.css 위에 얹음) */
+
+/* ── 잠금 화면 ── */
+.guildLock {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0 60px;
+}
+.guildLockBox {
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  background: rgba(34, 26, 22, 0.82);
+  border: 1px solid rgba(255, 214, 170, 0.18);
+  border-radius: 20px;
+  padding: 32px 26px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+}
+.guildLockIcon {
+  font-size: 2.6rem;
+  margin-bottom: 6px;
+}
+.guildLockTitle {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+  color: #ffe1b5;
+}
+.guildLockDesc {
+  margin: 0 0 18px;
+  color: #c9b9a6;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+.guildLockForm {
+  display: flex;
+  gap: 8px;
+}
+.guildLockInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(231, 166, 95, 0.4);
+  background: rgba(12, 10, 9, 0.6);
+  color: #ffe1b5;
+  font-size: 1rem;
+}
+.guildLockInput:focus {
+  outline: none;
+  border-color: #e7a65f;
+}
+.guildLockBtn {
+  flex: 0 0 auto;
+  padding: 11px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(231, 166, 95, 0.5);
+  background: rgba(231, 166, 95, 0.18);
+  color: #ffe1b5;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.guildLockBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.guildLockBtn:not(:disabled):hover {
+  background: rgba(231, 166, 95, 0.3);
+}
+.guildLockError {
+  margin: 12px 0 0;
+  color: #ff9a8c;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+.guildLockHint {
+  margin: 14px 0 0;
+  color: #8a7c6b;
+  font-size: 0.8rem;
+}
+
+/* ── 콘텐츠 ── */
+.guildHeader {
+  margin: 8px 0 18px;
+}
+.guildHeaderTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.guildHeader h1 {
+  margin: 0;
+  font-size: 1.7rem;
+  color: #ffe1b5;
+  letter-spacing: -0.5px;
+}
+.guildLockOut {
+  flex: 0 0 auto;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(231, 166, 95, 0.35);
+  background: rgba(231, 166, 95, 0.1);
+  color: #ffe1b5;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.guildLockOut:hover {
+  background: rgba(231, 166, 95, 0.22);
+}
+.guildUpdated {
+  margin: 6px 0 0;
+  color: #9c8c79;
+  font-size: 0.82rem;
+}
+
+.guildBlock {
+  margin-top: 20px;
+  background: rgba(34, 26, 22, 0.78);
+  border: 1px solid rgba(255, 214, 170, 0.16);
+  border-radius: 18px;
+  padding: 16px 18px;
+}
+.guildBlockTitle {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+  color: #e7a65f;
+  border-bottom: 1px solid rgba(231, 166, 95, 0.22);
+  padding-bottom: 6px;
+}
+.guildEmpty {
+  margin: 0;
+  color: #8a7c6b;
+  font-size: 0.86rem;
+  font-style: italic;
+}
+.guildNotice {
+  margin: 0;
+  color: #ddcdba;
+  font-size: 0.9rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+/* ── 표 ── */
+.guildTableWrap {
+  margin-bottom: 16px;
+}
+.guildTableWrap:last-child {
+  margin-bottom: 0;
+}
+.guildTableTitle {
+  margin: 0 0 8px;
+  font-size: 0.98rem;
+  color: #ffe1b5;
+}
+.guildTableScroll {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(231, 166, 95, 0.18);
+}
+.guildTable {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+.guildTable th,
+.guildTable td {
+  padding: 7px 10px;
+  border: 1px solid rgba(231, 166, 95, 0.14);
+  text-align: center;
+  color: #d4c4b1;
+}
+.guildTable thead th {
+  background: rgba(231, 166, 95, 0.12);
+  color: #ffe1b5;
+  font-weight: 800;
+  position: sticky;
+  top: 0;
+}
+.guildTable tbody tr:nth-child(even) td {
+  background: rgba(12, 10, 9, 0.32);
+}
+.guildCellHi {
+  background: rgba(231, 120, 60, 0.85) !important;
+  color: #fff !important;
+  font-weight: 800;
+}
+.guildTableNote {
+  margin: 8px 0 0;
+  color: #9c8c79;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+/* ── 이미지 ── */
+.guildImages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.guildImageFig {
+  margin: 0;
+  width: 220px;
+  max-width: 100%;
+}
+.guildImageThumb {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid rgba(231, 166, 95, 0.3);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: zoom-in;
+  background: #0d0b0a;
+}
+.guildImageThumb img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.guildImageCap {
+  margin: 6px 2px 0;
+  color: #b6a791;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+/* ── 링크 ── */
+.guildLinks {
+  margin: 0;
+  padding-left: 1.2em;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.guildLinks li {
+  color: #d4c4b1;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+.guildLinks a {
+  color: #ffd79a;
+  font-weight: 700;
+}
+.guildLinkDesc {
+  color: #9c8c79;
+}
+
+@media (max-width: 640px) {
+  .guildLockForm {
+    flex-direction: column;
+  }
+}

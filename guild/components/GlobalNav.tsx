@@ -1,4 +1,4 @@
-/** DPS / 소환 / 장비 필터 3개 페이지 상단 탭 네비. */
+/** 전 페이지 상단 탭 네비. */
 type GlobalNavProps = {
   active: 'dps' | 'summon' | 'gear' | 'guide' | 'banners' | 'leaks' | 'guild'
 }

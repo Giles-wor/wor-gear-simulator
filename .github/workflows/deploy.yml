@@ -52,6 +52,9 @@ jobs:
       - name: Build (유출정보)
         run: npm run build:leaks
 
+      - name: Build (길드원 전용)
+        run: npm run build:guild
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
