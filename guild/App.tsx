@@ -79,7 +79,7 @@ function prepare(content: GuildContent): GuildContent {
  * 원격(guildId) → 원격(레거시 main) → 로컬(guildId) → 번들 시드 순으로 코드 복호화 시도,
  * 처음 성공한 콘텐츠 반환. 전부 실패하면 = 새 길드 → 빈 틀.
  */
-async function loadContent(code: string, guildId: string): Promise<GuildContent> {
+async function loadExisting(code: string, guildId: string): Promise<GuildContent | null> {
   const candidates: EncryptedBlob[] = []
   if (supabaseEnabled()) {
     try {
@@ -106,8 +106,12 @@ async function loadContent(code: string, guildId: string): Promise<GuildContent>
       /* 이 코드로 복호화 안 되는 블록 → 다음 후보 */
     }
   }
-  // 어떤 후보도 이 코드로 복호화되지 않음 = 새(또는 비어있는) 길드
-  return prepare(freshContent())
+  return null
+}
+
+async function loadContent(code: string, guildId: string): Promise<GuildContent> {
+  // 데이터 없으면 = 새(또는 비어있는) 길드 → 빈 틀
+  return (await loadExisting(code, guildId)) ?? prepare(freshContent())
 }
 
 function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
@@ -134,12 +138,41 @@ function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClos
   )
 }
 
-function LockScreen({ onSubmit, busy, error }: { onSubmit: (code: string) => void; busy: boolean; error: string }) {
+function LockScreen({
+  onSubmit,
+  busy,
+  error,
+  onMigrate,
+}: {
+  onSubmit: (code: string) => void
+  busy: boolean
+  error: string
+  onMigrate: (oldCode: string, newCode: string) => Promise<string | null>
+}) {
   const [code, setCode] = useState('')
   const submit = (e: FormEvent) => {
     e.preventDefault()
     if (code.trim()) onSubmit(code.trim())
   }
+
+  // 코드 이전 폼
+  const [migOpen, setMigOpen] = useState(false)
+  const [oldCode, setOldCode] = useState('')
+  const [newCode, setNewCode] = useState('')
+  const [migBusy, setMigBusy] = useState(false)
+  const [migErr, setMigErr] = useState('')
+  const doMigrate = async (e: FormEvent) => {
+    e.preventDefault()
+    setMigBusy(true)
+    setMigErr('')
+    const err = await onMigrate(oldCode, newCode)
+    if (err) {
+      setMigErr(err)
+      setMigBusy(false)
+    }
+    // 성공 시 App 이 새 코드로 입장 → 이 컴포넌트 언마운트
+  }
+
   return (
     <div className="guildLock">
       <div className="guildLockBox">
@@ -171,6 +204,44 @@ function LockScreen({ onSubmit, busy, error }: { onSubmit: (code: string) => voi
           </p>
         )}
         <p className="guildLockHint">코드는 길드 카카오톡에서 안내받을 수 있어요.</p>
+
+        <button type="button" className="guildMigToggle" onClick={() => setMigOpen((v) => !v)}>
+          🔁 코드 변경(이전){migOpen ? ' ▲' : ' ▼'}
+        </button>
+        {migOpen && (
+          <form className="guildMigForm" onSubmit={doMigrate}>
+            <p className="guildMigDesc">
+              이전 코드의 모든 내용을 새 코드로 <b>복사</b>합니다. 이후 새 코드로 작업한 건 이전 코드엔 반영되지
+              않아요(나간 사람은 옛 코드로 더 못 봄).
+            </p>
+            <input
+              className="guildLockInput"
+              type="text"
+              value={oldCode}
+              onChange={(e) => setOldCode(e.target.value)}
+              placeholder="이전 코드"
+              autoComplete="off"
+              aria-label="이전 코드"
+            />
+            <input
+              className="guildLockInput"
+              type="text"
+              value={newCode}
+              onChange={(e) => setNewCode(e.target.value)}
+              placeholder="새 코드"
+              autoComplete="off"
+              aria-label="새 코드"
+            />
+            <button className="guildLockBtn" type="submit" disabled={migBusy || !oldCode.trim() || !newCode.trim()}>
+              {migBusy ? '이전 중…' : '이전하기'}
+            </button>
+            {migErr && (
+              <p className="guildLockError" role="alert">
+                {migErr}
+              </p>
+            )}
+          </form>
+        )}
       </div>
     </div>
   )
@@ -391,13 +462,42 @@ export default function App() {
     [code, guildId, flashStatus],
   )
 
+  // 코드 이전: 이전 코드 내용을 새 코드로 복사(별도 행). 성공 시 새 코드로 자동 입장.
+  // 반환: 에러 문자열(있으면) / null(성공).
+  const migrateCode = useCallback(
+    async (oldCode: string, newCode: string): Promise<string | null> => {
+      if (!oldCode.trim() || !newCode.trim()) return '이전 코드와 새 코드를 모두 입력하세요.'
+      const oldId = await guildIdFromCode(oldCode)
+      const newId = await guildIdFromCode(newCode)
+      if (oldId === newId) return '이전 코드와 새 코드가 같습니다.'
+      const data = await loadExisting(oldCode, oldId)
+      if (!data) return '이전 코드의 데이터를 찾을 수 없습니다. (코드 확인)'
+      try {
+        const blob = await encryptContent(newCode, data)
+        if (supabaseEnabled()) await saveRemoteBlob(blob, newCode, newId)
+        writeLocalBlob(newId, blob)
+      } catch (e) {
+        return e instanceof Error ? e.message : '이전 저장에 실패했습니다.'
+      }
+      await tryUnlock(newCode, Date.now(), false)
+      flashStatus('코드 이전 완료 · 새 코드로 입장했습니다')
+      return null
+    },
+    [tryUnlock, flashStatus],
+  )
+
   return (
     <div className="app guildApp">
       <SiteCredit />
       <GlobalNav active="guild" />
 
       {!content ? (
-        <LockScreen onSubmit={(c) => void tryUnlock(c, Date.now(), false)} busy={busy} error={error} />
+        <LockScreen
+          onSubmit={(c) => void tryUnlock(c, Date.now(), false)}
+          busy={busy}
+          error={error}
+          onMigrate={migrateCode}
+        />
       ) : (
         <>
           <header className="guildHeader">

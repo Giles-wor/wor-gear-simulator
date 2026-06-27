@@ -78,6 +78,37 @@
   color: #8a7c6b;
   font-size: 0.8rem;
 }
+/* 코드 이전 */
+.guildMigToggle {
+  margin-top: 16px;
+  padding: 6px 10px;
+  border: none;
+  background: none;
+  color: #9c8c79;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.guildMigToggle:hover {
+  color: #ffe1b5;
+}
+.guildMigForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(231, 166, 95, 0.22);
+  background: rgba(12, 10, 9, 0.4);
+  text-align: left;
+}
+.guildMigDesc {
+  margin: 0 0 2px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #b6a791;
+}
 
 /* ── 콘텐츠 ── */
 .guildHeader {
