@@ -507,6 +507,91 @@
   background: rgba(90, 200, 120, 0.34);
 }
 
+/* ── 모바일 멤버 카드 입력폼 ── */
+.guildEditMembers {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.guildEditMemberCard {
+  border: 1px solid rgba(231, 166, 95, 0.22);
+  border-radius: 12px;
+  background: rgba(12, 10, 9, 0.4);
+  padding: 11px 12px;
+}
+.guildEditMemberHead {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.guildEditMemberName {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 9px 11px;
+  border-radius: 9px;
+  border: 1px solid rgba(231, 166, 95, 0.4);
+  background: rgba(12, 10, 9, 0.6);
+  color: #ffe1b5;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.guildEditMemberGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.guildEditField {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  border-radius: 9px;
+  background: rgba(231, 166, 95, 0.06);
+}
+.guildEditField.hi {
+  background: rgba(231, 120, 60, 0.85);
+}
+.guildEditFieldLabel {
+  font-size: 0.72rem;
+  color: #9c8c79;
+}
+.guildEditField.hi .guildEditFieldLabel {
+  color: #fff;
+}
+.guildEditFieldRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.guildEditFieldRow input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  padding: 8px 9px;
+  border-radius: 7px;
+  border: 1px solid rgba(231, 166, 95, 0.28);
+  background: rgba(12, 10, 9, 0.55);
+  color: #e7d6c6;
+  font-size: 0.95rem;
+}
+.guildEditField.hi .guildEditFieldRow input {
+  background: rgba(12, 10, 9, 0.35);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+.guildEditFieldRow .guildHiToggle {
+  position: static;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  font-size: 0.7rem;
+  color: rgba(231, 166, 95, 0.6);
+}
+.guildEditField.hi .guildHiToggle {
+  color: #fff;
+}
+
 @media (max-width: 640px) {
   .guildLockForm {
     flex-direction: column;

@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from 'react'
 import type { GuildContent, GuildTable } from '../types'
-import { cellOf } from './ResponsiveTable'
+import { cellOf, titleColIndex, useIsMobile } from './ResponsiveTable'
 
 type Props = {
   initial: GuildContent
@@ -13,6 +13,7 @@ type Props = {
 
 export function ContentEditor({ initial, onSave, onCancel, busy, error, canPublish }: Props) {
   const [draft, setDraft] = useState<GuildContent>(() => structuredClone(initial))
+  const mobile = useIsMobile()
 
   const setNotice = (notice: string) => setDraft((d) => ({ ...d, notice }))
 
@@ -80,6 +81,121 @@ export function ContentEditor({ initial, onSave, onCancel, busy, error, canPubli
     onSave({ ...draft, updatedAt: today })
   }
 
+  // 모바일: 멤버별 카드 입력폼 (가로 스크롤 없이 한 명씩 입력)
+  const renderMobileTable = (table: GuildTable, ti: number) => {
+    const titleCol = titleColIndex(table.headers)
+    return (
+      <div className="guildEditMembers">
+        {table.rows.map((row, ri) => {
+          const name = cellOf(row[titleCol] ?? '').v
+          return (
+            <div className="guildEditMemberCard" key={ri}>
+              <div className="guildEditMemberHead">
+                <input
+                  className="guildEditMemberName"
+                  value={name}
+                  onChange={(e) => setCell(ti, ri, titleCol, e.target.value)}
+                  placeholder={table.headers[titleCol] || '이름'}
+                  aria-label="캐릭명"
+                />
+                <button
+                  type="button"
+                  className="guildRowDel"
+                  onClick={() => removeRow(ti, ri)}
+                  aria-label="삭제"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="guildEditMemberGrid">
+                {row.map((cell, ci) => {
+                  if (ci === titleCol) return null
+                  const { v, hi } = cellOf(cell)
+                  return (
+                    <label key={ci} className={hi ? 'guildEditField hi' : 'guildEditField'}>
+                      <span className="guildEditFieldLabel">{table.headers[ci]}</span>
+                      <span className="guildEditFieldRow">
+                        <input
+                          value={v}
+                          onChange={(e) => setCell(ti, ri, ci, e.target.value)}
+                          inputMode={ci >= 2 ? 'numeric' : undefined}
+                          aria-label={`${name || ri + 1} ${table.headers[ci]}`}
+                        />
+                        <button
+                          type="button"
+                          className="guildHiToggle"
+                          onClick={() => toggleHi(ti, ri, ci)}
+                          aria-label="강조 토글"
+                          title="강조(주황) 토글"
+                        >
+                          ●
+                        </button>
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  // 데스크톱: 표 형태 입력
+  const renderDesktopTable = (table: GuildTable, ti: number) => (
+    <div className="guildTableScroll">
+      <table className="guildTable guildEditTable">
+        <thead>
+          <tr>
+            <th aria-label="행 삭제" />
+            {table.headers.map((h, hi) => (
+              <th key={hi}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.rows.map((row, ri) => (
+            <tr key={ri}>
+              <td className="guildEditDelCell">
+                <button
+                  type="button"
+                  className="guildRowDel"
+                  onClick={() => removeRow(ti, ri)}
+                  aria-label="행 삭제"
+                  title="행 삭제"
+                >
+                  ✕
+                </button>
+              </td>
+              {row.map((cell, ci) => {
+                const { v, hi } = cellOf(cell)
+                return (
+                  <td key={ci} className={hi ? 'guildEditCell hi' : 'guildEditCell'}>
+                    <input
+                      value={v}
+                      onChange={(e) => setCell(ti, ri, ci, e.target.value)}
+                      aria-label={`${table.headers[ci]} ${ri + 1}행`}
+                    />
+                    <button
+                      type="button"
+                      className="guildHiToggle"
+                      onClick={() => toggleHi(ti, ri, ci)}
+                      aria-label="강조 토글"
+                      title="강조(주황) 토글"
+                    >
+                      ●
+                    </button>
+                  </td>
+                )
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+
   return (
     <div className="guildEditor">
       <section className="guildBlock">
@@ -97,60 +213,11 @@ export function ContentEditor({ initial, onSave, onCancel, busy, error, canPubli
         <section className="guildBlock" key={ti}>
           <h2 className="guildBlockTitle">📊 {table.title || `표 ${ti + 1}`}</h2>
           <p className="guildEditHint">
-            칸을 눌러 값을 입력하세요. 칸의 <b>●</b>를 누르면 주황 강조 ON/OFF. 미달/주의 표시에 쓰세요.
+            값을 입력하고, <b>●</b> 를 누르면 주황 강조 ON/OFF (미달·주의 표시용).
           </p>
-          <div className="guildTableScroll">
-            <table className="guildTable guildEditTable">
-              <thead>
-                <tr>
-                  <th aria-label="행 삭제" />
-                  {table.headers.map((h, hi) => (
-                    <th key={hi}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {table.rows.map((row, ri) => (
-                  <tr key={ri}>
-                    <td className="guildEditDelCell">
-                      <button
-                        type="button"
-                        className="guildRowDel"
-                        onClick={() => removeRow(ti, ri)}
-                        aria-label="행 삭제"
-                        title="행 삭제"
-                      >
-                        ✕
-                      </button>
-                    </td>
-                    {row.map((cell, ci) => {
-                      const { v, hi } = cellOf(cell)
-                      return (
-                        <td key={ci} className={hi ? 'guildEditCell hi' : 'guildEditCell'}>
-                          <input
-                            value={v}
-                            onChange={(e) => setCell(ti, ri, ci, e.target.value)}
-                            aria-label={`${table.headers[ci]} ${ri + 1}행`}
-                          />
-                          <button
-                            type="button"
-                            className="guildHiToggle"
-                            onClick={() => toggleHi(ti, ri, ci)}
-                            aria-label="강조 토글"
-                            title="강조(주황) 토글"
-                          >
-                            ●
-                          </button>
-                        </td>
-                      )
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {mobile ? renderMobileTable(table, ti) : renderDesktopTable(table, ti)}
           <button type="button" className="guildAddBtn" onClick={() => addRow(ti)}>
-            + 행(길드원) 추가
+            + 길드원 추가
           </button>
         </section>
       ))}
