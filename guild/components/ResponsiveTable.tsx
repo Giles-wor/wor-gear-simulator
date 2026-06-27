@@ -62,7 +62,16 @@ function rowHasData(row: GuildCell[], headers: string[], titleCol: number): bool
 }
 
 /** 데스크톱: 가로 스크롤 표 / 모바일: 멤버별 카드(값 있는 항목만 → 한눈에). */
-export function ResponsiveTable({ table, fallbackDate }: { table: GuildTable; fallbackDate?: string }) {
+export function ResponsiveTable({
+  table,
+  fallbackDate,
+  headerIcon,
+}: {
+  table: GuildTable
+  fallbackDate?: string
+  /** 헤더명 → 아이콘 URL(있으면 텍스트 대신 아이콘 표시). */
+  headerIcon?: (header: string) => string | undefined
+}) {
   const mobile = useIsMobile()
   const titleCol = titleColIndex(table.headers)
 
@@ -105,9 +114,12 @@ export function ResponsiveTable({ table, fallbackDate }: { table: GuildTable; fa
                 <dl className="guildCardGrid">
                   {fields.map((f) => {
                     const empty = f.v.trim() === ''
+                    const icon = headerIcon?.(f.label)
                     return (
                       <div key={f.ci} className={!empty && f.hi ? 'guildCardItem hi' : 'guildCardItem'}>
-                        <dt>{f.label}</dt>
+                        <dt title={icon ? f.label : undefined}>
+                          {icon ? <img className="guildHeaderIcon sm" src={icon} alt={f.label} loading="lazy" /> : f.label}
+                        </dt>
                         <dd className={empty ? 'guildNaN' : undefined}>{empty ? 'NaN' : f.v}</dd>
                       </div>
                     )
@@ -128,12 +140,17 @@ export function ResponsiveTable({ table, fallbackDate }: { table: GuildTable; fa
       <table className="guildTable">
         <thead>
           <tr>
-            {table.headers.map((h, hi) => (
-              <Fragment key={hi}>
-                <th className={hi === titleCol ? 'guildColName' : undefined}>{h}</th>
-                {table.sumColumn && hi === titleCol && <th className="guildSumCol">계</th>}
-              </Fragment>
-            ))}
+            {table.headers.map((h, hi) => {
+              const icon = headerIcon?.(h)
+              return (
+                <Fragment key={hi}>
+                  <th className={hi === titleCol ? 'guildColName' : undefined} title={icon ? h : undefined}>
+                    {icon ? <img className="guildHeaderIcon" src={icon} alt={h} loading="lazy" /> : h}
+                  </th>
+                  {table.sumColumn && hi === titleCol && <th className="guildSumCol">계</th>}
+                </Fragment>
+              )
+            })}
             <th className="guildUpdCol">{UPDATED_HEADER}</th>
           </tr>
         </thead>
