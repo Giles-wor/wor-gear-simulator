@@ -250,8 +250,271 @@
   color: #9c8c79;
 }
 
+/* ── 헤더 버튼 / 동기화 태그 / 토스트 ── */
+.guildHeaderBtns {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.guildEditOpen {
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(231, 166, 95, 0.5);
+  background: rgba(231, 166, 95, 0.2);
+  color: #ffe1b5;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.guildEditOpen:hover {
+  background: rgba(231, 166, 95, 0.32);
+}
+.guildSyncTag {
+  margin-left: 6px;
+  color: #7e7060;
+  font-size: 0.78rem;
+}
+.guildToast {
+  margin: 10px 0 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(90, 200, 120, 0.14);
+  border: 1px solid rgba(90, 200, 120, 0.4);
+  color: #b9f0c8;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+/* ── 모바일 카드(읽기) ── */
+.guildCards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.guildCard {
+  border: 1px solid rgba(231, 166, 95, 0.18);
+  border-radius: 12px;
+  background: rgba(12, 10, 9, 0.4);
+  padding: 11px 13px;
+}
+.guildCardName {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #ffe1b5;
+  margin-bottom: 8px;
+}
+.guildCardGrid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 6px;
+}
+.guildCardItem {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgba(231, 166, 95, 0.06);
+}
+.guildCardItem dt {
+  font-size: 0.68rem;
+  color: #9c8c79;
+}
+.guildCardItem dd {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #e7d6c6;
+}
+.guildCardItem.hi {
+  background: rgba(231, 120, 60, 0.85);
+}
+.guildCardItem.hi dt,
+.guildCardItem.hi dd {
+  color: #fff;
+}
+.guildCardEmpty {
+  margin: 0;
+  color: #7e7060;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+.guildColName {
+  position: sticky;
+  left: 0;
+  background: rgba(28, 22, 18, 0.98);
+  font-weight: 700;
+  color: #ffe1b5;
+  z-index: 1;
+}
+.guildTable thead th.guildColName {
+  z-index: 2;
+}
+
+/* ── 편집 UI ── */
+.guildEditor {
+  display: flex;
+  flex-direction: column;
+}
+.guildEditNotice {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(231, 166, 95, 0.35);
+  background: rgba(12, 10, 9, 0.55);
+  color: #e7d6c6;
+  font: inherit;
+  line-height: 1.55;
+}
+.guildEditHint {
+  margin: 0 0 8px;
+  color: #9c8c79;
+  font-size: 0.8rem;
+}
+.guildEditTable input {
+  width: 92px;
+  min-width: 64px;
+  padding: 5px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(231, 166, 95, 0.22);
+  background: rgba(12, 10, 9, 0.5);
+  color: #e7d6c6;
+  font-size: 0.82rem;
+}
+.guildEditTable .guildEditCell {
+  position: relative;
+  padding: 4px;
+}
+.guildEditCell.hi input {
+  background: rgba(231, 120, 60, 0.85);
+  color: #fff;
+  border-color: rgba(231, 120, 60, 0.9);
+}
+.guildHiToggle {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: rgba(231, 166, 95, 0.45);
+  font-size: 0.6rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.guildEditCell.hi .guildHiToggle {
+  color: #fff;
+}
+.guildEditDelCell {
+  padding: 2px 4px;
+}
+.guildRowDel {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 120, 100, 0.4);
+  background: rgba(255, 80, 80, 0.1);
+  color: #ff9a8c;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.guildRowDel:hover {
+  background: rgba(255, 80, 80, 0.2);
+}
+.guildAddBtn {
+  align-self: flex-start;
+  margin-top: 10px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px dashed rgba(231, 166, 95, 0.5);
+  background: rgba(231, 166, 95, 0.08);
+  color: #ffe1b5;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.guildAddBtn:hover {
+  background: rgba(231, 166, 95, 0.18);
+}
+.guildFileBtn {
+  display: inline-block;
+}
+.guildEditImages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.guildEditImage {
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.guildEditImage img {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(231, 166, 95, 0.3);
+}
+.guildEditImage input,
+.guildEditLink input {
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(231, 166, 95, 0.3);
+  background: rgba(12, 10, 9, 0.5);
+  color: #e7d6c6;
+  font-size: 0.85rem;
+}
+.guildEditLink {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+.guildEditLink input {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+.guildEditBar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 12px 0;
+  background: linear-gradient(to top, rgba(20, 15, 12, 0.96), rgba(20, 15, 12, 0));
+}
+.guildSaveBtn {
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(90, 200, 120, 0.5);
+  background: rgba(90, 200, 120, 0.22);
+  color: #d6ffe2;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.guildSaveBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.guildSaveBtn:not(:disabled):hover {
+  background: rgba(90, 200, 120, 0.34);
+}
+
 @media (max-width: 640px) {
   .guildLockForm {
     flex-direction: column;
+  }
+  .guildHeader h1 {
+    font-size: 1.4rem;
+  }
+  .guildEditLink input {
+    flex-basis: 100%;
   }
 }
