@@ -4,6 +4,7 @@ import { SiteCredit } from './components/SiteCredit'
 import { ResponsiveTable } from './components/ResponsiveTable'
 import { ContentEditor } from './components/ContentEditor'
 import { decryptContent, encryptContent } from './crypto'
+import { ensureSoldierTable } from './soldiers'
 import { loadRemoteBlob, saveRemoteBlob, supabaseEnabled } from './supabase'
 import type { EncryptedBlob, GuildContent } from './types'
 import bundledBlob from './data/content.encrypted.json'
@@ -74,7 +75,7 @@ async function loadContent(code: string): Promise<GuildContent> {
   let lastErr: unknown = null
   for (const blob of candidates) {
     try {
-      return await decryptContent(code, blob)
+      return ensureSoldierTable(await decryptContent(code, blob))
     } catch (e) {
       lastErr = e
     }

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import type { GuildCell, GuildTable } from '../types'
-import { belowCut } from '../thresholds'
+import { belowCut, parseNum } from '../thresholds'
 
 export function cellOf(cell: GuildCell): { v: string; hi: boolean } {
   return typeof cell === 'string' ? { v: cell, hi: false } : { v: cell.v, hi: !!cell.hi }
@@ -70,6 +70,13 @@ export function ResponsiveTable({ table, fallbackDate }: { table: GuildTable; fa
   const rowDate = (ri: number, row: GuildCell[]): string | undefined =>
     table.rowMeta?.[ri]?.updatedAt ?? (rowHasData(row, table.headers, titleCol) ? fallbackDate : undefined)
 
+  // 계: 캐릭명/구분 외 수치 칸 합계(빈 칸=0).
+  const rowSum = (row: GuildCell[]): number =>
+    row.reduce((acc, cell, ci) => {
+      if (ci === titleCol || /구분/.test(table.headers[ci] ?? '')) return acc
+      return acc + (parseNum(cellOf(cell).v) ?? 0)
+    }, 0)
+
   if (mobile) {
     return (
       <div className="guildCards">
@@ -89,6 +96,7 @@ export function ResponsiveTable({ table, fallbackDate }: { table: GuildTable; fa
             <div key={ri} className="guildCard">
               <div className="guildCardName">
                 {title}
+                {table.sumColumn && <span className="guildCardSum">계 {rowSum(row)}</span>}
                 {upd && (
                   <span className={isStale(date) ? 'guildCardUpd stale' : 'guildCardUpd'}>업데이트 {upd}</span>
                 )}
@@ -121,9 +129,10 @@ export function ResponsiveTable({ table, fallbackDate }: { table: GuildTable; fa
         <thead>
           <tr>
             {table.headers.map((h, hi) => (
-              <th key={hi} className={hi === titleCol ? 'guildColName' : undefined}>
-                {h}
-              </th>
+              <Fragment key={hi}>
+                <th className={hi === titleCol ? 'guildColName' : undefined}>{h}</th>
+                {table.sumColumn && hi === titleCol && <th className="guildSumCol">계</th>}
+              </Fragment>
             ))}
             <th className="guildUpdCol">{UPDATED_HEADER}</th>
           </tr>
@@ -145,9 +154,10 @@ export function ResponsiveTable({ table, fallbackDate }: { table: GuildTable; fa
                   .filter(Boolean)
                   .join(' ')
                 return (
-                  <td key={ci} className={cls || undefined}>
-                    {showNaN ? 'NaN' : v}
-                  </td>
+                  <Fragment key={ci}>
+                    <td className={cls || undefined}>{showNaN ? 'NaN' : v}</td>
+                    {table.sumColumn && ci === titleCol && <td className="guildSum">{rowSum(row)}</td>}
+                  </Fragment>
                 )
               })}
               <td className={isStale(rowDate(ri, row)) ? 'guildUpd stale' : 'guildUpd'}>

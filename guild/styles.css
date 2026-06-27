@@ -208,6 +208,23 @@
   font-weight: 600;
   color: #9c8c79;
 }
+/* 계(합계) 열 / 카드 배지 */
+.guildTable th.guildSumCol,
+.guildTable td.guildSum {
+  color: #ffe1b5;
+  font-weight: 800;
+  background: rgba(231, 166, 95, 0.12);
+}
+.guildCardSum {
+  margin-left: 8px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: rgba(231, 166, 95, 0.18);
+  border: 1px solid rgba(231, 166, 95, 0.4);
+  color: #ffe1b5;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
 /* 30일 초과 갱신 지연 경고색 */
 .guildUpd.stale,
 .guildCardUpd.stale {
