@@ -762,6 +762,21 @@ td.guildColName .guildMemberLink {
 .guildEditMemberGrid.soldiers .guildEditField {
   padding: 5px 5px;
 }
+/* PC: 마병 편집 아이콘 크게 + 칸 더 촘촘하게 */
+@media (min-width: 641px) {
+  .guildEditMemberGrid.soldiers {
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 8px;
+  }
+  .guildEditMemberGrid.soldiers .guildHeaderIcon.sm {
+    width: 46px;
+    height: 46px;
+    border-radius: 8px;
+  }
+  .guildEditMemberGrid.soldiers .guildEditField {
+    padding: 8px 6px;
+  }
+}
 .guildEditField {
   display: flex;
   flex-direction: column;
