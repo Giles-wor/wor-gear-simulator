@@ -1,0 +1,41 @@
+name: Sync 마병 아이콘 (Demon Soldier Icons)
+
+# Actions 탭 → 이 워크플로 → "Run workflow" 버튼으로 실행.
+# fandom 위키에서 마병 아이콘을 받아 guild/assets/soldiers/ 에 커밋(→ 배포까지 자동).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-soldiers
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Crawl soldier icons
+        run: npm run sync:soldiers
+
+      - name: Commit icons (if changed)
+        run: |
+          mkdir -p guild/assets/soldiers
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add guild/assets/soldiers
+          if git diff --staged --quiet; then
+            echo "변경된 아이콘이 없습니다."
+          else
+            git commit -m "guild: 마병 아이콘 동기화 (sync-soldiers)"
+            git push
+          fi
