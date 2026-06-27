@@ -216,7 +216,15 @@ function MarStrip({ levels }: { levels?: Record<string, string> }) {
   )
 }
 
-function ReadView({ content, onShot }: { content: GuildContent; onShot: (src: string, alt: string) => void }) {
+function ReadView({
+  content,
+  onShot,
+  onEditMember,
+}: {
+  content: GuildContent
+  onShot: (src: string, alt: string) => void
+  onEditMember: (name: string) => void
+}) {
   const soldierTable = content.tables.find((t) => t.title === SOLDIER_TABLE_TITLE)
   const levels = buildSoldierLevels(soldierTable)
   // 마병 표는 별도 표로 보여주지 않고, 각 멤버 패널 안에 strip 으로 삽입.
@@ -245,6 +253,7 @@ function ReadView({ content, onShot }: { content: GuildContent; onShot: (src: st
               fallbackDate={content.updatedAt}
               headerIcon={soldierIcon}
               memberExtra={marExtra}
+              onMemberClick={onEditMember}
             />
             {table.note && <p className="guildTableNote">{table.note}</p>}
           </section>
@@ -307,6 +316,7 @@ export default function App() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [editing, setEditing] = useState(false)
+  const [editMember, setEditMember] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [status, setStatus] = useState('')
@@ -395,7 +405,14 @@ export default function App() {
               <h1>길드원 전용 🛡️</h1>
               <div className="guildHeaderBtns">
                 {!editing && (
-                  <button type="button" className="guildEditOpen" onClick={() => setEditing(true)}>
+                  <button
+                    type="button"
+                    className="guildEditOpen"
+                    onClick={() => {
+                      setEditMember('')
+                      setEditing(true)
+                    }}
+                  >
                     ✏️ 편집
                   </button>
                 )}
@@ -417,6 +434,7 @@ export default function App() {
           {editing ? (
             <ContentEditor
               initial={content}
+              initialMember={editMember}
               onSave={handleSave}
               onCancel={() => {
                 setEditing(false)
@@ -428,7 +446,14 @@ export default function App() {
               headerIcon={soldierIcon}
             />
           ) : (
-            <ReadView content={content} onShot={(src, alt) => setShot({ src, alt })} />
+            <ReadView
+              content={content}
+              onShot={(src, alt) => setShot({ src, alt })}
+              onEditMember={(name) => {
+                setEditMember(name)
+                setEditing(true)
+              }}
+            />
           )}
         </>
       )}

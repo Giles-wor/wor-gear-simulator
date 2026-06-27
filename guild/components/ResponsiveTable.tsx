@@ -67,6 +67,7 @@ export function ResponsiveTable({
   fallbackDate,
   headerIcon,
   memberExtra,
+  onMemberClick,
 }: {
   table: GuildTable
   fallbackDate?: string
@@ -74,6 +75,8 @@ export function ResponsiveTable({
   headerIcon?: (header: string) => string | undefined
   /** 멤버(캐릭명)별 추가 표시(카드 하단 / 표 행 아래 한 줄). 마병 strip 등. */
   memberExtra?: (memberName: string) => ReactNode
+  /** 멤버 이름 클릭 시(읽기 화면 → 그 멤버 편집). */
+  onMemberClick?: (memberName: string) => void
 }) {
   const mobile = useIsMobile()
   const titleCol = titleColIndex(table.headers)
@@ -107,7 +110,13 @@ export function ResponsiveTable({
           return (
             <div key={ri} className="guildCard">
               <div className="guildCardName">
-                {title}
+                {onMemberClick ? (
+                  <button type="button" className="guildMemberLink" onClick={() => onMemberClick(title)}>
+                    {title} <span className="guildEditPen">✏️</span>
+                  </button>
+                ) : (
+                  title
+                )}
                 {table.sumColumn && <span className="guildCardSum">계 {rowSum(row)}</span>}
                 {upd && (
                   <span className={isStale(date) ? 'guildCardUpd stale' : 'guildCardUpd'}>업데이트 {upd}</span>
@@ -179,7 +188,17 @@ export function ResponsiveTable({
                   .join(' ')
                 return (
                   <Fragment key={ci}>
-                    <td className={cls || undefined}>{showNaN ? 'NaN' : v}</td>
+                    <td className={cls || undefined}>
+                      {ci === titleCol && onMemberClick ? (
+                        <button type="button" className="guildMemberLink" onClick={() => onMemberClick(v)}>
+                          {v} <span className="guildEditPen">✏️</span>
+                        </button>
+                      ) : showNaN ? (
+                        'NaN'
+                      ) : (
+                        v
+                      )}
+                    </td>
                     {table.sumColumn && ci === titleCol && <td className="guildSum">{rowSum(row)}</td>}
                   </Fragment>
                 )
