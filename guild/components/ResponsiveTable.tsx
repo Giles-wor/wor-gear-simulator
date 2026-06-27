@@ -57,7 +57,8 @@ export function ResponsiveTable({ table }: { table: GuildTable }) {
               const label = table.headers[ci] ?? ''
               return { label, v, hi: hi || belowCut(label, v), ci }
             })
-            .filter((f) => f.ci !== titleCol && f.v.trim() !== '')
+            // 캐릭명/구분 제외한 수치 열은 값이 없어도 NaN 으로 표시
+            .filter((f) => f.ci !== titleCol && !/구분/.test(f.label))
           const upd = daysAgoLabel(table.rowMeta?.[ri]?.updatedAt)
           return (
             <div key={ri} className="guildCard">
@@ -67,12 +68,15 @@ export function ResponsiveTable({ table }: { table: GuildTable }) {
               </div>
               {fields.length > 0 ? (
                 <dl className="guildCardGrid">
-                  {fields.map((f) => (
-                    <div key={f.ci} className={f.hi ? 'guildCardItem hi' : 'guildCardItem'}>
-                      <dt>{f.label}</dt>
-                      <dd>{f.v}</dd>
-                    </div>
-                  ))}
+                  {fields.map((f) => {
+                    const empty = f.v.trim() === ''
+                    return (
+                      <div key={f.ci} className={!empty && f.hi ? 'guildCardItem hi' : 'guildCardItem'}>
+                        <dt>{f.label}</dt>
+                        <dd className={empty ? 'guildNaN' : undefined}>{empty ? 'NaN' : f.v}</dd>
+                      </div>
+                    )
+                  })}
                 </dl>
               ) : (
                 <p className="guildCardEmpty">기록 없음</p>
@@ -102,13 +106,20 @@ export function ResponsiveTable({ table }: { table: GuildTable }) {
             <tr key={ri}>
               {row.map((cell, ci) => {
                 const { v, hi } = cellOf(cell)
-                const lit = hi || belowCut(table.headers[ci] ?? '', v)
-                const cls = [lit ? 'guildCellHi' : '', ci === titleCol ? 'guildColName' : '']
+                const header = table.headers[ci] ?? ''
+                const isStat = ci !== titleCol && !/구분/.test(header)
+                const showNaN = isStat && v.trim() === ''
+                const lit = hi || belowCut(header, v)
+                const cls = [
+                  lit ? 'guildCellHi' : '',
+                  ci === titleCol ? 'guildColName' : '',
+                  showNaN ? 'guildNaN' : '',
+                ]
                   .filter(Boolean)
                   .join(' ')
                 return (
                   <td key={ci} className={cls || undefined}>
-                    {v}
+                    {showNaN ? 'NaN' : v}
                   </td>
                 )
               })}
