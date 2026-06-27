@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { GuildCell, GuildTable } from '../types'
+import { belowCut } from '../thresholds'
 
 export function cellOf(cell: GuildCell): { v: string; hi: boolean } {
   return typeof cell === 'string' ? { v: cell, hi: false } : { v: cell.v, hi: !!cell.hi }
@@ -35,15 +36,19 @@ export function ResponsiveTable({ table }: { table: GuildTable }) {
         {table.rows.map((row, ri) => {
           const title = cellOf(row[titleCol] ?? '').v || `행 ${ri + 1}`
           const fields = row
-            .map((cell, ci) => ({ label: table.headers[ci] ?? '', ...cellOf(cell) }))
-            .filter((f, ci) => ci !== titleCol && f.v.trim() !== '')
+            .map((cell, ci) => {
+              const { v, hi } = cellOf(cell)
+              const label = table.headers[ci] ?? ''
+              return { label, v, hi: hi || belowCut(label, v), ci }
+            })
+            .filter((f) => f.ci !== titleCol && f.v.trim() !== '')
           return (
             <div key={ri} className="guildCard">
               <div className="guildCardName">{title}</div>
               {fields.length > 0 ? (
                 <dl className="guildCardGrid">
-                  {fields.map((f, fi) => (
-                    <div key={fi} className={f.hi ? 'guildCardItem hi' : 'guildCardItem'}>
+                  {fields.map((f) => (
+                    <div key={f.ci} className={f.hi ? 'guildCardItem hi' : 'guildCardItem'}>
                       <dt>{f.label}</dt>
                       <dd>{f.v}</dd>
                     </div>
@@ -76,7 +81,8 @@ export function ResponsiveTable({ table }: { table: GuildTable }) {
             <tr key={ri}>
               {row.map((cell, ci) => {
                 const { v, hi } = cellOf(cell)
-                const cls = [hi ? 'guildCellHi' : '', ci === titleCol ? 'guildColName' : '']
+                const lit = hi || belowCut(table.headers[ci] ?? '', v)
+                const cls = [lit ? 'guildCellHi' : '', ci === titleCol ? 'guildColName' : '']
                   .filter(Boolean)
                   .join(' ')
                 return (

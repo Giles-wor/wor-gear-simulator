@@ -34,20 +34,6 @@ export function ContentEditor({ initial, onSave, onCancel, busy, error, canPubli
       ),
     }))
 
-  const toggleHi = (ti: number, ri: number, ci: number) =>
-    updateTable(ti, (t) => ({
-      ...t,
-      rows: t.rows.map((row, r) =>
-        r !== ri
-          ? row
-          : row.map((cell, c) => {
-              if (c !== ci) return cell
-              const prev = cellOf(cell)
-              return prev.hi ? prev.v : { v: prev.v, hi: true }
-            }),
-      ),
-    }))
-
   const addRow = (ti: number) =>
     updateTable(ti, (t) => ({ ...t, rows: [...t.rows, t.headers.map(() => '')] }))
 
@@ -110,27 +96,16 @@ export function ContentEditor({ initial, onSave, onCancel, busy, error, canPubli
               <div className="guildEditMemberGrid">
                 {row.map((cell, ci) => {
                   if (ci === titleCol) return null
-                  const { v, hi } = cellOf(cell)
+                  const { v } = cellOf(cell)
                   return (
-                    <label key={ci} className={hi ? 'guildEditField hi' : 'guildEditField'}>
+                    <label key={ci} className="guildEditField">
                       <span className="guildEditFieldLabel">{table.headers[ci]}</span>
-                      <span className="guildEditFieldRow">
-                        <input
-                          value={v}
-                          onChange={(e) => setCell(ti, ri, ci, e.target.value)}
-                          inputMode={ci >= 2 ? 'numeric' : undefined}
-                          aria-label={`${name || ri + 1} ${table.headers[ci]}`}
-                        />
-                        <button
-                          type="button"
-                          className="guildHiToggle"
-                          onClick={() => toggleHi(ti, ri, ci)}
-                          aria-label="강조 토글"
-                          title="강조(주황) 토글"
-                        >
-                          ●
-                        </button>
-                      </span>
+                      <input
+                        value={v}
+                        onChange={(e) => setCell(ti, ri, ci, e.target.value)}
+                        inputMode={ci >= 2 ? 'numeric' : undefined}
+                        aria-label={`${name || ri + 1} ${table.headers[ci]}`}
+                      />
                     </label>
                   )
                 })}
@@ -169,23 +144,14 @@ export function ContentEditor({ initial, onSave, onCancel, busy, error, canPubli
                 </button>
               </td>
               {row.map((cell, ci) => {
-                const { v, hi } = cellOf(cell)
+                const { v } = cellOf(cell)
                 return (
-                  <td key={ci} className={hi ? 'guildEditCell hi' : 'guildEditCell'}>
+                  <td key={ci} className="guildEditCell">
                     <input
                       value={v}
                       onChange={(e) => setCell(ti, ri, ci, e.target.value)}
                       aria-label={`${table.headers[ci]} ${ri + 1}행`}
                     />
-                    <button
-                      type="button"
-                      className="guildHiToggle"
-                      onClick={() => toggleHi(ti, ri, ci)}
-                      aria-label="강조 토글"
-                      title="강조(주황) 토글"
-                    >
-                      ●
-                    </button>
                   </td>
                 )
               })}
@@ -213,7 +179,7 @@ export function ContentEditor({ initial, onSave, onCancel, busy, error, canPubli
         <section className="guildBlock" key={ti}>
           <h2 className="guildBlockTitle">📊 {table.title || `표 ${ti + 1}`}</h2>
           <p className="guildEditHint">
-            값을 입력하고, <b>●</b> 를 누르면 주황 강조 ON/OFF (미달·주의 표시용).
+            값만 입력하면 됩니다. 미달(주황) 표시는 컷 기준으로 자동 적용됩니다.
           </p>
           {mobile ? renderMobileTable(table, ti) : renderDesktopTable(table, ti)}
           <button type="button" className="guildAddBtn" onClick={() => addRow(ti)}>
