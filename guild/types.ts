@@ -20,6 +20,8 @@ export type GuildTable = {
   rows: GuildCell[][]
   /** 행별 최종 수정일 (rows 와 같은 순서). 저장 시 변경된 행만 갱신. */
   rowMeta?: RowMeta[]
+  /** 캐릭명 뒤에 '계'(행 합계) 열을 자동 표시. */
+  sumColumn?: boolean
 }
 
 export type GuildLink = { label: string; url: string; desc?: string }
