@@ -7,6 +7,6 @@
 export const config = {
   /** 예: https://abcdxyz.supabase.co (프로젝트 ref: cegxyqtymolnazfhppgw) */
   url: 'https://cegxyqtymolnazfhppgw.supabase.co',
-  /** Supabase 프로젝트 Settings → API → Project API keys → anon public (eyJ... JWT) */
-  anonKey: '',
+  /** Supabase 프로젝트 Settings → API Keys → publishable (sb_publishable_...). 공개 안전. */
+  anonKey: 'sb_publishable_4r_qKYT292rMfJhrBA7AeQ_W9Vx-wEJ',
 }
