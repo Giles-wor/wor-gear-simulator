@@ -681,6 +681,18 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 8px;
 }
+/* 마병 등 아이콘 라벨 필드는 더 촘촘하게(3열) + 아이콘 가운데 */
+.guildEditMemberGrid.soldiers {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.guildEditMemberGrid.soldiers .guildEditFieldLabel {
+  display: flex;
+  justify-content: center;
+}
+.guildEditMemberGrid.soldiers .guildEditField {
+  padding: 5px 5px;
+}
 .guildEditField {
   display: flex;
   flex-direction: column;
@@ -699,37 +711,20 @@
 .guildEditField.hi .guildEditFieldLabel {
   color: #fff;
 }
-.guildEditFieldRow {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.guildEditFieldRow input {
-  flex: 1 1 auto;
-  min-width: 0;
+.guildEditField input {
   width: 100%;
-  padding: 8px 9px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 7px 8px;
   border-radius: 7px;
   border: 1px solid rgba(231, 166, 95, 0.28);
   background: rgba(12, 10, 9, 0.55);
   color: #e7d6c6;
   font-size: 0.95rem;
 }
-.guildEditField.hi .guildEditFieldRow input {
-  background: rgba(12, 10, 9, 0.35);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.4);
-}
-.guildEditFieldRow .guildHiToggle {
-  position: static;
-  flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
-  font-size: 0.7rem;
-  color: rgba(231, 166, 95, 0.6);
-}
-.guildEditField.hi .guildHiToggle {
-  color: #fff;
+.guildEditMemberGrid.soldiers .guildEditField input {
+  padding: 6px 4px;
+  text-align: center;
 }
 
 @media (max-width: 640px) {
