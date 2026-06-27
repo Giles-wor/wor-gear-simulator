@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from 'react'
 import type { GuildCell, GuildContent, GuildTable, RowMeta } from '../types'
-import { cellOf, titleColIndex, useIsMobile } from './ResponsiveTable'
+import { cellOf, titleColIndex } from './ResponsiveTable'
 
 type Props = {
   initial: GuildContent
@@ -15,7 +15,15 @@ type Props = {
 
 export function ContentEditor({ initial, onSave, onCancel, busy, error, canPublish, headerIcon }: Props) {
   const [draft, setDraft] = useState<GuildContent>(() => structuredClone(initial))
-  const mobile = useIsMobile()
+
+  const mainTitleCol = draft.tables[0] ? titleColIndex(draft.tables[0].headers) : 1
+  const members = draft.tables[0]?.rows.map((r) => cellOf(r[mainTitleCol] ?? '').v) ?? []
+
+  const [selRaw, setSel] = useState<string>(() => {
+    const t0 = initial.tables[0]
+    return t0 ? cellOf(t0.rows[0]?.[titleColIndex(t0.headers)] ?? '').v : ''
+  })
+  const selected = members.includes(selRaw) ? selRaw : (members[0] ?? '')
 
   const setNotice = (notice: string) => setDraft((d) => ({ ...d, notice }))
 
@@ -36,20 +44,70 @@ export function ContentEditor({ initial, onSave, onCancel, busy, error, canPubli
       ),
     }))
 
-  const addRow = (ti: number) =>
-    updateTable(ti, (t) => ({ ...t, rows: [...t.rows, t.headers.map(() => '')] }))
+  const rowIndexOf = (t: GuildTable, name: string) => {
+    const tc = titleColIndex(t.headers)
+    return t.rows.findIndex((r) => cellOf(r[tc] ?? '').v === name)
+  }
 
-  const removeRow = (ti: number, ri: number) =>
-    updateTable(ti, (t) => ({ ...t, rows: t.rows.filter((_, r) => r !== ri) }))
+  // ── 길드원 추가/삭제/이름변경 (모든 표에 동기) ──
+  const addMember = () => {
+    let name = '새 길드원'
+    let i = 1
+    while (members.includes(name)) name = `새 길드원 ${++i}`
+    setDraft((d) => ({
+      ...d,
+      tables: d.tables.map((t) => {
+        const tc = titleColIndex(t.headers)
+        const row: GuildCell[] = t.headers.map((_, ci) => (ci === tc ? name : ''))
+        return { ...t, rows: [...t.rows, row] }
+      }),
+    }))
+    setSel(name)
+  }
 
-  // 링크
+  const deleteMember = () => {
+    if (!selected) return
+    const remaining = members.filter((m) => m !== selected)
+    setDraft((d) => ({
+      ...d,
+      tables: d.tables.map((t) => {
+        const tc = titleColIndex(t.headers)
+        const idx = t.rows.findIndex((r) => cellOf(r[tc] ?? '').v === selected)
+        if (idx < 0) return t
+        return {
+          ...t,
+          rows: t.rows.filter((_, r) => r !== idx),
+          rowMeta: t.rowMeta?.filter((_, r) => r !== idx),
+        }
+      }),
+    }))
+    setSel(remaining[0] ?? '')
+  }
+
+  const renameMember = (newName: string) => {
+    setDraft((d) => ({
+      ...d,
+      tables: d.tables.map((t) => {
+        const tc = titleColIndex(t.headers)
+        return {
+          ...t,
+          rows: t.rows.map((r) =>
+            cellOf(r[tc] ?? '').v === selected ? r.map((c, ci) => (ci === tc ? newName : c)) : r,
+          ),
+        }
+      }),
+    }))
+    setSel(newName)
+  }
+
+  // ── 링크 ──
   const addLink = () => setDraft((d) => ({ ...d, links: [...d.links, { label: '', url: '' }] }))
   const setLink = (i: number, key: 'label' | 'url' | 'desc', value: string) =>
     setDraft((d) => ({ ...d, links: d.links.map((l, j) => (j === i ? { ...l, [key]: value } : l)) }))
   const removeLink = (i: number) =>
     setDraft((d) => ({ ...d, links: d.links.filter((_, j) => j !== i) }))
 
-  // 이미지
+  // ── 이미지 ──
   const addImage = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -84,110 +142,6 @@ export function ContentEditor({ initial, onSave, onCancel, busy, error, canPubli
     onSave({ ...draft, updatedAt: today, tables })
   }
 
-  // 모바일: 멤버별 카드 입력폼 (가로 스크롤 없이 한 명씩 입력)
-  const renderMobileTable = (table: GuildTable, ti: number) => {
-    const titleCol = titleColIndex(table.headers)
-    return (
-      <div className="guildEditMembers">
-        {table.rows.map((row, ri) => {
-          const name = cellOf(row[titleCol] ?? '').v
-          return (
-            <div className="guildEditMemberCard" key={ri}>
-              <div className="guildEditMemberHead">
-                <input
-                  className="guildEditMemberName"
-                  value={name}
-                  onChange={(e) => setCell(ti, ri, titleCol, e.target.value)}
-                  placeholder={table.headers[titleCol] || '이름'}
-                  aria-label="캐릭명"
-                />
-                <button
-                  type="button"
-                  className="guildRowDel"
-                  onClick={() => removeRow(ti, ri)}
-                  aria-label="삭제"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className={table.sumColumn ? 'guildEditMemberGrid soldiers' : 'guildEditMemberGrid'}>
-                {row.map((cell, ci) => {
-                  if (ci === titleCol) return null
-                  const { v } = cellOf(cell)
-                  const label = table.headers[ci] ?? ''
-                  const icon = headerIcon?.(label)
-                  return (
-                    <label key={ci} className="guildEditField" title={icon ? label : undefined}>
-                      <span className="guildEditFieldLabel">
-                        {icon ? <img className="guildHeaderIcon sm" src={icon} alt={label} /> : label}
-                      </span>
-                      <input
-                        value={v}
-                        onChange={(e) => setCell(ti, ri, ci, e.target.value)}
-                        inputMode={ci >= 2 ? 'numeric' : undefined}
-                        aria-label={`${name || ri + 1} ${label}`}
-                      />
-                    </label>
-                  )
-                })}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    )
-  }
-
-  // 데스크톱: 표 형태 입력
-  const renderDesktopTable = (table: GuildTable, ti: number) => (
-    <div className="guildTableScroll">
-      <table className="guildTable guildEditTable">
-        <thead>
-          <tr>
-            <th aria-label="행 삭제" />
-            {table.headers.map((h, hi) => {
-              const icon = headerIcon?.(h)
-              return (
-                <th key={hi} title={icon ? h : undefined}>
-                  {icon ? <img className="guildHeaderIcon" src={icon} alt={h} /> : h}
-                </th>
-              )
-            })}
-          </tr>
-        </thead>
-        <tbody>
-          {table.rows.map((row, ri) => (
-            <tr key={ri}>
-              <td className="guildEditDelCell">
-                <button
-                  type="button"
-                  className="guildRowDel"
-                  onClick={() => removeRow(ti, ri)}
-                  aria-label="행 삭제"
-                  title="행 삭제"
-                >
-                  ✕
-                </button>
-              </td>
-              {row.map((cell, ci) => {
-                const { v } = cellOf(cell)
-                return (
-                  <td key={ci} className="guildEditCell">
-                    <input
-                      value={v}
-                      onChange={(e) => setCell(ti, ri, ci, e.target.value)}
-                      aria-label={`${table.headers[ci]} ${ri + 1}행`}
-                    />
-                  </td>
-                )
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-
   return (
     <div className="guildEditor">
       <section className="guildBlock">
@@ -201,18 +155,76 @@ export function ContentEditor({ initial, onSave, onCancel, busy, error, canPubli
         />
       </section>
 
-      {draft.tables.map((table, ti) => (
-        <section className="guildBlock" key={ti}>
-          <h2 className="guildBlockTitle">📊 {table.title || `표 ${ti + 1}`}</h2>
-          <p className="guildEditHint">
-            값만 입력하면 됩니다. 미달(주황) 표시는 컷 기준으로 자동 적용됩니다.
-          </p>
-          {mobile ? renderMobileTable(table, ti) : renderDesktopTable(table, ti)}
-          <button type="button" className="guildAddBtn" onClick={() => addRow(ti)}>
-            + 길드원 추가
+      <section className="guildBlock">
+        <div className="guildBlockTitle guildMemberHead">
+          <span>👤 길드원 편집</span>
+          <span className="guildMemberCount">{members.length}명</span>
+        </div>
+        <p className="guildEditHint">길드원을 골라 그 사람의 진행 현황·마병만 입력하세요.</p>
+
+        <div className="guildMemberBar">
+          <select
+            className="guildMemberSelect"
+            value={selected}
+            onChange={(e) => setSel(e.target.value)}
+            aria-label="길드원 선택"
+          >
+            {members.map((m, i) => (
+              <option key={i} value={m}>
+                {m || '(이름 없음)'}
+              </option>
+            ))}
+          </select>
+          <button type="button" className="guildAddBtn" onClick={addMember}>
+            + 길드원
           </button>
-        </section>
-      ))}
+          <button type="button" className="guildRowDel" onClick={deleteMember} disabled={!selected}>
+            삭제
+          </button>
+        </div>
+
+        {members.length === 0 ? (
+          <p className="guildEmpty">길드원이 없습니다. “+ 길드원”으로 추가하세요.</p>
+        ) : (
+          <>
+            <label className="guildEditField guildNameField">
+              <span className="guildEditFieldLabel">캐릭명</span>
+              <input value={selected} onChange={(e) => renameMember(e.target.value)} aria-label="캐릭명" />
+            </label>
+
+            {draft.tables.map((table, ti) => {
+              const ri = rowIndexOf(table, selected)
+              if (ri < 0) return null
+              const tc = titleColIndex(table.headers)
+              return (
+                <div className="guildMemberSection" key={ti}>
+                  <h3 className="guildMemberSecTitle">{table.title || `표 ${ti + 1}`}</h3>
+                  <div className={table.sumColumn ? 'guildEditMemberGrid soldiers' : 'guildEditMemberGrid'}>
+                    {table.headers.map((h, ci) => {
+                      if (ci === tc) return null
+                      const icon = headerIcon?.(h)
+                      const v = cellOf(table.rows[ri][ci] ?? '').v
+                      return (
+                        <label key={ci} className="guildEditField" title={icon ? h : undefined}>
+                          <span className="guildEditFieldLabel">
+                            {icon ? <img className="guildHeaderIcon sm" src={icon} alt={h} /> : h}
+                          </span>
+                          <input
+                            value={v}
+                            onChange={(e) => setCell(ti, ri, ci, e.target.value)}
+                            inputMode={/구분/.test(h) ? undefined : 'numeric'}
+                            aria-label={`${selected} ${h}`}
+                          />
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+          </>
+        )}
+      </section>
 
       <section className="guildBlock">
         <h2 className="guildBlockTitle">🖼️ 이미지</h2>
