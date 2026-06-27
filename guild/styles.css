@@ -806,6 +806,58 @@ td.guildColName .guildMemberLink {
   color: #e7d6c6;
   font-size: 0.95rem;
 }
+/* 길전 투력: 투력 + 영주/각성 산식 입력 */
+.guildLordField {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 9px;
+  background: rgba(231, 166, 95, 0.08);
+  border: 1px solid rgba(231, 166, 95, 0.18);
+}
+.guildLordRaw {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 8px;
+  border-radius: 7px;
+  border: 1px solid rgba(231, 166, 95, 0.3);
+  background: rgba(12, 10, 9, 0.55);
+  color: #e7d6c6;
+  font-size: 0.95rem;
+}
+.guildLordOpts {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: #c9b9a6;
+}
+.guildLordCheck,
+.guildLordAwk {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.guildLordCheck input {
+  width: 16px;
+  height: 16px;
+  accent-color: #e7a65f;
+}
+.guildLordAwk input {
+  width: 52px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(231, 166, 95, 0.3);
+  background: rgba(12, 10, 9, 0.55);
+  color: #e7d6c6;
+}
+.guildLordResult {
+  font-weight: 800;
+  color: #ffd79a;
+}
 .guildEditMemberGrid.soldiers .guildEditField input {
   padding: 6px 4px;
   text-align: center;
