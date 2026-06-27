@@ -43,6 +43,14 @@ export async function decryptContent(code: string, blob: EncryptedBlob): Promise
   return JSON.parse(new TextDecoder().decode(plain)) as GuildContent
 }
 
+/** 코드 → 길드 식별자(SHA-256 hex). Postgres encode(digest(code,'sha256'),'hex') 와 동일. */
+export async function guildIdFromCode(code: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(code))
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
 /** 콘텐츠를 코드로 암호화해 저장용 블록 생성. */
 export async function encryptContent(code: string, content: GuildContent): Promise<EncryptedBlob> {
   const salt = crypto.getRandomValues(new Uint8Array(16))

@@ -3,18 +3,18 @@ import { GlobalNav } from './components/GlobalNav'
 import { SiteCredit } from './components/SiteCredit'
 import { ResponsiveTable, cellOf, titleColIndex } from './components/ResponsiveTable'
 import { ContentEditor } from './components/ContentEditor'
-import { decryptContent, encryptContent } from './crypto'
+import { decryptContent, encryptContent, guildIdFromCode } from './crypto'
 import { ensureSoldierTable, soldierIcon, SOLDIERS, SOLDIER_TABLE_TITLE } from './soldiers'
-import { migrateMainTable } from './migrate'
+import { migrateMainTable, MAIN_HEADERS } from './migrate'
 import { parseNum } from './thresholds'
-import { loadRemoteBlob, saveRemoteBlob, supabaseEnabled } from './supabase'
+import { loadRemoteBlob, saveRemoteBlob, supabaseEnabled, LEGACY_ID } from './supabase'
 import type { EncryptedBlob, GuildContent, GuildTable } from './types'
 import bundledBlob from './data/content.encrypted.json'
 
 const SEED = bundledBlob as EncryptedBlob
 const UNLOCK_KEY = 'guildUnlock'
 const UNLOCK_TTL = 24 * 60 * 60 * 1000 // 잠금 해제 유효기간: 1일(이후 코드 재입력)
-const LOCAL_BLOB = 'guildContentBlob'
+const LOCAL_BLOB = 'guildContentBlob' // 길드별로 :<guildId> 붙여 저장
 
 function readUnlock(): { code: string; ts: number } | null {
   try {
@@ -42,48 +42,72 @@ function clearUnlock() {
   }
 }
 
-function readLocalBlob(): EncryptedBlob | null {
+function readLocalBlob(guildId: string): EncryptedBlob | null {
   try {
-    const raw = localStorage.getItem(LOCAL_BLOB)
+    const raw = localStorage.getItem(`${LOCAL_BLOB}:${guildId}`)
     return raw ? (JSON.parse(raw) as EncryptedBlob) : null
   } catch {
     return null
   }
 }
 
-function writeLocalBlob(blob: EncryptedBlob) {
+function writeLocalBlob(guildId: string, blob: EncryptedBlob) {
   try {
-    localStorage.setItem(LOCAL_BLOB, JSON.stringify(blob))
+    localStorage.setItem(`${LOCAL_BLOB}:${guildId}`, JSON.stringify(blob))
   } catch {
     /* noop */
   }
 }
 
-/** 우선순위(원격 → 로컬 → 번들) 블록들을 코드로 차례로 복호화, 처음 성공한 콘텐츠 반환. */
-async function loadContent(code: string): Promise<GuildContent> {
+/** 데이터가 전혀 없는 새 길드용 빈 틀. */
+function freshContent(): GuildContent {
+  return {
+    updatedAt: new Date().toISOString().slice(0, 10),
+    notice: '',
+    tables: [{ title: '극한 도전 진행 현황', note: '', headers: [...MAIN_HEADERS], rows: [] }],
+    images: [],
+    links: [],
+  }
+}
+
+function prepare(content: GuildContent): GuildContent {
+  return ensureSoldierTable({ ...content, tables: content.tables.map(migrateMainTable) })
+}
+
+/**
+ * 멀티길드: 코드의 해시(guildId)로 그 길드 데이터를 찾는다.
+ * 원격(guildId) → 원격(레거시 main) → 로컬(guildId) → 번들 시드 순으로 코드 복호화 시도,
+ * 처음 성공한 콘텐츠 반환. 전부 실패하면 = 새 길드 → 빈 틀.
+ */
+async function loadContent(code: string, guildId: string): Promise<GuildContent> {
   const candidates: EncryptedBlob[] = []
   if (supabaseEnabled()) {
     try {
-      const remote = await loadRemoteBlob()
+      const remote = await loadRemoteBlob(guildId)
       if (remote) candidates.push(remote)
     } catch {
-      /* 네트워크 실패 시 로컬/번들로 폴백 */
+      /* 네트워크 실패 → 폴백 */
+    }
+    try {
+      const legacy = await loadRemoteBlob(LEGACY_ID)
+      if (legacy) candidates.push(legacy)
+    } catch {
+      /* noop */
     }
   }
-  const local = readLocalBlob()
+  const local = readLocalBlob(guildId)
   if (local) candidates.push(local)
   candidates.push(SEED)
 
-  let lastErr: unknown = null
   for (const blob of candidates) {
     try {
-      const decrypted = await decryptContent(code, blob)
-      return ensureSoldierTable({ ...decrypted, tables: decrypted.tables.map(migrateMainTable) })
-    } catch (e) {
-      lastErr = e
+      return prepare(await decryptContent(code, blob))
+    } catch {
+      /* 이 코드로 복호화 안 되는 블록 → 다음 후보 */
     }
   }
-  throw lastErr ?? new Error('복호화 실패')
+  // 어떤 후보도 이 코드로 복호화되지 않음 = 새(또는 비어있는) 길드
+  return prepare(freshContent())
 }
 
 function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
@@ -279,6 +303,7 @@ function ReadView({ content, onShot }: { content: GuildContent; onShot: (src: st
 export default function App() {
   const [content, setContent] = useState<GuildContent | null>(null)
   const [code, setCode] = useState('')
+  const [guildId, setGuildId] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [editing, setEditing] = useState(false)
@@ -299,6 +324,7 @@ export default function App() {
     window.clearTimeout(lockTimer.current)
     setContent(null)
     setCode('')
+    setGuildId('')
     setEditing(false)
     setError('')
     clearUnlock()
@@ -310,9 +336,11 @@ export default function App() {
       setBusy(true)
       setError('')
       try {
-        const data = await loadContent(c)
+        const id = await guildIdFromCode(c)
+        const data = await loadContent(c, id)
         setContent(data)
         setCode(c)
+        setGuildId(id)
         writeUnlock(c, ts)
         window.clearTimeout(lockTimer.current)
         lockTimer.current = window.setTimeout(lock, Math.max(0, ts + UNLOCK_TTL - Date.now()))
@@ -339,8 +367,8 @@ export default function App() {
       setSaveError('')
       try {
         const blob = await encryptContent(code, next)
-        if (supabaseEnabled()) await saveRemoteBlob(blob, code)
-        writeLocalBlob(blob)
+        if (supabaseEnabled()) await saveRemoteBlob(blob, code, guildId)
+        writeLocalBlob(guildId, blob)
         setContent(next)
         setEditing(false)
         flashStatus(supabaseEnabled() ? '저장됨 · 전 길드원에게 반영됩니다' : '이 브라우저에 저장됨')
@@ -350,7 +378,7 @@ export default function App() {
         setSaving(false)
       }
     },
-    [code, flashStatus],
+    [code, guildId, flashStatus],
   )
 
   return (
