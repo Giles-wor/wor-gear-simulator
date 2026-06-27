@@ -514,6 +514,54 @@
   color: #9c8c79;
   font-size: 0.8rem;
 }
+/* 길드원 선택 편집 */
+.guildMemberHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.guildMemberCount {
+  font-size: 0.8rem;
+  color: #9c8c79;
+  font-weight: 600;
+}
+.guildMemberBar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.guildMemberSelect {
+  flex: 1 1 180px;
+  min-width: 0;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(231, 166, 95, 0.4);
+  background: rgba(12, 10, 9, 0.6);
+  color: #ffe1b5;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.guildMemberBar .guildAddBtn {
+  margin-top: 0;
+}
+.guildMemberBar .guildRowDel:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.guildNameField {
+  max-width: 260px;
+  margin-bottom: 6px;
+}
+.guildMemberSection {
+  margin-top: 16px;
+}
+.guildMemberSecTitle {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  color: #e7a65f;
+}
 .guildEditTable input {
   width: 92px;
   min-width: 64px;
