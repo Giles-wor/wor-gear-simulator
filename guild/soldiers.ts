@@ -20,7 +20,7 @@ export function soldierKey(name: string): string {
 }
 
 // guild/assets/soldiers/*.<ext> 아이콘을 빌드 URL 로 로드(파일 없으면 빈 맵 → 텍스트 폴백).
-const iconModules = import.meta.glob('./assets/soldiers/*.{png,jpg,jpeg,webp,PNG,JPG,JPEG,WEBP}', {
+const iconModules = import.meta.glob('./assets/soldiers/*.{png,jpg,jpeg,webp,gif,PNG,JPG,JPEG,WEBP,GIF}', {
   eager: true,
   query: '?url',
   import: 'default',
