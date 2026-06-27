@@ -10,6 +10,7 @@
     "sync:heroes": "node scripts/sync-heroes.mjs",
     "sync:summon": "node scripts/sync-summon.mjs",
     "sync:banners": "node scripts/sync-banners.mjs",
+    "encrypt:guild": "node scripts/encrypt-guild.mjs",
     "typecheck": "tsc --noEmit",
     "typecheck:v1": "tsc --noEmit -p v1/tsconfig.json",
     "typecheck:summon": "tsc --noEmit -p summon/tsconfig.json",
@@ -17,6 +18,7 @@
     "typecheck:guide": "tsc --noEmit -p guide/tsconfig.json",
     "typecheck:banners": "tsc --noEmit -p banners/tsconfig.json",
     "typecheck:leaks": "tsc --noEmit -p leaks/tsconfig.json",
+    "typecheck:guild": "tsc --noEmit -p guild/tsconfig.json",
     "dev": "vite",
     "dev:v1": "vite --config v1/vite.config.ts",
     "dev:summon": "vite --config summon/vite.config.ts",
@@ -24,6 +26,7 @@
     "dev:guide": "vite --config guide/vite.config.ts",
     "dev:banners": "vite --config banners/vite.config.ts",
     "dev:leaks": "vite --config leaks/vite.config.ts",
+    "dev:guild": "vite --config guild/vite.config.ts",
     "build": "npm run typecheck && vite build",
     "build:v1": "npm run typecheck:v1 && vite build --config v1/vite.config.ts",
     "build:summon": "npm run typecheck:summon && vite build --config summon/vite.config.ts",
@@ -31,6 +34,7 @@
     "build:guide": "npm run typecheck:guide && vite build --config guide/vite.config.ts",
     "build:banners": "npm run typecheck:banners && vite build --config banners/vite.config.ts",
     "build:leaks": "npm run typecheck:leaks && vite build --config leaks/vite.config.ts",
+    "build:guild": "npm run typecheck:guild && vite build --config guild/vite.config.ts",
     "preview": "vite preview"
   },
   "dependencies": {
