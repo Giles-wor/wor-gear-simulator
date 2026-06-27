@@ -4,6 +4,8 @@ import { cellOf, titleColIndex } from './ResponsiveTable'
 
 type Props = {
   initial: GuildContent
+  /** 편집 시작 시 선택할 길드원(읽기 화면에서 클릭한 멤버). 비면 첫 멤버. */
+  initialMember?: string
   onSave: (next: GuildContent) => void
   onCancel: () => void
   busy: boolean
@@ -13,13 +15,23 @@ type Props = {
   headerIcon?: (header: string) => string | undefined
 }
 
-export function ContentEditor({ initial, onSave, onCancel, busy, error, canPublish, headerIcon }: Props) {
+export function ContentEditor({
+  initial,
+  initialMember,
+  onSave,
+  onCancel,
+  busy,
+  error,
+  canPublish,
+  headerIcon,
+}: Props) {
   const [draft, setDraft] = useState<GuildContent>(() => structuredClone(initial))
 
   const mainTitleCol = draft.tables[0] ? titleColIndex(draft.tables[0].headers) : 1
   const members = draft.tables[0]?.rows.map((r) => cellOf(r[mainTitleCol] ?? '').v) ?? []
 
   const [selRaw, setSel] = useState<string>(() => {
+    if (initialMember) return initialMember
     const t0 = initial.tables[0]
     return t0 ? cellOf(t0.rows[0]?.[titleColIndex(t0.headers)] ?? '').v : ''
   })
