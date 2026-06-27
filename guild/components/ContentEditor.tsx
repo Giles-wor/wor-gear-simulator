@@ -9,9 +9,11 @@ type Props = {
   busy: boolean
   error: string
   canPublish: boolean
+  /** 헤더명 → 아이콘 URL(편집 시 매칭용). */
+  headerIcon?: (header: string) => string | undefined
 }
 
-export function ContentEditor({ initial, onSave, onCancel, busy, error, canPublish }: Props) {
+export function ContentEditor({ initial, onSave, onCancel, busy, error, canPublish, headerIcon }: Props) {
   const [draft, setDraft] = useState<GuildContent>(() => structuredClone(initial))
   const mobile = useIsMobile()
 
@@ -108,18 +110,22 @@ export function ContentEditor({ initial, onSave, onCancel, busy, error, canPubli
                   ✕
                 </button>
               </div>
-              <div className="guildEditMemberGrid">
+              <div className={table.sumColumn ? 'guildEditMemberGrid soldiers' : 'guildEditMemberGrid'}>
                 {row.map((cell, ci) => {
                   if (ci === titleCol) return null
                   const { v } = cellOf(cell)
+                  const label = table.headers[ci] ?? ''
+                  const icon = headerIcon?.(label)
                   return (
-                    <label key={ci} className="guildEditField">
-                      <span className="guildEditFieldLabel">{table.headers[ci]}</span>
+                    <label key={ci} className="guildEditField" title={icon ? label : undefined}>
+                      <span className="guildEditFieldLabel">
+                        {icon ? <img className="guildHeaderIcon sm" src={icon} alt={label} /> : label}
+                      </span>
                       <input
                         value={v}
                         onChange={(e) => setCell(ti, ri, ci, e.target.value)}
                         inputMode={ci >= 2 ? 'numeric' : undefined}
-                        aria-label={`${name || ri + 1} ${table.headers[ci]}`}
+                        aria-label={`${name || ri + 1} ${label}`}
                       />
                     </label>
                   )
@@ -139,9 +145,14 @@ export function ContentEditor({ initial, onSave, onCancel, busy, error, canPubli
         <thead>
           <tr>
             <th aria-label="행 삭제" />
-            {table.headers.map((h, hi) => (
-              <th key={hi}>{h}</th>
-            ))}
+            {table.headers.map((h, hi) => {
+              const icon = headerIcon?.(h)
+              return (
+                <th key={hi} title={icon ? h : undefined}>
+                  {icon ? <img className="guildHeaderIcon" src={icon} alt={h} /> : h}
+                </th>
+              )
+            })}
           </tr>
         </thead>
         <tbody>

@@ -397,6 +397,7 @@ export default function App() {
               busy={saving}
               error={saveError}
               canPublish={supabaseEnabled()}
+              headerIcon={soldierIcon}
             />
           ) : (
             <ReadView content={content} onShot={(src, alt) => setShot({ src, alt })} />
