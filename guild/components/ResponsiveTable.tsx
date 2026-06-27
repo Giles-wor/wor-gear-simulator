@@ -6,6 +6,13 @@ export function cellOf(cell: GuildCell): { v: string; hi: boolean } {
   return typeof cell === 'string' ? { v: cell, hi: false } : { v: cell.v, hi: !!cell.hi }
 }
 
+/** 길전 투력 칸 꼬리표: 영주면 (각성), 비영주면 (x). 값 없으면 ''. */
+export function lordSuffix(cell: GuildCell, header: string): string {
+  if (!/길전\s*투력/.test(header)) return ''
+  if (cellOf(cell).v.trim() === '') return ''
+  return typeof cell !== 'string' && cell.lord ? `(${cell.awaken ?? 0})` : '(x)'
+}
+
 /** 좁은 화면(모바일) 여부. */
 export function useIsMobile(breakpoint = 640): boolean {
   const [mobile, setMobile] = useState(false)
@@ -101,7 +108,7 @@ export function ResponsiveTable({
             .map((cell, ci) => {
               const { v, hi } = cellOf(cell)
               const label = table.headers[ci] ?? ''
-              return { label, v, hi: hi || belowCut(label, v), ci }
+              return { label, v, hi: hi || belowCut(label, v), ci, suffix: lordSuffix(cell, label) }
             })
             // 캐릭명/구분 제외한 수치 열은 값이 없어도 NaN 으로 표시
             .filter((f) => f.ci !== titleCol && !/구분/.test(f.label))
@@ -132,7 +139,16 @@ export function ResponsiveTable({
                         <dt title={icon ? f.label : undefined}>
                           {icon ? <img className="guildHeaderIcon sm" src={icon} alt={f.label} loading="lazy" /> : f.label}
                         </dt>
-                        <dd className={empty ? 'guildNaN' : undefined}>{empty ? 'NaN' : f.v}</dd>
+                        <dd className={empty ? 'guildNaN' : undefined}>
+                          {empty ? (
+                            'NaN'
+                          ) : (
+                            <>
+                              {f.v}
+                              {f.suffix && <span className="guildLordTag"> {f.suffix}</span>}
+                            </>
+                          )}
+                        </dd>
                       </div>
                     )
                   })}
@@ -196,7 +212,12 @@ export function ResponsiveTable({
                       ) : showNaN ? (
                         'NaN'
                       ) : (
-                        v
+                        <>
+                          {v}
+                          {lordSuffix(cell, header) && (
+                            <span className="guildLordTag"> {lordSuffix(cell, header)}</span>
+                          )}
+                        </>
                       )}
                     </td>
                     {table.sumColumn && ci === titleCol && <td className="guildSum">{rowSum(row)}</td>}
