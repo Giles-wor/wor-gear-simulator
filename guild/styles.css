@@ -187,7 +187,9 @@
   color: #ffe1b5;
 }
 .guildTableScroll {
-  overflow-x: auto;
+  overflow: auto;
+  /* 표 안에서 스크롤 → 헤더(sticky top) + 캐릭명 열(sticky left)이 고정 */
+  max-height: 80vh;
   border-radius: 10px;
   border: 1px solid rgba(231, 166, 95, 0.18);
 }
@@ -205,11 +207,12 @@
   color: #d4c4b1;
 }
 .guildTable thead th {
-  background: rgba(231, 166, 95, 0.12);
+  background: #2d251e; /* 고정 시 아래 행이 비쳐 보이지 않도록 불투명 */
   color: #ffe1b5;
   font-weight: 800;
   position: sticky;
   top: 0;
+  z-index: 1;
   /* 긴 헤더는 2줄로 접어서 열 폭을 줄임 → 마지막 열까지 보이게 */
   white-space: normal;
   line-height: 1.2;
@@ -535,13 +538,18 @@ td.guildColName .guildMemberLink {
 .guildColName {
   position: sticky;
   left: 0;
-  background: rgba(28, 22, 18, 0.98);
+  background: #211a14;
   font-weight: 700;
   color: #ffe1b5;
   z-index: 1;
 }
+/* 가로 스크롤 시 캐릭명 열 뒤로 다른 칸이 비치지 않게(줄무늬보다 우선) */
+.guildTable tbody td.guildColName {
+  background: #211a14;
+}
 .guildTable thead th.guildColName {
-  z-index: 2;
+  background: #2d251e;
+  z-index: 3;
 }
 
 /* ── 편집 UI ── */
