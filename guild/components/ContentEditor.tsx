@@ -177,21 +177,34 @@ export function ContentEditor({
 
   const save = () => {
     const today = new Date().toISOString().slice(0, 10)
-    // 변경된 행만 오늘 날짜로 갱신(캐릭명 기준 매칭). 안 바뀐 행은 기존 날짜 유지.
+
+    // 멤버별로 '어느 표든'(진행현황·마병) 바뀌면 갱신 대상으로. → 최근 업데이트 통합 반영.
+    const changedMembers = new Set<string>()
+    draft.tables.forEach((t, ti) => {
+      const init = initial.tables[ti]
+      const tc = titleColIndex(t.headers)
+      const prevRow = new Map<string, GuildCell[]>()
+      init?.rows.forEach((r) => prevRow.set(cellOf(r[tc] ?? '').v, r))
+      t.rows.forEach((r) => {
+        const name = cellOf(r[tc] ?? '').v
+        const pr = prevRow.get(name)
+        if (!pr || JSON.stringify(pr) !== JSON.stringify(r)) changedMembers.add(name)
+      })
+    })
+
+    // 변경된 멤버는 모든 표에서 오늘 날짜로, 안 바뀐 멤버는 기존 날짜 유지(캐릭명 매칭).
     const tables = draft.tables.map((t, ti) => {
       const init = initial.tables[ti]
-      const titleCol = titleColIndex(t.headers)
-      const prev = new Map<string, { row: GuildCell[]; meta?: RowMeta }>()
-      init?.rows.forEach((r, i) => {
-        prev.set(cellOf(r[titleCol] ?? '').v, { row: r, meta: init.rowMeta?.[i] })
-      })
+      const tc = titleColIndex(t.headers)
+      const prevMeta = new Map<string, RowMeta | undefined>()
+      init?.rows.forEach((r, i) => prevMeta.set(cellOf(r[tc] ?? '').v, init.rowMeta?.[i]))
       const rowMeta: RowMeta[] = t.rows.map((r) => {
-        const p = prev.get(cellOf(r[titleCol] ?? '').v)
-        const changed = !p || JSON.stringify(p.row) !== JSON.stringify(r)
-        return changed ? { updatedAt: today } : (p.meta ?? {})
+        const name = cellOf(r[tc] ?? '').v
+        return changedMembers.has(name) ? { updatedAt: today } : (prevMeta.get(name) ?? {})
       })
       return { ...t, rowMeta }
     })
+
     onSave({ ...draft, updatedAt: today, tables })
   }
 
