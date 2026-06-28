@@ -296,18 +296,18 @@ export function ContentEditor({
                               </label>
                               <label className="guildLordAwk">
                                 각성
-                                <input
-                                  type="number"
-                                  min={0}
-                                  max={5}
+                                <select
                                   value={awaken}
-                                  onChange={(e) =>
-                                    setLordCell(ti, ri, ci, {
-                                      awaken: Math.max(0, Math.min(5, Math.floor(Number(e.target.value) || 0))),
-                                    })
-                                  }
+                                  onChange={(e) => setLordCell(ti, ri, ci, { awaken: Number(e.target.value) })}
+                                  onWheel={(e) => e.currentTarget.blur()}
                                   aria-label={`${h} 각성`}
-                                />
+                                >
+                                  {[0, 1, 2, 3, 4, 5].map((n) => (
+                                    <option key={n} value={n}>
+                                      {n}각
+                                    </option>
+                                  ))}
+                                </select>
                               </label>
                               {lord && raw.trim() !== '' && <span className="guildLordResult">→ {result}</span>}
                             </div>
@@ -323,9 +323,10 @@ export function ContentEditor({
                             {icon ? <img className="guildHeaderIcon sm" src={icon} alt={h} /> : h}
                           </span>
                           <input
+                            type="text"
                             value={v}
                             onChange={(e) => setCell(ti, ri, ci, e.target.value)}
-                            inputMode={/구분/.test(h) ? undefined : 'numeric'}
+                            inputMode={/구분/.test(h) ? 'text' : 'numeric'}
                             aria-label={`${selected} ${h}`}
                           />
                         </label>
