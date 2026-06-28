@@ -8,6 +8,7 @@ import { ensureSoldierTable, soldierIcon, SOLDIERS, SOLDIER_TABLE_TITLE } from '
 import { migrateMainTable, MAIN_HEADERS } from './migrate'
 import { parseNum } from './thresholds'
 import { loadRemoteBlob, saveRemoteBlob, supabaseEnabled, LEGACY_ID } from './supabase'
+import { mergeMemberChanges } from './merge'
 import type { EncryptedBlob, GuildContent, GuildTable } from './types'
 import bundledBlob from './data/content.encrypted.json'
 
@@ -447,10 +448,25 @@ export default function App() {
       setSaving(true)
       setSaveError('')
       try {
-        const blob = await encryptContent(code, next)
+        let toSave = next
+        if (supabaseEnabled()) {
+          // 동시 편집 데이터 손실 방지: 저장 직전 최신 원격을 다시 받아,
+          // 내가 건드린 멤버만 병합한다. 원격을 못 받으면 빈/오래된 값으로 덮어쓰지 않도록 저장 취소.
+          let latest: GuildContent | null = null
+          try {
+            const remote = await loadRemoteBlob(guildId)
+            if (remote) latest = prepare(await decryptContent(code, remote))
+          } catch {
+            setSaveError('네트워크 문제로 저장을 취소했어요. 잠시 후 다시 시도해 주세요.')
+            setSaving(false)
+            return
+          }
+          if (latest && content) toSave = mergeMemberChanges(latest, content, next)
+        }
+        const blob = await encryptContent(code, toSave)
         if (supabaseEnabled()) await saveRemoteBlob(blob, code, guildId)
         writeLocalBlob(guildId, blob)
-        setContent(next)
+        setContent(toSave)
         setEditing(false)
         flashStatus(supabaseEnabled() ? '저장됨 · 전 길드원에게 반영됩니다' : '이 브라우저에 저장됨')
       } catch (e) {
@@ -459,7 +475,7 @@ export default function App() {
         setSaving(false)
       }
     },
-    [code, guildId, flashStatus],
+    [code, guildId, content, flashStatus],
   )
 
   // 코드 이전: 이전 코드 내용을 새 코드로 복사(별도 행). 성공 시 새 코드로 자동 입장.

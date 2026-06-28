@@ -885,8 +885,9 @@ td.guildColName .guildMemberLink {
   height: 16px;
   accent-color: #e7a65f;
 }
-.guildLordAwk input {
-  width: 52px;
+.guildLordAwk input,
+.guildLordAwk select {
+  width: 64px;
   padding: 4px 6px;
   border-radius: 6px;
   border: 1px solid rgba(231, 166, 95, 0.3);
