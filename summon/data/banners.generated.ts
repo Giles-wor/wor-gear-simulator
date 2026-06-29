@@ -1,6 +1,5 @@
 // scripts/sync-summon.mjs 크롤 결과가 이 파일을 덮어씁니다.
-// 천장 규칙 / featuredMultiplier / stacking / featuredHardGuarantee 만 덮어쓰며,
-// 영주/일반 base rate 와 풀 크기는 banners.ts placeholder 가 그대로 사용됩니다 (위키에 없음).
+// 크롤 성공 전에는 null 이며, banners.ts 가 placeholder 기본값을 사용합니다.
 import type { BannerConfig } from '../lib/gacha'
 
 export const generatedBanners: Partial<
@@ -27,10 +26,9 @@ export const generatedBanners: Partial<
     "softPityStart": 186,
     "softPityIncrement": 0.08,
     "hardPity": 200,
-    "pityFocus": "lord",
     "featuredMultiplier": 20,
     "rateUpStackingMultiplier": 2,
-    "notes": "고대 소환 (인게임 확인): 5성 영주 전용 천장, 185회 미획득 후 +8%, 200픽 영주 확정."
+    "notes": "Special Ancient: Ancient pity + ×20 + ×2 stacking. Scarlet Feast 보장 90픽 (미모델)."
   },
   "divine": {
     "softPityStart": 13,
@@ -44,5 +42,5 @@ export const generatedBanners: Partial<
 
 export const generatedSource: { url: string; fetchedAt: string } | null = {
   "url": "https://watcher-of-realms.fandom.com/wiki/Banner",
-  "fetchedAt": "2026-05-20T01:35:59.246Z"
+  "fetchedAt": "2026-06-29T08:16:36.368Z"
 }
