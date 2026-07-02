@@ -19,6 +19,9 @@ wor-webapp.zip
 # 길드원 페이지 평문 콘텐츠는 리포에 올리지 않음 (암호화본 content.encrypted.json 만 커밋)
 guild/content.source.json
 
+# sync-banners 크롤 실패 시 생성되는 디버그 덤프 (리포에 올리지 않음)
+banners/data/_debug_fetch.txt
+
 # 마병 아이콘은 리포에 포함 (위 *.jpg/*.png 무시 규칙의 예외)
 !guild/assets/
 !guild/assets/**
