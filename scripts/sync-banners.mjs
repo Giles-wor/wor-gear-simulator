@@ -110,9 +110,45 @@ export function parseBanners(html) {
   return banners
 }
 
-async function fetchText(url, accept) {
-  const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: accept } })
-  return { ok: res.ok, status: res.status, text: await res.text() }
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+// prospector.gg 는 Cloudflare 봇차단이 걸려 있어 자동 요청이 429/403 으로 막히곤 한다.
+// 브라우저에 가까운 헤더를 붙이고, 재시도 가치가 있는 상태(429/403/5xx)만 소수 백오프 재시도한다.
+// (주간 스케줄 1회 실행 안에서만 재시도 — 소스를 자주 두드리지 않는다.)
+const BROWSER_HEADERS = {
+  'User-Agent': UA,
+  'Accept-Language': 'en-US,en;q=0.9',
+  Referer: 'https://prospector.gg/',
+  'Cache-Control': 'no-cache',
+  'sec-ch-ua': '"Chromium";v="124", "Not:A-Brand";v="99"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"Linux"',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+}
+const RETRYABLE = new Set([429, 403, 500, 502, 503, 504])
+
+async function fetchText(url, accept, attempts = 3) {
+  let last = { ok: false, status: 0, text: '' }
+  for (let i = 0; i < attempts; i += 1) {
+    if (i > 0) {
+      // 서버가 Retry-After 를 주면 존중(최대 60s), 없으면 지수 백오프(2s·4s·8s…, 최대 30s).
+      const ra = Number(last.retryAfter)
+      const wait =
+        Number.isFinite(ra) && ra > 0 ? Math.min(ra * 1000, 60000) : Math.min(2000 * 2 ** (i - 1), 30000)
+      await sleep(wait)
+    }
+    try {
+      const res = await fetch(url, { headers: { ...BROWSER_HEADERS, Accept: accept } })
+      const text = await res.text()
+      last = { ok: res.ok, status: res.status, text, retryAfter: res.headers.get('retry-after') }
+      if (res.ok || !RETRYABLE.has(res.status)) return last
+    } catch (err) {
+      last = { ok: false, status: 0, text: '', retryAfter: null }
+    }
+  }
+  return last
 }
 
 function debugSlice(label, html) {

@@ -48,12 +48,27 @@ jobs:
           npm run typecheck:banners
 
       - name: Create pull request
+        id: cpr
         uses: peter-evans/create-pull-request@v6
         with:
           branch: data/auto-sync
           title: "chore: refresh crawled game data"
           commit-message: "chore: refresh crawled hero & summon data"
+          # 크롤 결과 데이터 파일만 커밋 — 실패 시 생성되는 _debug_fetch.txt 등이 딸려가지 않게.
+          add-paths: |
+            src/data/heroes.generated.ts
+            summon/data/banners.generated.ts
+            banners/data/schedule.generated.ts
           body: |
-            자동 크롤 갱신 (sync:heroes / sync:summon).
-            소환율 파싱은 best-effort 이며 페이지 구조 변경 시 검토 필요.
+            자동 크롤 갱신 (sync:heroes / sync:summon / sync:banners).
+            소환율·배너 파싱은 best-effort 이며 소스 차단/구조 변경 시 기존 데이터 유지.
           delete-branch: true
+
+      # 데이터 PR 은 자동 생성 결과라 리뷰가 병목이 되어 방치되기 쉬움 → 곧바로 머지해 배포에 반영.
+      - name: Auto-merge data PR
+        if: steps.cpr.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr merge --squash --delete-branch "${{ steps.cpr.outputs.pull-request-number }}" \
+            || echo "자동 머지 실패 — PR #${{ steps.cpr.outputs.pull-request-number }} 수동 머지 필요"
