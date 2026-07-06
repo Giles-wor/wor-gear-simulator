@@ -58,6 +58,7 @@ const CREDITS: Record<string, string> = {
   '길드보스 (악몽·심연)': '9enie',
   '초보자 필독사항': '9enie',
   '장비 셋팅 가이드': '9enie',
+  '장비 프리셋 기능': '9enie',
   '공속표': '9enie',
   '탈변보석 팁': '9enie',
   '승화기능 팁': '9enie',
