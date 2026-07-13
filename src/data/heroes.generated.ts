@@ -1328,13 +1328,13 @@ export const heroes: Omit<Hero, 'awakeningAtkBonus' | 'burstAtkBonusPer100Aspd'>
     "sourceLevel": "Lv.60",
     "rarity": "Legendary",
     "heroClass": "Tactician",
-    "damageType": "Physical Magic at A1",
+    "damageType": "Physical Physical or Magic at A1",
     "factions": [
       "Watchguard",
       "Infernal Blast"
     ],
     "heroTags": [],
-    "description": "Legendary Tactician / Physical Magic at A1",
+    "description": "Legendary Tactician / Physical Physical or Magic at A1",
     "hp": 28487,
     "baseAtk": 5573,
     "defense": 2564,
