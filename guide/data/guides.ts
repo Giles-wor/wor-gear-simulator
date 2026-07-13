@@ -35,9 +35,10 @@ export type GuideCategory = {
 }
 
 /** 카테고리 노출 순서 + 폴더키 → 한글 라벨 */
-const CATEGORY_ORDER = ['tips', 'gearTips', 'summonTips', 'guildWar', 'event', 'titans', 'malik', 'bossTome', 'content'] as const
+const CATEGORY_ORDER = ['tips', 'tierList', 'gearTips', 'summonTips', 'guildWar', 'event', 'titans', 'malik', 'bossTome', 'content'] as const
 const CATEGORY_LABELS: Record<string, string> = {
   tips: '초보팁',
+  tierList: '티어표',
   gearTips: '장비팁',
   summonTips: '소환팁',
   guildWar: '길드전팁',
@@ -58,6 +59,7 @@ const NAME_OVERRIDES: Record<string, string> = {}
 const CREDITS: Record<string, string> = {
   '길드보스 (악몽·심연)': '9enie',
   '초보자 필독사항': '9enie',
+  '영웅 티어표': '9enie',
   '장비 셋팅 가이드': '9enie',
   '장비 프리셋 기능': '9enie',
   '공속표': '9enie',
