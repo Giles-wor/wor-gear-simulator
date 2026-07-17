@@ -1,6 +1,6 @@
 import { aggregateAwakening, type AwakeningTier, type Hero } from '../data/heroes'
 import { gearSetLabel, type GearSet } from '../data/gearSets'
-import { getAttackSpeedProfile } from '../data/attackSpeed'
+import { getAttackSpeedProfileForHero } from '../data/attackSpeed'
 import { findFactionAccessory } from '../data/factionAccessories'
 import { findLordEffect } from '../data/lordEffects'
 
@@ -111,8 +111,8 @@ function clampUptime(value: number) {
   return Math.min(1, Math.max(0, value))
 }
 
-export function getBreakpointInfo(baseInterval: number, finalAspd: number) {
-  const profile = getAttackSpeedProfile(baseInterval)
+export function getBreakpointInfo(baseInterval: number, finalAspd: number, heroId?: string) {
+  const profile = getAttackSpeedProfileForHero(heroId, baseInterval)
   const table = profile.breakpoints
   let current = table[0]
   let next: typeof current | null = null
@@ -391,7 +391,7 @@ export function calculateBuild(
   const totalAspd = build.attackSpeed + awakening.attackSpeedBonus
   const finalAspd = totalAspd + pantheonAspdBonus + lordAttackSpeedBonus
   const attackSpeedProfileBaseInterval = hero.attackSpeedProfileBaseIntervalOverride ?? hero.baseInterval
-  const bp = getBreakpointInfo(attackSpeedProfileBaseInterval, finalAspd)
+  const bp = getBreakpointInfo(attackSpeedProfileBaseInterval, finalAspd, hero.id)
 
   const critRateRatio = Math.min(finalCritRate, 100) / 100
   const critMultiplier = 1 + critRateRatio * (finalCritDmg / 100 - 1)
