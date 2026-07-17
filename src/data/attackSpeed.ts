@@ -84,6 +84,27 @@ export const attackSpeedProfilesByBaseInterval: Record<string, AttackSpeedProfil
     { interval: 2.6, requiredTotalAspd: 454 },
     { interval: 2.5, requiredTotalAspd: 501 },
   ]),
+  // 카드그림(khadgrim): baseInterval 10, 공속표 Ver 26.7.17 기준
+  '10.0': withBaseline(10, [
+    { interval: 7.7, requiredTotalAspd: 258 },
+    { interval: 7.6, requiredTotalAspd: 271 },
+    { interval: 7.5, requiredTotalAspd: 285 },
+    { interval: 7.4, requiredTotalAspd: 301 },
+    { interval: 7.3, requiredTotalAspd: 317 },
+    { interval: 7.2, requiredTotalAspd: 335 },
+    { interval: 7.1, requiredTotalAspd: 355 },
+    { interval: 7.0, requiredTotalAspd: 377 },
+    { interval: 6.9, requiredTotalAspd: 401 },
+    { interval: 6.8, requiredTotalAspd: 427 },
+    { interval: 6.7, requiredTotalAspd: 456 },
+    { interval: 6.6, requiredTotalAspd: 489 },
+    { interval: 6.5, requiredTotalAspd: 526 },
+    { interval: 6.4, requiredTotalAspd: 567 },
+    { interval: 6.3, requiredTotalAspd: 613 },
+    { interval: 6.2, requiredTotalAspd: 670 },
+    { interval: 6.1, requiredTotalAspd: 734 },
+    { interval: 6.0, requiredTotalAspd: 810 },
+  ]),
 }
 
 export const specialAttackSpeedProfiles: Record<string, AttackSpeedProfile> = {
@@ -102,6 +123,25 @@ export const specialAttackSpeedProfiles: Record<string, AttackSpeedProfile> = {
   },
 }
 
+// 같은 baseInterval 이라도 고유 공속 곡선을 갖는 영웅(키 = hero id).
+// 예: 지제벨(jezebelle)은 baseInterval 5.0 이지만 일반 5.0 표(엘)와 구간이 다름.
+export const heroSpecificAttackSpeedProfiles: Record<string, AttackSpeedProfile> = {
+  jezebelle: withBaseline(5.0, [
+    { interval: 3.7, requiredTotalAspd: 234 },
+    { interval: 3.6, requiredTotalAspd: 253 },
+    { interval: 3.5, requiredTotalAspd: 276 },
+    { interval: 3.4, requiredTotalAspd: 301 },
+    { interval: 3.3, requiredTotalAspd: 329 },
+    { interval: 3.2, requiredTotalAspd: 362 },
+    { interval: 3.1, requiredTotalAspd: 401 },
+    { interval: 3.0, requiredTotalAspd: 446 },
+    { interval: 2.9, requiredTotalAspd: 501 },
+    { interval: 2.8, requiredTotalAspd: 567 },
+    { interval: 2.7, requiredTotalAspd: 651 },
+    { interval: 2.6, requiredTotalAspd: 758 },
+  ]),
+}
+
 function formatBaseIntervalKey(baseInterval: number) {
   return baseInterval.toFixed(1)
 }
@@ -109,4 +149,12 @@ function formatBaseIntervalKey(baseInterval: number) {
 export function getAttackSpeedProfile(baseInterval: number) {
   const directKey = formatBaseIntervalKey(baseInterval)
   return attackSpeedProfilesByBaseInterval[directKey] ?? withBaseline(baseInterval, [])
+}
+
+/** 영웅 전용 공속표가 있으면 그걸, 없으면 baseInterval 기준 일반표를 반환. */
+export function getAttackSpeedProfileForHero(heroId: string | undefined, baseInterval: number) {
+  if (heroId && heroSpecificAttackSpeedProfiles[heroId]) {
+    return heroSpecificAttackSpeedProfiles[heroId]
+  }
+  return getAttackSpeedProfile(baseInterval)
 }

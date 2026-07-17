@@ -128,7 +128,6 @@ export const heroNameKo: Record<string, string> = {
   cainan: '카이난',
   aurelius_gale: '아우렐리우스',
   jezebelle: '지제벨',
-  khadgrim: '카드그림',
 }
 
 /** Hero id → 한글 이름. 매핑 없으면 undefined. */
