@@ -2,14 +2,14 @@ import type { BannerConfig } from '../lib/gacha'
 import { generatedBanners, generatedSource } from './banners.generated'
 
 // 인게임 Drop Rates 탭 확정 수치.
-// Rare 크리스탈(스피릿): 영주 0.04% × 8명 / 일반 0.46% × ~96명, 180→+5%/회→200픽.
+// Rare 크리스탈(스피릿): 영주 0.04% × 8명 / 일반 0.46% × 92명, 180→+5%/회→200픽.
 // 고대: 영주 0.8% × 16명 / 일반 1% × 28명, 185→+8%/회→200픽, 영주 전용 천장.
 //   (2026-06-29 풀 조정: 비주류 영주/알수없는자 7명 제외 — 아라샤·모리건·아자크스·트윈즈 베노마·킹 할츠·톨레도·라야. 영주 15→8, 그룹 0.72%는 유지.)
 //   (2026-07 지제벨(영주) 추가 → 영주 풀 8→9. 그룹 0.72% 유지되어 영주 1명당 확률은 하락.)
 //   (2026-07-18 인게임 풀 개편: 고대 영주 0.72%×9 → 0.8%×16(주류 영주 대거 편입), 고대 일반 30→28.
-//    스피릿/디바인 일반 풀 ~85→~96. 6/29 고대에서 제외됐던 영주 8명은 이제 스피릿 영주 풀(0.04%×8)에서 확인됨.
+//    스피릿/디바인 일반 풀 85→92. 6/29 고대에서 제외됐던 영주 8명은 이제 스피릿 영주 풀(0.04%×8)에서 확인됨.
 //    카이난은 한정 영웅이지만 스피릿 일반 풀에도 노출.)
-// 디바인(Legendary): 영주 0.4% × 8명 / 일반 5.6% × ~96명, 12→+5%/회→20픽.
+// 디바인(Legendary): 영주 0.4% × 8명 / 일반 5.6% × 92명, 12→+5%/회→20픽.
 // 픽업: 이벤트 배너는 픽업 영웅 ×20, 비-픽업 5성 뽑을 때마다 모든 픽업 가중치 ×10 (고대는 ×2).
 //   이 stacking 보정은 "첫 픽업 획득 전"에만 적용 — 픽업(타겟이든 아니든)을 1장이라도 얻으면 그 기간 동안
 //   보정은 종료되고 이후 카피는 기본배수(×20)만 적용된다.
@@ -20,7 +20,7 @@ const placeholderBanners: Record<BannerConfig['id'], BannerConfig> = {
     lordGroupRate: 0.0004,
     commonGroupRate: 0.0046,
     lordPoolSize: 8,
-    commonPoolSize: 96,
+    commonPoolSize: 92,
     softPityStart: 181,
     softPityIncrement: 0.05,
     hardPity: 200,
@@ -38,7 +38,7 @@ const placeholderBanners: Record<BannerConfig['id'], BannerConfig> = {
     lordGroupRate: 0.0004,
     commonGroupRate: 0.0046,
     lordPoolSize: 8,
-    commonPoolSize: 96,
+    commonPoolSize: 92,
     softPityStart: 181,
     softPityIncrement: 0.05,
     hardPity: 200,
@@ -83,7 +83,7 @@ const placeholderBanners: Record<BannerConfig['id'], BannerConfig> = {
     lordGroupRate: 0.004,
     commonGroupRate: 0.056,
     lordPoolSize: 8,
-    commonPoolSize: 96,
+    commonPoolSize: 92,
     softPityStart: 13,
     softPityIncrement: 0.05,
     hardPity: 20,
