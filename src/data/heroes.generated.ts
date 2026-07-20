@@ -813,13 +813,13 @@ export const heroes: Omit<Hero, 'awakeningAtkBonus' | 'burstAtkBonusPer100Aspd'>
     "sourceLevel": "Lv.60",
     "rarity": "Epic",
     "heroClass": "Fighter",
-    "damageType": "",
+    "damageType": "Physical",
     "factions": [
       "Cursed Cult",
       "Chaos Dominion"
     ],
     "heroTags": [],
-    "description": "Epic Fighter / ",
+    "description": "Epic Fighter / Physical",
     "hp": 9106,
     "baseAtk": 3030,
     "defense": 1916,
@@ -1328,13 +1328,13 @@ export const heroes: Omit<Hero, 'awakeningAtkBonus' | 'burstAtkBonusPer100Aspd'>
     "sourceLevel": "Lv.60",
     "rarity": "Legendary",
     "heroClass": "Tactician",
-    "damageType": "Physical Physical or Magic at A1",
+    "damageType": "Physical Physical/ Magic at A1",
     "factions": [
       "Watchguard",
       "Infernal Blast"
     ],
     "heroTags": [],
-    "description": "Legendary Tactician / Physical Physical or Magic at A1",
+    "description": "Legendary Tactician / Physical Physical/ Magic at A1",
     "hp": 28487,
     "baseAtk": 5573,
     "defense": 2564,
@@ -1652,13 +1652,13 @@ export const heroes: Omit<Hero, 'awakeningAtkBonus' | 'burstAtkBonusPer100Aspd'>
     "sourceLevel": "Lv.60",
     "rarity": "Legendary",
     "heroClass": "Defender",
-    "damageType": "",
+    "damageType": "Normal",
     "factions": [
       "Watchguard",
       "Supreme Arbiter"
     ],
     "heroTags": [],
-    "description": "Legendary Defender / ",
+    "description": "Legendary Defender / Normal",
     "hp": 23493,
     "baseAtk": 3248,
     "defense": 3366,
@@ -2677,13 +2677,13 @@ export const heroes: Omit<Hero, 'awakeningAtkBonus' | 'burstAtkBonusPer100Aspd'>
     "sourceLevel": "Lv.60",
     "rarity": "Legendary",
     "heroClass": "Defender",
-    "damageType": "",
+    "damageType": "Piercing",
     "factions": [
       "Supreme Arbiter",
       "Star Piercers"
     ],
     "heroTags": [],
-    "description": "Legendary Defender / ",
+    "description": "Legendary Defender / Piercing",
     "hp": 22896,
     "baseAtk": 4872,
     "defense": 3058,
@@ -8280,12 +8280,12 @@ export const heroes: Omit<Hero, 'awakeningAtkBonus' | 'burstAtkBonusPer100Aspd'>
     "sourceLevel": "Lv.60",
     "rarity": "Legendary",
     "heroClass": "Marksman",
-    "damageType": "Physical",
+    "damageType": "Piercing",
     "factions": [
       "Star Piercers"
     ],
     "heroTags": [],
-    "description": "Legendary Marksman / Physical",
+    "description": "Legendary Marksman / Piercing",
     "hp": 11387,
     "baseAtk": 3795,
     "defense": 904,
