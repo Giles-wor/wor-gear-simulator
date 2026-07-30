@@ -21,6 +21,7 @@
     "typecheck:leaks": "tsc --noEmit -p leaks/tsconfig.json",
     "typecheck:guild": "tsc --noEmit -p guild/tsconfig.json",
     "dev": "vite",
+    "tistory": "vite tools/tistory --open",
     "dev:v1": "vite --config v1/vite.config.ts",
     "dev:summon": "vite --config summon/vite.config.ts",
     "dev:gear": "vite --config gear/vite.config.ts",
