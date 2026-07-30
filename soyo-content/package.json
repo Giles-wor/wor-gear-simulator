@@ -1,0 +1,16 @@
+{
+  "name": "soyo-content",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "tistory": "vite tistory --open",
+    "check": "node tistory/qa-cli.mjs"
+  },
+  "devDependencies": {
+    "vite": "^5.4.8"
+  }
+}

@@ -10,7 +10,7 @@ description: 소비요정 김소요의 네이버 블로그 글을 티스토리(t
 핵심 원칙 한 문장: **네이버는 브랜드를 키우고, 티스토리는 검색 자산을 쌓는다.**
 
 정량 기준(이미지 수, 메타 길이, 유사도 상한 등)의 원본은
-`tools/tistory/lib/rules.js`다. 숫자가 필요하면 그 파일을 읽고, 여기 값과
+`tistory/lib/rules.js`다. 숫자가 필요하면 그 파일을 읽고, 여기 값과
 어긋나면 `rules.js`를 따른다.
 
 ## 절대 규칙
@@ -117,10 +117,10 @@ FAQ → 최종 정리
 초안을 파일로 저장한 뒤 CLI로 검수한다. 사람 눈으로 놓치는 항목을 잡아준다.
 
 ```bash
-node tools/tistory/qa-cli.mjs check <초안.md> --naver <네이버입력.md> --out <출력디렉터리>
+node tistory/qa-cli.mjs check <초안.md> --naver <네이버입력.md> --out <출력디렉터리>
 ```
 
-`--naver`에 넘길 입력 파일은 `node tools/tistory/qa-cli.mjs init <경로>`로
+`--naver`에 넘길 입력 파일은 `node tistory/qa-cli.mjs init <경로>`로
 템플릿을 만들어 채운다. `--out`을 주면 티스토리 HTML, 제목 후보, 태그,
 메타 설명, 이미지 계획, metadata.json이 생성된다.
 

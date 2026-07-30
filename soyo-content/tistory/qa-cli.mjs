@@ -3,13 +3,13 @@
  * 티스토리 재가공 CLI — 웹 도구 없이 폴더/터미널로 쓸 때 사용한다.
  * 웹 도구(index.html)와 같은 lib/ 모듈을 쓰므로 판정 결과가 다르지 않다.
  *
- *   node tools/tistory/qa-cli.mjs init  <입력파일>
+ *   node tistory/qa-cli.mjs init  <입력파일>
  *     → 네이버 원고 입력 템플릿을 만든다
  *
- *   node tools/tistory/qa-cli.mjs prompt <입력파일>
+ *   node tistory/qa-cli.mjs prompt <입력파일>
  *     → 변환 프롬프트를 표준출력으로 뽑는다 (클로드에 붙여넣는다)
  *
- *   node tools/tistory/qa-cli.mjs check  <초안파일> [--naver <입력파일>] [--out <디렉터리>]
+ *   node tistory/qa-cli.mjs check  <초안파일> [--naver <입력파일>] [--out <디렉터리>]
  *     → 품질 검수 결과를 출력하고, --out을 주면 티스토리 HTML 등을 파일로 쓴다
  *
  * check 결과에 "수정" 항목이 있으면 종료 코드 1을 반환한다.
@@ -99,9 +99,9 @@ async function main() {
     console.log(
       [
         '사용법:',
-        '  node tools/tistory/qa-cli.mjs init   <입력파일>',
-        '  node tools/tistory/qa-cli.mjs prompt <입력파일>',
-        '  node tools/tistory/qa-cli.mjs check  <초안파일> [--naver <입력파일>] [--out <디렉터리>]',
+        '  node tistory/qa-cli.mjs init   <입력파일>',
+        '  node tistory/qa-cli.mjs prompt <입력파일>',
+        '  node tistory/qa-cli.mjs check  <초안파일> [--naver <입력파일>] [--out <디렉터리>]',
       ].join('\n')
     )
     process.exit(command ? 0 : 1)

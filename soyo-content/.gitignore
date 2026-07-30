@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+
+# 작업 중인 원고와 산출물은 커밋하지 않는다
+input/
+output/

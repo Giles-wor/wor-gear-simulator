@@ -5,9 +5,7 @@
 
 > 네이버는 브랜드를 키우고, 티스토리는 검색 자산을 쌓는다.
 
-이 도구는 이 저장소의 WoR 웹앱과 무관하다. 로컬 전용이며 GitHub Pages 배포
-(`.github/workflows/deploy.yml`)에 포함되지 않고, `npm run typecheck` 대상도
-아니다. 별도 저장소로 옮겨도 그대로 동작한다.
+로컬 전용 도구다. 어디에도 배포되지 않는다.
 
 ## 무엇이 자동이고 무엇이 아닌가
 
@@ -47,13 +45,13 @@ npm run tistory
 
 ```bash
 # 입력 템플릿 생성
-node tools/tistory/qa-cli.mjs init input/naver_post.md
+node tistory/qa-cli.mjs init input/naver_post.md
 
 # 템플릿을 채운 뒤 변환 프롬프트 생성 → 클로드에 붙여넣기
-node tools/tistory/qa-cli.mjs prompt input/naver_post.md
+node tistory/qa-cli.mjs prompt input/naver_post.md
 
 # 클로드 결과를 저장한 뒤 검수 + 산출물 생성
-node tools/tistory/qa-cli.mjs check output/tistory_post.md \
+node tistory/qa-cli.mjs check output/tistory_post.md \
   --naver input/naver_post.md --out output/
 ```
 
