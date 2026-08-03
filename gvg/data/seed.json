@@ -1,0 +1,367 @@
+{
+  "updatedAt": "2026-08-03",
+  "title": "GvG",
+  "rounds": [
+    {
+      "id": "7-2",
+      "label": "7-2 결과"
+    },
+    {
+      "id": "8-1",
+      "label": "8-1 결과"
+    },
+    {
+      "id": "e1",
+      "label": "예상 결과",
+      "projected": true
+    },
+    {
+      "id": "e2",
+      "label": "예상 결과",
+      "projected": true
+    }
+  ],
+  "guilds": [
+    {
+      "id": "g1",
+      "tag": "[眾神]",
+      "name": "◆異域星辰◆",
+      "highlight": true,
+      "points": {
+        "7-2": 1675,
+        "8-1": 1668,
+        "e1": 1688,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g2",
+      "tag": "[프로]",
+      "name": "↘┅Pro",
+      "points": {
+        "7-2": 1336,
+        "8-1": 1355,
+        "e1": 1375,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g3",
+      "tag": "[四季]",
+      "name": "◆旅狼◆",
+      "points": {
+        "7-2": 1346,
+        "8-1": 1366,
+        "e1": 1359,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g4",
+      "tag": "[레드]",
+      "name": "Devil",
+      "points": {
+        "7-2": 1340,
+        "8-1": 1334,
+        "e1": 1354,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g5",
+      "tag": "[MOM]",
+      "name": "那一天的寂寞寡寡起来",
+      "points": {
+        "7-2": 1308,
+        "8-1": 1328,
+        "e1": 1348,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g6",
+      "tag": "[사계]",
+      "name": "등화가친",
+      "highlight": true,
+      "points": {
+        "7-2": 1323,
+        "8-1": 1348,
+        "e1": 1341,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g7",
+      "tag": "[시간]",
+      "name": "Time",
+      "highlight": true,
+      "points": {
+        "7-2": 1300,
+        "8-1": 1320,
+        "e1": 1340,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g8",
+      "tag": "[戰爭]",
+      "name": "百戰農神殿",
+      "points": {
+        "7-2": 1314,
+        "8-1": 1338,
+        "e1": 1331,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g9",
+      "tag": "[0_0]",
+      "name": "死亡凝視",
+      "points": {
+        "7-2": 1291,
+        "8-1": 1311,
+        "e1": 1331,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g10",
+      "tag": "[歡樂]",
+      "name": "暗閣",
+      "points": {
+        "7-2": 1286,
+        "8-1": 1306,
+        "e1": 1326,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g11",
+      "tag": "[紅蓮]",
+      "name": "-紅蓮隊-",
+      "points": {
+        "7-2": 1307,
+        "8-1": 1300,
+        "e1": 1320,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g12",
+      "tag": "[WoN]",
+      "name": "Wonderland",
+      "highlight": true,
+      "points": {
+        "7-2": 1304,
+        "8-1": 1297,
+        "e1": 1317,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g13",
+      "tag": "[♡♧♣◇]",
+      "name": "ソロモン級",
+      "points": {
+        "7-2": 1297,
+        "8-1": 1322,
+        "e1": 1315,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g14",
+      "tag": "[OLC]",
+      "name": "Oolacile",
+      "points": {
+        "7-2": 1299,
+        "8-1": 1292,
+        "e1": 1312,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g15",
+      "tag": "[浪浪]",
+      "name": "流浪動物之家",
+      "points": {
+        "7-2": 1318,
+        "8-1": 1311,
+        "e1": 1304,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g16",
+      "tag": "[EE]",
+      "name": "[이이]",
+      "highlight": true,
+      "points": {
+        "7-2": 1290,
+        "8-1": 1283,
+        "e1": 1303,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g17",
+      "tag": "[夏日]",
+      "name": "夏日衝刺咻咻咻",
+      "points": {
+        "7-2": 1317,
+        "8-1": 1307,
+        "e1": 1300,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g18",
+      "tag": "[欧]",
+      "name": "恶人谷",
+      "points": {
+        "7-2": 1283,
+        "8-1": 1303,
+        "e1": 1296,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g19",
+      "tag": "[당근]",
+      "name": "[당근]",
+      "points": {
+        "7-2": 1283,
+        "8-1": 1276,
+        "e1": 1296,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g20",
+      "tag": "[Wing]",
+      "name": "Deathwing",
+      "points": {
+        "7-2": 1282,
+        "8-1": 1302,
+        "e1": 1295,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g21",
+      "tag": "[八荒]",
+      "name": "帝王州",
+      "points": {
+        "7-2": 1277,
+        "8-1": 1297,
+        "e1": 1290,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g22",
+      "tag": "[天井]",
+      "name": "天井の申し子",
+      "points": {
+        "7-2": 1277,
+        "8-1": 1270,
+        "e1": 1290,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g23",
+      "tag": "[Nova]",
+      "name": "Vanguard",
+      "points": {
+        "7-2": 1273,
+        "8-1": 1294,
+        "e1": 1287,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g24",
+      "tag": "[☆TW☆]",
+      "name": "白金之星",
+      "points": {
+        "7-2": 1268,
+        "8-1": 1288,
+        "e1": 1281,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g25",
+      "tag": "[GDT]",
+      "name": "金龍樓",
+      "points": {
+        "7-2": 1266,
+        "8-1": 1259,
+        "e1": 1279,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g26",
+      "tag": "[보스전]",
+      "name": "Yoon",
+      "points": {
+        "7-2": 1288,
+        "8-1": 1281,
+        "e1": 1274,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g27",
+      "tag": "[K K]",
+      "name": "KEEN-KISS",
+      "points": {
+        "7-2": 1274,
+        "8-1": 1267,
+        "e1": 1260,
+        "e2": null
+      },
+      "rankOverride": {}
+    },
+    {
+      "id": "g28",
+      "tag": "[1200]",
+      "name": "休閒農場",
+      "points": {
+        "7-2": 1270,
+        "8-1": 1262,
+        "e1": 1255,
+        "e2": null
+      },
+      "rankOverride": {}
+    }
+  ]
+}
