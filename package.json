@@ -20,6 +20,7 @@
     "typecheck:banners": "tsc --noEmit -p banners/tsconfig.json",
     "typecheck:leaks": "tsc --noEmit -p leaks/tsconfig.json",
     "typecheck:guild": "tsc --noEmit -p guild/tsconfig.json",
+    "typecheck:gvg": "tsc --noEmit -p gvg/tsconfig.json",
     "dev": "vite",
     "dev:v1": "vite --config v1/vite.config.ts",
     "dev:summon": "vite --config summon/vite.config.ts",
@@ -28,6 +29,7 @@
     "dev:banners": "vite --config banners/vite.config.ts",
     "dev:leaks": "vite --config leaks/vite.config.ts",
     "dev:guild": "vite --config guild/vite.config.ts",
+    "dev:gvg": "vite --config gvg/vite.config.ts",
     "build": "npm run typecheck && vite build",
     "build:v1": "npm run typecheck:v1 && vite build --config v1/vite.config.ts",
     "build:summon": "npm run typecheck:summon && vite build --config summon/vite.config.ts",
@@ -36,6 +38,7 @@
     "build:banners": "npm run typecheck:banners && vite build --config banners/vite.config.ts",
     "build:leaks": "npm run typecheck:leaks && vite build --config leaks/vite.config.ts",
     "build:guild": "npm run typecheck:guild && vite build --config guild/vite.config.ts",
+    "build:gvg": "npm run typecheck:gvg && vite build --config gvg/vite.config.ts",
     "preview": "vite preview"
   },
   "dependencies": {

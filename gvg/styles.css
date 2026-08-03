@@ -1,0 +1,208 @@
+.gvgPage {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 12px 12px 60px;
+}
+
+.gvgHead h1 {
+  margin: 10px 0 4px;
+  font-size: 1.35rem;
+}
+.gvgMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  color: #9aa4b2;
+  font-size: 0.85rem;
+}
+.gvgSrc.server { color: #46c46a; }
+.gvgSrc.seed { color: #c9a34a; }
+.gvgActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.gvgActions button,
+.gvgEditTools button,
+.gvgEditorBar button {
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid #3a4252;
+  background: #232a36;
+  color: #e6e9ef;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.gvgActions button.primary,
+.gvgEditorBar button.primary {
+  background: #2f6df0;
+  border-color: #2f6df0;
+  font-weight: 700;
+}
+.gvgActions button:disabled,
+.gvgEditorBar button:disabled { opacity: 0.5; cursor: default; }
+.gvgError { color: #ff6b6b; font-size: 0.85rem; margin: 6px 0; }
+.muted { color: #8b94a3; }
+
+/* 편집 로그 */
+.gvgLog {
+  background: #1b212c;
+  border: 1px solid #2c3442;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 8px 0;
+}
+.gvgLog h2 { font-size: 1rem; margin: 4px 0 8px; }
+.gvgLog ul { margin: 0; padding-left: 18px; }
+.gvgLog li { font-size: 0.85rem; margin: 3px 0; color: #c4ccd8; }
+
+/* 편집 바 */
+.gvgEditorBar {
+  background: #172033;
+  border: 1px solid #2c3b58;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 8px 0;
+}
+.gvgEditorBar .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+}
+.gvgEditorBar label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.72rem;
+  color: #9aa4b2;
+}
+.gvgEditorBar label.grow { flex: 1 1 200px; }
+.gvgEditorBar input {
+  padding: 6px 8px;
+  border-radius: 7px;
+  border: 1px solid #3a4252;
+  background: #0f1420;
+  color: #e6e9ef;
+  font-size: 0.9rem;
+}
+
+/* 표 */
+.gvgTableWrap {
+  overflow-x: auto;
+  border: 1px solid #2c3442;
+  border-radius: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+.gvgTable {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+.gvgTable th,
+.gvgTable td {
+  border-right: 1px solid #2c3442;
+  border-bottom: 1px solid #2c3442;
+  padding: 6px 8px;
+  text-align: center;
+}
+.gvgTable thead th {
+  position: sticky;
+  top: 0;
+  background: #10151f;
+  z-index: 2;
+  color: #e6e9ef;
+}
+.gvgTable .roundHead { background: #0b0e14; font-weight: 800; }
+.gvgTable .roundHead.projected,
+.gvgTable .subHead.projected { background: #16385f; color: #dbeafe; }
+.gvgTable .subHead { background: #10151f; font-size: 0.78rem; color: #aeb7c4; top: 34px; }
+
+/* 좌측 고정 열 */
+.stickyCol {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: #10151f;
+  text-align: left !important;
+  min-width: 150px;
+}
+.cornerCell { z-index: 4; text-align: center !important; }
+.nameCell { background: #171d28; }
+.nameCell .tag {
+  display: block;
+  color: #f0a54a;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.nameCell .gname { display: block; color: #e6e9ef; font-size: 0.9rem; }
+
+.ptCell { font-variant-numeric: tabular-nums; font-weight: 600; }
+.rankCell { font-variant-numeric: tabular-nums; color: #cfd6e2; }
+.ptCell.projected,
+.rankCell.projected { background: rgba(47, 109, 240, 0.08); }
+
+/* 강조 행(노란) */
+tr.hi td,
+tr.hi th.nameCell { background: #f5e100; color: #171717; }
+tr.hi .tag { color: #7a5a00; }
+tr.hi .gname { color: #171717; }
+
+/* 편집 위젯 */
+.gvgTable input.num {
+  width: 64px;
+  padding: 4px 5px;
+  text-align: center;
+  border-radius: 6px;
+  border: 1px solid #3a4252;
+  background: #0f1420;
+  color: #e6e9ef;
+  font-size: 0.85rem;
+}
+.nameEdit { display: flex; flex-direction: column; gap: 4px; min-width: 190px; }
+.nameEditTop { display: flex; gap: 6px; align-items: center; }
+.nameEdit input.tag { width: 110px; }
+.nameEdit input.gname { width: 100%; }
+.nameEdit input {
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid #3a4252;
+  background: #0f1420;
+  color: #e6e9ef;
+  font-size: 0.85rem;
+}
+.hiToggle { font-size: 0.8rem; display: inline-flex; align-items: center; gap: 2px; }
+.rowMove { display: flex; gap: 4px; }
+.roundEdit { display: flex; flex-direction: column; gap: 4px; }
+.roundEdit input {
+  width: 120px;
+  padding: 3px 5px;
+  border-radius: 6px;
+  border: 1px solid #3a4252;
+  background: #0f1420;
+  color: #e6e9ef;
+  font-size: 0.82rem;
+}
+.roundEditBtns { display: flex; gap: 6px; align-items: center; justify-content: center; font-size: 0.72rem; }
+.miniBtn {
+  border: 1px solid #3a4252;
+  background: #232a36;
+  color: #e6e9ef;
+  border-radius: 6px;
+  padding: 1px 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+.miniBtn.danger { border-color: #7a2f2f; color: #ff9b9b; }
+.miniBtn:disabled { opacity: 0.4; cursor: default; }
+
+.gvgEditTools { display: flex; gap: 8px; margin: 10px 0; }
+.gvgHelp { color: #8b94a3; font-size: 0.8rem; margin-top: 14px; line-height: 1.5; }
+
+@media (max-width: 640px) {
+  .gvgPage { padding: 8px 6px 50px; }
+  .stickyCol { min-width: 120px; }
+}

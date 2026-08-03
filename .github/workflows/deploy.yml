@@ -52,6 +52,9 @@ jobs:
       - name: Build (유출정보)
         run: npm run build:leaks
 
+      - name: Build (길드전 리더보드)
+        run: npm run build:gvg
+
       - name: Build (길드원 전용)
         run: npm run build:guild
 
