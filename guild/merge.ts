@@ -1,9 +1,18 @@
 // 동시 편집(여러 길드원이 같은 코드로 거의 동시에 저장) 시 데이터 손실 방지용 병합.
 // 저장 직전 받은 최신 원격(latest) 을 바탕으로, 편집자가 실제로 건드린 멤버(행)만
 // base(편집 시작 시점) 대비 edited 의 변경분을 덮어쓴다.
-// → 그 사이 다른 사람이 바꾼 멤버는 그대로 유지되어, 전체 덮어쓰기로 인한 손실을 막는다.
+// → 그 사이 다른 사람이 바꿼 멤버는 그대로 유지되어, 전체 덮어쓰기로 인한 손실을 막는다.
 import { cellOf, titleColIndex } from './components/ResponsiveTable'
 import type { GuildCell, GuildContent, GuildTable, RowMeta } from './types'
+
+/**
+ * 두 메타 중 갱신일이 더 최근인 쪽을 채택(YYYY-MM-DD 라 문자열 비교로 충분).
+ * 편집기는 '어느 표든' 값이 바뀜 멤버를 모든 표에서 오늘 날짜로 찍는데, 병합이 표별로
+ * 값 변경만 보고 원격의 옛 날짜를 되돌리면 그 갱신이 사라진다. 그걸 막는다.
+ */
+function newerMeta(latest?: RowMeta, edited?: RowMeta): RowMeta {
+  return (edited?.updatedAt ?? '') > (latest?.updatedAt ?? '') ? (edited ?? {}) : (latest ?? {})
+}
 
 /** 한 표를 멤버(행) 단위로 병합. 멤버 식별 키 = 캐릭명 열 값. */
 export function mergeTableByMember(latest: GuildTable, base: GuildTable, edited: GuildTable): GuildTable {
@@ -36,19 +45,15 @@ export function mergeTableByMember(latest: GuildTable, base: GuildTable, edited:
   const rowMeta: RowMeta[] = []
   const placed = new Set<string>()
 
-  // 1) 최신 원격 순서 유지: 삭제된 멤버 제외, 편집자가 바꾼 멤버는 편집본으로 교체,
-  //    안 건드린 멤버는 최신 원격 그대로(= 남이 바꾼 값 보존)
+  // 1) 최신 원격 순서 유지: 삭제된 멤버 제외, 편집자가 바꿈 멤버는 편집본으로 교체,
+  //    안 건드린 멤버는 최신 원격 그대로(= 남이 바꿫 값 보존)
   latest.rows.forEach((r, i) => {
     const n = nameOf(r)
     if (deleted.has(n)) return
     placed.add(n)
-    if (changed.has(n)) {
-      rows.push(editedByName.get(n) ?? r)
-      rowMeta.push(editedMeta.get(n) ?? {})
-    } else {
-      rows.push(r)
-      rowMeta.push(latest.rowMeta?.[i] ?? {})
-    }
+    rows.push(changed.has(n) ? (editedByName.get(n) ?? r) : r)
+    // 값은 표별 변경 여부대로, 갱신일은 둘 중 더 최근 것으로(다른 표에서만 바뀜 멤버 보존).
+    rowMeta.push(newerMeta(latest.rowMeta?.[i], editedMeta.get(n)))
   })
   // 2) 편집자가 새로 추가한(최신 원격에 없던) 멤버를 뒤에 붙임
   editedByName.forEach((r, n) => {
@@ -60,7 +65,7 @@ export function mergeTableByMember(latest: GuildTable, base: GuildTable, edited:
   return { ...latest, headers: edited.headers, sumColumn: edited.sumColumn, rows, rowMeta }
 }
 
-/** 멤버 단위가 아닌 필드(공지/이미지/링크)는 편집자가 바꿨으면 편집본, 아니면 최신 원격 유지. */
+/** 멤버 단위가 아닌 필드(공지/이미지/링크)는 편집자가 바꿠으면 편집본, 아니면 최신 원격 유지. */
 export function mergeField<T>(latest: T, base: T, edited: T): T {
   return JSON.stringify(edited) !== JSON.stringify(base) ? edited : latest
 }
