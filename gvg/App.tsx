@@ -1,7 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from 'react'
 import { GlobalNav } from './components/GlobalNav'
 import { SiteCredit } from './components/SiteCredit'
-import { loadBoard, loadLog, saveBoard, supabaseEnabled } from './supabase'
+import { boardIdFromCode, decryptJson, encryptJson } from './crypto'
+import { loadBoardBlob, loadLogRows, saveBoardBlob, supabaseEnabled } from './supabase'
 import {
   autoRanks,
   cloneBoard,
@@ -11,11 +19,44 @@ import {
   sortByRound,
 } from './board'
 import type { Board, EditLog, GuildRow, Round } from './types'
-import seed from './data/seed.json'
 
-const SEED = seed as Board
-const CODE_KEY = 'gvgEditCode'
+const UNLOCK_KEY = 'gvgUnlock'
+const UNLOCK_TTL = 24 * 60 * 60 * 1000 // 잠금 해제 유효기간: 1일(이후 코드 재입력)
 const EDITOR_KEY = 'gvgEditor'
+
+function today(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function emptyBoard(): Board {
+  return { updatedAt: today(), title: 'GvG', rounds: [], guilds: [] }
+}
+
+function readUnlock(): { code: string; ts: number } | null {
+  try {
+    const raw = localStorage.getItem(UNLOCK_KEY)
+    const o = raw ? JSON.parse(raw) : null
+    return o && typeof o.code === 'string' && typeof o.ts === 'number' ? o : null
+  } catch {
+    return null
+  }
+}
+
+function writeUnlock(code: string, ts: number) {
+  try {
+    localStorage.setItem(UNLOCK_KEY, JSON.stringify({ code, ts }))
+  } catch {
+    /* 저장 실패해도 이번 세션은 그대로 사용 */
+  }
+}
+
+function clearUnlock() {
+  try {
+    localStorage.removeItem(UNLOCK_KEY)
+  } catch {
+    /* ignore */
+  }
+}
 
 function parseNumOrNull(s: string): number | null {
   const t = s.trim()
@@ -25,51 +66,140 @@ function parseNumOrNull(s: string): number | null {
 }
 
 export default function App() {
-  const [board, setBoard] = useState<Board>(SEED)
-  const [source, setSource] = useState<'server' | 'seed'>('seed')
-  const [loading, setLoading] = useState(true)
+  // 잠금 해제 상태 (code 가 빈 문자열이면 잠김)
+  const [code, setCode] = useState('')
+  const [boardId, setBoardId] = useState('')
+  const [unlocking, setUnlocking] = useState(false)
+  const [lockError, setLockError] = useState('')
+  const lockTimer = useRef<number | undefined>(undefined)
+
+  const [board, setBoard] = useState<Board | null>(null)
+  const [source, setSource] = useState<'server' | 'empty'>('empty')
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [log, setLog] = useState<EditLog[]>([])
   const [showLog, setShowLog] = useState(false)
 
   // 편집 상태
   const [draft, setDraft] = useState<Board | null>(null)
-  const [code, setCode] = useState(() => localStorage.getItem(CODE_KEY) ?? '')
   const [editor, setEditor] = useState(() => localStorage.getItem(EDITOR_KEY) ?? '')
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
 
-  const refresh = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+  /** 편집 로그를 받아 코드로 복호화. 실패해도 본문 표시는 막지 않는다. */
+  const readLog = useCallback(async (c: string, id: string): Promise<EditLog[]> => {
+    if (!supabaseEnabled()) return []
     try {
-      const remote = await loadBoard()
-      if (remote) {
-        setBoard(remote)
-        setSource('server')
-      } else {
-        setBoard(SEED)
-        setSource('seed')
+      const rows = await loadLogRows(id)
+      const out: EditLog[] = []
+      for (const r of rows) {
+        try {
+          const e = await decryptJson<{ editor: string; note?: string | null }>(c, id, r.blob)
+          out.push({ editor: e.editor, note: e.note ?? null, at: r.at })
+        } catch {
+          /* 옛 코드로 남은 줄 → 건너뜀 */
+        }
       }
-      setLog(await loadLog())
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '불러오기 오류')
-      setBoard(SEED)
-      setSource('seed')
-    } finally {
-      setLoading(false)
+      return out
+    } catch {
+      return []
     }
   }, [])
 
+  const lock = useCallback(() => {
+    window.clearTimeout(lockTimer.current)
+    clearUnlock()
+    setCode('')
+    setBoardId('')
+    setBoard(null)
+    setDraft(null)
+    setLog([])
+    setSource('empty')
+    setError(null)
+  }, [])
+
+  /**
+   * 코드로 입장. ts = 잠금 해제 기준 시각(수동 입력=지금, 자동복원=저장된 시각) → ts+1일에 자동 잠금.
+   * 서버에 이 코드의 보드가 있으면 복호화해서 보여주고(코드가 틀리면 복호화 실패),
+   * 없으면 빈 보드로 입장한다(이 코드로 처음 만드는 경우).
+   */
+  const unlock = useCallback(
+    async (c: string, ts: number, silent: boolean) => {
+      setUnlocking(true)
+      setLockError('')
+      try {
+        const id = await boardIdFromCode(c)
+        let next = emptyBoard()
+        let src: 'server' | 'empty' = 'empty'
+        if (supabaseEnabled()) {
+          let blob
+          try {
+            blob = await loadBoardBlob(id)
+          } catch {
+            throw new Error('서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.')
+          }
+          if (blob) {
+            try {
+              next = await decryptJson<Board>(c, id, blob)
+              src = 'server'
+            } catch {
+              throw new Error('코드가 올바르지 않습니다. 다시 확인해 주세요.')
+            }
+          }
+        }
+        setBoard(next)
+        setSource(src)
+        setCode(c)
+        setBoardId(id)
+        writeUnlock(c, ts)
+        window.clearTimeout(lockTimer.current)
+        lockTimer.current = window.setTimeout(lock, Math.max(0, ts + UNLOCK_TTL - Date.now()))
+        setLog(await readLog(c, id))
+      } catch (e) {
+        clearUnlock()
+        if (!silent) setLockError(e instanceof Error ? e.message : '코드가 올바르지 않습니다.')
+      } finally {
+        setUnlocking(false)
+      }
+    },
+    [lock, readLog],
+  )
+
+  // 1일 이내 해제 기록이 있으면 자동 입장, 아니면 코드 재입력.
   useEffect(() => {
-    void refresh()
-  }, [refresh])
+    const u = readUnlock()
+    if (u && Date.now() - u.ts < UNLOCK_TTL) void unlock(u.code, u.ts, true)
+    else clearUnlock()
+  }, [unlock])
+
+  useEffect(() => () => window.clearTimeout(lockTimer.current), [])
+
+  const refresh = useCallback(async () => {
+    if (!code) return
+    setLoading(true)
+    setError(null)
+    try {
+      const blob = supabaseEnabled() ? await loadBoardBlob(boardId) : null
+      if (blob) {
+        setBoard(await decryptJson<Board>(code, boardId, blob))
+        setSource('server')
+      } else {
+        setSource('empty')
+      }
+      setLog(await readLog(code, boardId))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '불러오기 오류')
+    } finally {
+      setLoading(false)
+    }
+  }, [boardId, code, readLog])
 
   const editing = draft !== null
   const view = draft ?? board
 
   const startEdit = () => {
+    if (!board) return
     setSaveMsg(null)
     setDraft(cloneBoard(board))
   }
@@ -88,38 +218,59 @@ export default function App() {
     })
   }
 
+  /** 초기 데이터(번들 시드)를 편집 상태로 불러온다. 저장해야 서버에 암호화되어 올라간다. */
+  const loadSeed = async () => {
+    setSaveMsg(null)
+    const mod = await import('./data/seed.json')
+    setDraft(cloneBoard(mod.default as Board))
+  }
+
   const doSave = async () => {
     if (!draft) return
-    if (!code.trim()) {
-      setSaveMsg('편집 코드를 입력하세요.')
-      return
-    }
     if (!editor.trim()) {
       setSaveMsg('편집자 이름을 입력하세요.')
+      return
+    }
+    if (!supabaseEnabled()) {
+      setSaveMsg('Supabase 미설정이라 저장할 수 없습니다.')
       return
     }
     setSaving(true)
     setSaveMsg(null)
     try {
-      const payload: Board = {
-        ...draft,
-        updatedAt: new Date().toISOString().slice(0, 10),
-        updatedBy: editor.trim(),
-      }
-      await saveBoard(payload, code.trim(), editor.trim(), note.trim() || undefined)
-      localStorage.setItem(CODE_KEY, code.trim())
+      const payload: Board = { ...draft, updatedAt: today(), updatedBy: editor.trim() }
+      const blob = await encryptJson(code, boardId, payload)
+      const logBlob = await encryptJson(code, boardId, {
+        editor: editor.trim(),
+        note: note.trim() || null,
+      })
+      await saveBoardBlob(boardId, code, blob, logBlob)
       localStorage.setItem(EDITOR_KEY, editor.trim())
       setBoard(payload)
       setSource('server')
       setDraft(null)
       setNote('')
       setSaveMsg(null)
-      setLog(await loadLog())
+      setLog(await readLog(code, boardId))
     } catch (e) {
       setSaveMsg(e instanceof Error ? e.message : '저장 실패')
     } finally {
       setSaving(false)
     }
+  }
+
+  if (!code || !view) {
+    return (
+      <div className="gvgPage">
+        <SiteCredit />
+        <GlobalNav active="gvg" />
+        <GvgLock
+          busy={unlocking}
+          error={lockError}
+          onSubmit={(c) => void unlock(c, Date.now(), false)}
+        />
+      </div>
+    )
   }
 
   return (
@@ -133,7 +284,11 @@ export default function App() {
           <span>갱신 {view.updatedAt}</span>
           {view.updatedBy && <span>· 최종 편집: {view.updatedBy}</span>}
           <span className={`gvgSrc ${source}`}>
-            {source === 'server' ? '● 서버 반영' : supabaseEnabled() ? '○ 서버 데이터 없음(시드 표시)' : '○ 로컬 전용(Supabase 미설정)'}
+            {source === 'server'
+              ? '● 서버 반영'
+              : supabaseEnabled()
+                ? '○ 이 코드로 저장된 보드 없음'
+                : '○ 로컬 전용(Supabase 미설정)'}
           </span>
         </div>
         <div className="gvgActions">
@@ -148,9 +303,18 @@ export default function App() {
             </>
           )}
           <button onClick={() => setShowLog((v) => !v)}>{showLog ? '로그 닫기' : '편집 로그'}</button>
+          <button onClick={lock} title="코드 입력 화면으로">🔒 잠금</button>
         </div>
-        {error && <p className="gvgError">불러오기 오류: {error} (시드 데이터를 표시합니다)</p>}
+        {error && <p className="gvgError">불러오기 오류: {error}</p>}
       </header>
+
+      {source === 'empty' && !editing && (
+        <div className="gvgNotice">
+          이 코드로 저장된 보드가 없습니다. 코드를 잘못 입력했다면 <b>잠금</b> 후 다시 입력하세요.
+          맞다면 아래에서 새로 만들 수 있습니다.
+          <button onClick={() => void loadSeed()}>초기 데이터 불러오기</button>
+        </div>
+      )}
 
       {showLog && (
         <section className="gvgLog">
@@ -172,12 +336,10 @@ export default function App() {
 
       {editing ? (
         <EditorBar
-          code={code}
           editor={editor}
           note={note}
           saving={saving}
           saveMsg={saveMsg}
-          onCode={setCode}
           onEditor={setEditor}
           onNote={setNote}
           onSave={() => void doSave()}
@@ -202,20 +364,61 @@ export default function App() {
       )}
 
       <p className="gvgHelp">
-        읽기는 누구나 가능합니다. 수정은 편집 코드가 있는 사람만 가능하며, 저장 시 편집자 이름과 시각이 로그로 남습니다.
+        코드를 아는 사람만 열람·수정할 수 있습니다. 내용은 브라우저에서 암호화된 뒤 저장되므로 서버에는
+        암호문만 남고, 저장 시 편집자 이름과 시각이 로그로 기록됩니다.
         순위 칸은 포인트 기준 자동 계산되며, 편집 중 순위 칸에 값을 직접 넣으면 그 값으로 보정됩니다(비우면 자동).
       </p>
     </div>
   )
 }
 
+function GvgLock(props: { busy: boolean; error: string; onSubmit: (code: string) => void }) {
+  const [code, setCode] = useState('')
+  const submit = (e: FormEvent) => {
+    e.preventDefault()
+    if (code.trim()) props.onSubmit(code.trim())
+  }
+  return (
+    <div className="gvgLock">
+      <div className="gvgLockBox">
+        <div className="gvgLockIcon" aria-hidden="true">
+          🔒
+        </div>
+        <h1 className="gvgLockTitle">길드전 리더보드</h1>
+        <p className="gvgLockDesc">
+          공용 코드를 아는 사람만 열람·수정할 수 있습니다. 길드에서 받은 코드를 입력하세요.
+        </p>
+        <form className="gvgLockForm" onSubmit={submit}>
+          <input
+            className="gvgLockInput"
+            type="password"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="공용 코드"
+            autoComplete="off"
+            autoFocus
+            aria-label="공용 코드"
+          />
+          <button className="gvgLockBtn" type="submit" disabled={props.busy || !code.trim()}>
+            {props.busy ? '확인 중…' : '입장'}
+          </button>
+        </form>
+        {props.error && (
+          <p className="gvgLockError" role="alert">
+            {props.error}
+          </p>
+        )}
+        <p className="gvgLockHint">한 번 입장하면 이 기기에서 1일간 유지됩니다.</p>
+      </div>
+    </div>
+  )
+}
+
 function EditorBar(props: {
-  code: string
   editor: string
   note: string
   saving: boolean
   saveMsg: string | null
-  onCode: (v: string) => void
   onEditor: (v: string) => void
   onNote: (v: string) => void
   onSave: () => void
@@ -223,16 +426,6 @@ function EditorBar(props: {
   return (
     <div className="gvgEditorBar">
       <div className="row">
-        <label>
-          편집 코드
-          <input
-            type="password"
-            value={props.code}
-            onChange={(e) => props.onCode(e.target.value)}
-            placeholder="공용 편집 코드"
-            autoComplete="off"
-          />
-        </label>
         <label>
           편집자 이름
           <input
