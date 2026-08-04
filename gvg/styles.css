@@ -255,7 +255,7 @@ tr.hi td,
 tr.hi th.nameCell { background: #f5e100; color: #171717; }
 tr.hi .tag { color: #7a5a00; }
 tr.hi .gname { color: #171717; }
-/* 편집 중 입력칸은 배경이 어둡으므로 강조행이어도 기본 글자색을 쓴다(검은 글씨 → 안 보임 방지) */
+/* 편집 중 입력칸은 배경이 어두우므로 강조행이어도 기본 글자색을 쓴다(검은 글씨 → 안 보임 방지) */
 tr.hi .nameEdit input.tag { color: #f0a54a; }
 tr.hi .nameEdit input.gname { color: #e6e9ef; }
 
