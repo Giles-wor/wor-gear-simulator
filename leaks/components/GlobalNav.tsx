@@ -12,7 +12,7 @@ const LINKS = [
   { id: 'guide' as const, label: '공략', href: `${BASE}guide/` },
   { id: 'banners' as const, label: '다가오는 배너', href: `${BASE}banners/` },
   { id: 'leaks' as const, label: '유출정보', href: `${BASE}leaks/` },
-  { id: 'gvg' as const, label: '길드전 리더보드', href: `${BASE}gvg/` },
+  { id: 'gvg' as const, label: '길드전 리더보드 🔒', href: `${BASE}gvg/` },
 ]
 
 export function GlobalNav({ active }: GlobalNavProps) {
