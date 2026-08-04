@@ -1,5 +1,6 @@
 // 길드전(GvG) 리더보드 데이터 스키마.
-// 읽기는 누구나(평문 저장), 수정은 공용 편집 코드가 있어야 하며, 저장 시 편집자 이름이 로그로 남습니다.
+// 공용 코드 1개로 열람·수정합니다. 코드는 암호키 겸 보드 식별자(sha256)로 쓰이며,
+// 보드와 편집 로그는 브라우저에서 암호화된 뒤 저장되므로 코드 없이는 DB 를 열어도 내용을 볼 수 없습니다.
 
 /** 결과 회차(열). 각 회차는 포인트/순위 두 칸으로 표시됩니다. */
 export type Round = {
@@ -34,13 +35,29 @@ export type Board = {
   title: string
   rounds: Round[]
   guilds: GuildRow[]
-  /** 마지막 편집자 이름(서버가 저장 시 기록) */
+  /** 마지막 편집자 이름 */
   updatedBy?: string
 }
 
-/** 편집 로그 한 줄(서버 gvg_edit_log). */
+/** AES-GCM 암호문 블록. salt 는 보드 id 로 고정이라 따로 담지 않습니다. */
+export type EncBlob = {
+  v: 1
+  iterations: number
+  /** base64 */
+  iv: string
+  /** base64 */
+  ct: string
+}
+
+/** 편집 로그 한 줄(복호화된 형태). */
 export type EditLog = {
   editor: string
   note?: string | null
+  at: string
+}
+
+/** 서버 gvg_edit_log 한 줄. 편집자/메모는 암호문, 시각만 평문. */
+export type LogRow = {
+  blob: EncBlob
   at: string
 }
