@@ -42,5 +42,5 @@ export const generatedBanners: Partial<
 
 export const generatedSource: { url: string; fetchedAt: string } | null = {
   "url": "https://watcher-of-realms.fandom.com/wiki/Banner",
-  "fetchedAt": "2026-08-17T03:52:43.745Z"
+  "fetchedAt": "2026-08-24T03:56:23.707Z"
 }
