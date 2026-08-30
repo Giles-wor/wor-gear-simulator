@@ -50,7 +50,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 /** 폴더/파일명을 다른 제목으로 보이고 싶을 때만 등록 (선택) */
-const NAME_OVERRIDES: Record<string, string> = {}
+const NAME_OVERRIDES: Record<string, string> = {
+  '거침없는힘 보석 딜 실험': '이화-거침없는힘 딜량 실험',
+}
 
 /**
  * 항목별 공략 제작자/출처. 항목 키(폴더/파일명)로 등록.
