@@ -4,25 +4,9 @@ import type { BannerSchedule } from './types'
 export const generatedSchedule: BannerSchedule | null = {
   "source": "prospector.gg",
   "sourceUrl": "https://prospector.gg/upcoming-hero-banners/",
-  "fetchedAt": "2026-09-07T08:02:48.100Z",
+  "fetchedAt": "2026-09-14T08:40:47.316Z",
   "sourceModified": "2026-08-13T15:15:39Z",
   "banners": [
-    {
-      "status": "upcoming",
-      "type": "Hero Summoning",
-      "durationDays": 10,
-      "startUtc": "2026-08-31T07:00:00.000Z",
-      "endUtc": "2026-09-10T07:00:00.000Z",
-      "heroes": []
-    },
-    {
-      "status": "upcoming",
-      "type": "Hero Summoning",
-      "durationDays": 10,
-      "startUtc": "2026-08-31T07:00:00.000Z",
-      "endUtc": "2026-09-10T07:00:00.000Z",
-      "heroes": []
-    },
     {
       "status": "upcoming",
       "type": "Hero Summoning",
