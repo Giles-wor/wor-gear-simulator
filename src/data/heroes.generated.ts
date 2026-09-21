@@ -1721,7 +1721,8 @@ export const heroes: Omit<Hero, 'awakeningAtkBonus' | 'burstAtkBonusPer100Aspd'>
     "heroClass": "Marksman",
     "damageType": "Piercing",
     "factions": [
-      "Star Piercers"
+      "Star Piercers",
+      "Grey Blades"
     ],
     "heroTags": [],
     "description": "Legendary Marksman / Piercing",
@@ -6427,6 +6428,38 @@ export const heroes: Omit<Hero, 'awakeningAtkBonus' | 'burstAtkBonusPer100Aspd'>
     "rrAttacked": 0
   },
   {
+    "id": "oakenvar",
+    "name": "Oakenvar",
+    "wikiTitle": "Oakenvar",
+    "wikiUrl": "https://watcher-of-realms.fandom.com/wiki/Oakenvar",
+    "source": "Watcher of Realms Wiki",
+    "sourceLevel": "Lv.60",
+    "rarity": "Legendary",
+    "heroClass": "Defender",
+    "damageType": "Physical",
+    "factions": [
+      "Watchguard"
+    ],
+    "heroTags": [],
+    "description": "Legendary Defender / Physical",
+    "hp": 29325,
+    "baseAtk": 3024,
+    "defense": 4017,
+    "magicRes": 888,
+    "block": 3,
+    "cost": 19,
+    "revivalTime": 60,
+    "baseInterval": 2.4,
+    "attackSpeed": 100,
+    "critRate": 0,
+    "critDmg": 0,
+    "healingEffect": 0,
+    "rageRegen": 0,
+    "rrAuto": 0,
+    "rrBasicAtk": 0,
+    "rrAttacked": 0
+  },
+  {
     "id": "ogrul",
     "name": "Ogrul",
     "wikiTitle": "Ogrul",
@@ -7103,7 +7136,8 @@ export const heroes: Omit<Hero, 'awakeningAtkBonus' | 'burstAtkBonusPer100Aspd'>
     "heroClass": "Marksman",
     "damageType": "Piercing",
     "factions": [
-      "Star Piercers"
+      "Star Piercers",
+      "Grey Blades"
     ],
     "heroTags": [],
     "description": "Legendary Marksman / Piercing",
@@ -8589,6 +8623,38 @@ export const heroes: Omit<Hero, 'awakeningAtkBonus' | 'burstAtkBonusPer100Aspd'>
     "cost": 12,
     "revivalTime": 60,
     "baseInterval": 2,
+    "attackSpeed": 100,
+    "critRate": 0,
+    "critDmg": 0,
+    "healingEffect": 0,
+    "rageRegen": 0,
+    "rrAuto": 0,
+    "rrBasicAtk": 0,
+    "rrAttacked": 0
+  },
+  {
+    "id": "veyrathia",
+    "name": "Veyrathia",
+    "wikiTitle": "Veyrathia",
+    "wikiUrl": "https://watcher-of-realms.fandom.com/wiki/Veyrathia",
+    "source": "Watcher of Realms Wiki",
+    "sourceLevel": "Lv.60",
+    "rarity": "Epic",
+    "heroClass": "Fighter",
+    "damageType": "Physical",
+    "factions": [
+      "Nightmare Council"
+    ],
+    "heroTags": [],
+    "description": "Epic Fighter / Physical",
+    "hp": 13626,
+    "baseAtk": 3777,
+    "defense": 2407,
+    "magicRes": 604,
+    "block": 2,
+    "cost": 17,
+    "revivalTime": 60,
+    "baseInterval": 2.4,
     "attackSpeed": 100,
     "critRate": 0,
     "critDmg": 0,
