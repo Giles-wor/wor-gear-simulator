@@ -7703,12 +7703,12 @@ export const heroes: Omit<Hero, 'awakeningAtkBonus' | 'burstAtkBonusPer100Aspd'>
     "sourceLevel": "Lv.60",
     "rarity": "Legendary",
     "heroClass": "Mage",
-    "damageType": "Magic",
+    "damageType": "Magic / Physical",
     "factions": [
       "North Throne"
     ],
     "heroTags": [],
-    "description": "Legendary Mage / Magic",
+    "description": "Legendary Mage / Magic / Physical",
     "hp": 10822,
     "baseAtk": 4137,
     "defense": 717,
