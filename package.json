@@ -11,6 +11,8 @@
     "sync:summon": "node scripts/sync-summon.mjs",
     "sync:banners": "node scripts/sync-banners.mjs",
     "sync:soldiers": "node scripts/sync-soldiers.mjs",
+    "check:health": "node scripts/check-health.mjs",
+    "probe:sources": "node scripts/probe-sources.mjs",
     "encrypt:guild": "node scripts/encrypt-guild.mjs",
     "typecheck": "tsc --noEmit",
     "typecheck:v1": "tsc --noEmit -p v1/tsconfig.json",

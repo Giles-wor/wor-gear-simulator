@@ -9,6 +9,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: write # 머지 후 deploy 워크플로 실행용
 
 concurrency:
   group: "sync-data"
@@ -37,8 +38,12 @@ jobs:
         run: npm run sync:summon
         continue-on-error: true
 
-      - name: Sync upcoming banners (prospector.gg crawl)
+      - name: Sync upcoming banners (wornuts.com → prospector.gg 폴백)
         run: npm run sync:banners
+        continue-on-error: true
+
+      - name: Sync 마병 아이콘 (없는 것만 받고, 목록에서 빠진 것은 삭제)
+        run: npm run sync:soldiers
         continue-on-error: true
 
       - name: Typecheck
@@ -57,10 +62,12 @@ jobs:
           # 크롤 결과 데이터 파일만 커밋 — 실패 시 생성되는 _debug_fetch.txt 등이 딸려가지 않게.
           add-paths: |
             src/data/heroes.generated.ts
+            src/data/heroes.pending.generated.json
             summon/data/banners.generated.ts
             banners/data/schedule.generated.ts
+            guild/assets/soldiers
           body: |
-            자동 크롤 갱신 (sync:heroes / sync:summon / sync:banners).
+            자동 크롤 갱신 (sync:heroes / sync:summon / sync:banners / sync:soldiers).
             소환율·배너 파싱은 best-effort 이며 소스 차단/구조 변경 시 기존 데이터 유지.
           delete-branch: true
 
@@ -70,5 +77,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh pr merge --squash --delete-branch "${{ steps.cpr.outputs.pull-request-number }}" \
-            || echo "자동 머지 실패 — PR #${{ steps.cpr.outputs.pull-request-number }} 수동 머지 필요"
+          if gh pr merge --squash --delete-branch "${{ steps.cpr.outputs.pull-request-number }}"; then
+            # 봇(GITHUB_TOKEN) 머지는 deploy 워크플로의 push 트리거를 깨우지 않음 → 직접 실행해야 사이트에 반영됨.
+            gh workflow run deploy.yml --ref main
+          else
+            echo "자동 머지 실패 — PR #${{ steps.cpr.outputs.pull-request-number }} 수동 머지 필요"
+          fi

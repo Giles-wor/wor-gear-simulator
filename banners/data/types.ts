@@ -1,4 +1,4 @@
-/** prospector.gg "다가오는 영웅 배너" 일정 데이터 타입. */
+/** "다가오는 영웅 배너" 일정 데이터 타입 (출처: wornuts.com 1순위, prospector.gg 2순위). */
 
 /** prospector 가 표기하는 편집형 상태 (실제 노출 상태는 타임스탬프로 재계산). */
 export type BannerStatus = 'active' | 'next' | 'upcoming'
@@ -25,11 +25,19 @@ export type ScheduledBanner = {
   /** UTC ISO8601 종료 */
   endUtc: string
   heroes: BannerHero[]
+  /** 배너 이름 (예: Sage's Invocation) — wornuts 출처만 */
+  title?: string
+  /** 이벤트 종류 (예: x20, 1+1, x2+x20) — wornuts 출처만 */
+  kind?: string
+  /** 한정 소환 여부 */
+  limited?: boolean
 }
 
 export type BannerSchedule = {
   source: string
   sourceUrl: string
+  /** 영웅 상세 페이지 URL 접두사 (뒤에 slug) */
+  heroPageUrl?: string
   /** 크롤 시각 (ISO). 시드 데이터는 null */
   fetchedAt: string | null
   /** 원본 페이지 최종 수정 시각 (WP modified_gmt) */

@@ -1,12 +1,18 @@
 name: Sync 마병 아이콘 (Demon Soldier Icons)
 
-# Actions 탭 → 이 워크플로 → "Run workflow" 버튼으로 실행.
-# fandom 위키에서 마병 아이콘을 받아 guild/assets/soldiers/ 에 커밋(→ 배포까지 자동).
+# guild/soldiers.json 이 main 에 반영되면 자동 실행 (수동 실행도 가능).
+# 아이콘 없는 마병만 fandom 위키에서 받고, 목록에서 빠진 마병 아이콘은 지운 뒤 커밋 → 재배포.
+# (주간 Sync game data 워크플로도 같은 동기화를 돌림 — 놓친 아이콘 재시도용)
 on:
+  push:
+    branches: ["main"]
+    paths:
+      - "guild/soldiers.json"
   workflow_dispatch:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: sync-soldiers
@@ -28,14 +34,23 @@ jobs:
         run: npm run sync:soldiers
 
       - name: Commit icons (if changed)
+        id: commit
         run: |
           mkdir -p guild/assets/soldiers
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add guild/assets/soldiers
+          git add -A guild/assets/soldiers
           if git diff --staged --quiet; then
             echo "변경된 아이콘이 없습니다."
           else
             git commit -m "guild: 마병 아이콘 동기화 (sync-soldiers)"
             git push
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
           fi
+
+      # 봇(GITHUB_TOKEN) 푸시는 deploy 워크플로의 push 트리거를 깨우지 않으므로 직접 실행.
+      - name: Trigger deploy
+        if: steps.commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref main
