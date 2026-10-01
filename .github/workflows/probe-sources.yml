@@ -23,6 +23,9 @@ jobs:
         with:
           node-version: 20
 
+      - name: Probe sources (로그 출력)
+        run: node scripts/probe-sources.mjs
+
       - name: Banner crawl (dry-run)
         run: node scripts/sync-banners.mjs --dry-run
 
