@@ -38,7 +38,7 @@ jobs:
         run: npm run sync:summon
         continue-on-error: true
 
-      - name: Sync upcoming banners (prospector.gg crawl)
+      - name: Sync upcoming banners (wornuts.com → prospector.gg 폴백)
         run: npm run sync:banners
         continue-on-error: true
 
