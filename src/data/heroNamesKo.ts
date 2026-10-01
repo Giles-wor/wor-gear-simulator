@@ -144,6 +144,9 @@ export const manualHeroNameKo: Record<string, string> = {
   aurelius_gale: '아우렐리우스',
   jezebelle: '지제벨',
   leikan: '레이칸', // 위 raizan(prospector 슬러그)과 동일 영웅의 fandom id
+
+  // ─────── worwiki 영문 표기가 fandom 과 달라 자동 매칭 안 되는 영웅 ───────
+  akira: '아키라', // worwiki: AkiraStar
 }
 
 /** 최종 매핑: 크롤 결과 위에 수동 매핑을 덮어씀 */
