@@ -4,8 +4,9 @@ import type { BannerSchedule, ScheduledBanner } from './types'
 export type { BannerSchedule, ScheduledBanner, BannerHero, BannerStatus } from './types'
 
 const EMPTY: BannerSchedule = {
-  source: 'prospector.gg',
-  sourceUrl: 'https://prospector.gg/upcoming-hero-banners/',
+  source: 'wornuts.com',
+  sourceUrl: 'https://wornuts.com/en/banners',
+  heroPageUrl: 'https://wornuts.com/en/heroes/',
   fetchedAt: null,
   sourceModified: null,
   banners: [],

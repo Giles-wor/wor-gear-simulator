@@ -252,6 +252,11 @@
   line-height: 1.35;
   color: #f6ead8;
 }
+.bannerTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e8c68a;
+}
 .bannerRange {
   margin: 0;
   font-size: 0.85rem;

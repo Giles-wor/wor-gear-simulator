@@ -1,6 +1,6 @@
 name: Probe crawl sources
 
-# 크롤 후보 출처 조사(읽기 전용, 커밋 없음). 결과는 실행 로그로 확인.
+# 크롤 후보 출처 조사(읽기 전용). 결과는 실행 로그로 확인.
 # 수동 실행 또는 probe 스크립트를 수정해 claude/** 브랜치에 푸시하면 실행된다.
 on:
   workflow_dispatch:
@@ -11,15 +11,31 @@ on:
       - ".github/workflows/probe-sources.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: node scripts/probe-sources.mjs
+
+      - name: Banner crawl (dry-run)
+        run: node scripts/sync-banners.mjs --dry-run
+
+      # 작업 브랜치에서 실제 크롤을 1회 돌려 결과를 브랜치에 커밋 (머지 시 최신 데이터 반영)
+      - name: Crawl on work branch
+        if: startsWith(github.ref_name, 'claude/')
+        run: |
+          node scripts/sync-heroes.mjs
+          node scripts/sync-banners.mjs || echo "banners 실패"
+          node scripts/sync-soldiers.mjs || echo "soldiers 일부 실패"
+          node scripts/check-health.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/heroes.generated.ts src/data/heroes.pending.generated.json banners/data/schedule.generated.ts guild/assets/soldiers
+          git diff --staged --stat
+          git diff --staged --quiet || { git commit -m "chore: 작업 브랜치에서 크롤 갱신 (heroes / banners / soldiers)"; git push; }

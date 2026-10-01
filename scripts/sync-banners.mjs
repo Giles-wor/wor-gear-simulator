@@ -1,7 +1,14 @@
-// prospector.gg "Upcoming Hero Banners" 크롤 → banners/data/schedule.generated.ts 갱신.
-// WP REST API(content.rendered)를 1순위로, 실패 시 페이지 HTML을 2순위로 파싱한다.
+// 배너 일정 크롤 → banners/data/schedule.generated.ts 갱신.
+//   1순위: wornuts.com/en/banners — Next.js RSC 페이로드의 "entries" 배열(과거~예정 전체, 예정은 수 주 앞까지)
+//   2순위: prospector.gg "Upcoming Hero Banners" (2026-08 이후 갱신 중단 → 폴백으로만 유지)
 //
-// 실제 구조(.pgub-layout-page):
+//   node scripts/sync-banners.mjs            ← 파일 갱신
+//   node scripts/sync-banners.mjs --dry-run  ← 파싱 결과만 출력
+//
+// wornuts entries 항목: { date:'2026-10-08', days:5, kind:'x20', kindName:'x20', pools:['spirits'],
+//   name:"Sage's Invocation", note:'limited'|null, heroes:[{slug,name,portrait,quality(5=전설,4=영웅)}] }
+//
+// prospector 실제 구조(.pgub-layout-page):
 //   <article class="pgub-page-card" data-pgub-status data-pgub-start data-pgub-expire(유닉스초)>
 //     <div class="pgub-page-meta"><span>{배너 종류}</span><span>{N-day banner}</span>...</div>
 //     <div class="pgub-page-heroes"> <a class="pgub-hero-link" href=".../hero/{slug}/">
@@ -12,6 +19,8 @@
 import { writeFile, unlink } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
 
+const WORNUTS_URL = 'https://wornuts.com/en/banners'
+const WORNUTS_HERO_URL = 'https://wornuts.com/en/heroes/'
 const REST_URL = 'https://prospector.gg/wp-json/wp/v2/pages/8803'
 const PAGE_URL = 'https://prospector.gg/upcoming-hero-banners/'
 const OUTPUT_FILE = new URL('../banners/data/schedule.generated.ts', import.meta.url)
@@ -110,6 +119,103 @@ export function parseBanners(html) {
   return banners
 }
 
+// ─────────────────────────── wornuts.com ───────────────────────────
+// 날짜만 주므로 시작 시각은 기존 prospector 데이터와 같은 일일 리셋 07:00 UTC 로 둔다.
+const RESET_HOUR_UTC = 7
+const POOL_NAMES = { spirits: 'Invocation of Spirits', divine: 'Divine Summoning', ancient: 'Ancient Summoning' }
+const QUALITY_RARITY = { 5: 'legendary', 4: 'epic', 3: 'rare', 2: 'uncommon', 1: 'common' }
+
+/** self.__next_f.push([1,"..."]) 조각을 이어 붙인 RSC 페이로드 */
+function rscPayload(html) {
+  return [...html.matchAll(/self\.__next_f\.push\(\[1,"((?:[^"\\]|\\.)*)"\]\)/g)]
+    .map((m) => {
+      try {
+        return JSON.parse(`"${m[1]}"`)
+      } catch {
+        return ''
+      }
+    })
+    .join('')
+}
+
+/** text[start] 의 '[' 부터 짝이 맞는 ']' 까지 (문자열 내부 괄호 무시) */
+function sliceBalanced(text, start) {
+  let depth = 0
+  let inStr = false
+  for (let i = start; i < text.length; i++) {
+    const c = text[i]
+    if (inStr) {
+      if (c === '\\') i++
+      else if (c === '"') inStr = false
+      continue
+    }
+    if (c === '"') inStr = true
+    else if (c === '[' || c === '{') depth++
+    else if (c === ']' || c === '}') {
+      depth--
+      if (depth === 0) return text.slice(start, i + 1)
+    }
+  }
+  return null
+}
+
+export function parseWornuts(html, now = Date.now()) {
+  const payload = rscPayload(html)
+  const at = payload.indexOf('"entries":[')
+  if (at < 0) return { banners: [], builtToday: null }
+  const raw = sliceBalanced(payload, at + '"entries":'.length)
+  const entries = raw ? JSON.parse(raw) : []
+  const builtToday = payload.match(/"builtToday":"([\d-]+)"/)?.[1] ?? null
+
+  const banners = []
+  for (const e of entries) {
+    if (!e?.date || !e?.days) continue
+    const start = Date.parse(`${e.date}T${String(RESET_HOUR_UTC).padStart(2, '0')}:00:00Z`)
+    if (!Number.isFinite(start)) continue
+    const end = start + e.days * 86400000
+    if (end < now - 3 * 86400000) continue // 지난 배너는 최근 3일까지만 보관
+    const limited = e.note === 'limited'
+    const pools = (e.pools ?? []).map((p) => POOL_NAMES[p] ?? p)
+    banners.push({
+      status: start <= now && now < end ? 'active' : 'upcoming',
+      type: `${limited ? 'Limited · ' : ''}${pools.join(' · ') || 'Hero Summoning'}`,
+      durationDays: e.days,
+      startUtc: new Date(start).toISOString(),
+      endUtc: new Date(end).toISOString(),
+      heroes: (e.heroes ?? []).map((h) => ({
+        name: h.name,
+        ...(h.slug ? { slug: h.slug } : {}),
+        ...(QUALITY_RARITY[h.quality] ? { rarity: QUALITY_RARITY[h.quality] } : {}),
+        ...(h.portrait ? { icon: h.portrait } : {}),
+      })),
+      ...(e.name && e.name !== 'Special' ? { title: e.name } : {}),
+      ...(e.kindName ? { kind: e.kindName } : {}),
+      ...(limited ? { limited: true } : {}),
+    })
+  }
+  return { banners, builtToday }
+}
+
+async function fetchWornuts(debug) {
+  const page = await fetchText(WORNUTS_URL, 'text/html')
+  debug.push(`WORNUTS → HTTP ${page.status}, bytes=${page.text.length}`)
+  if (!page.ok) return null
+  const { banners, builtToday } = parseWornuts(page.text)
+  debug.push(`parsed: WORNUTS=${banners.length} (builtToday=${builtToday})`)
+  // 진행/예정 배너가 있고 그중 하나라도 영웅이 있어야 정상으로 본다
+  const now = Date.now()
+  const live = banners.filter((b) => Date.parse(b.endUtc) > now)
+  if (!live.length || live.every((b) => !b.heroes.length)) return null
+  return {
+    source: 'wornuts.com',
+    sourceUrl: WORNUTS_URL,
+    heroPageUrl: WORNUTS_HERO_URL,
+    fetchedAt: new Date().toISOString(),
+    sourceModified: builtToday ? `${builtToday}T00:00:00Z` : null,
+    banners,
+  }
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 // prospector.gg 는 Cloudflare 봇차단이 걸려 있어 자동 요청이 429/403 으로 막히곤 한다.
@@ -165,8 +271,7 @@ function debugSlice(label, html) {
   return head + (idx < 0 ? html.slice(0, 2000) : html.slice(idx, idx + 22000)) + '\n'
 }
 
-async function main() {
-  const debug = [`fetchedAt: ${new Date().toISOString()}`, '']
+async function fetchProspector(debug) {
   let restHtml = ''
   let sourceModified = null
   try {
@@ -195,27 +300,51 @@ async function main() {
   const banners = restBanners.length >= pageBanners.length ? restBanners : pageBanners
   debug.push(`parsed: REST=${restBanners.length}, PAGE=${pageBanners.length}`, '')
 
-  if (!banners.length) {
-    debug.push(debugSlice('REST content.rendered', restHtml), debugSlice('PAGE html', pageHtml))
-    await writeFile(DEBUG_FILE, debug.join('\n'), 'utf8')
-    throw new Error('배너 0건 파싱 — _debug_fetch.txt 확인. 기존 데이터 유지.')
-  }
   // 카드는 있는데 영웅이 전부 비면(출처 미갱신/구조 변경) 빈 일정을 '정상'으로 덮어쓰지 않는다.
-  // → fetchedAt 이 갱신되지 않아 상태 점검(check-health)이 크롤 실패로 잡아낸다.
-  if (banners.every((b) => !b.heroes.length)) {
+  if (!banners.length || banners.every((b) => !b.heroes.length)) {
     debug.push(debugSlice('REST content.rendered', restHtml), debugSlice('PAGE html', pageHtml))
-    await writeFile(DEBUG_FILE, debug.join('\n'), 'utf8')
-    throw new Error(`배너 ${banners.length}건 모두 영웅 목록 비어 있음 — _debug_fetch.txt 확인. 기존 데이터 유지.`)
+    return null
   }
   banners.sort((a, b) => Date.parse(a.startUtc) - Date.parse(b.startUtc))
-
-  const schedule = {
+  return {
     source: 'prospector.gg',
     sourceUrl: PAGE_URL,
+    heroPageUrl: 'https://prospector.gg/hero/',
     fetchedAt: new Date().toISOString(),
     sourceModified,
     banners,
   }
+}
+
+async function main() {
+  const dryRun = process.argv.includes('--dry-run')
+  const debug = [`fetchedAt: ${new Date().toISOString()}`, '']
+
+  let schedule = null
+  try {
+    schedule = await fetchWornuts(debug)
+  } catch (err) {
+    debug.push(`WORNUTS 예외: ${err.message}`)
+  }
+  if (!schedule) schedule = await fetchProspector(debug)
+
+  if (!schedule) {
+    if (!dryRun) await writeFile(DEBUG_FILE, debug.join('\n'), 'utf8')
+    console.error(debug.slice(0, 12).join('\n'))
+    // 빈 일정으로 덮어쓰지 않음 → fetchedAt 이 묵어 상태 점검(check-health)이 크롤 실패로 잡는다.
+    throw new Error('모든 출처에서 유효한 배너(영웅 포함)를 얻지 못함 — 기존 데이터 유지.')
+  }
+  schedule.banners.sort((a, b) => Date.parse(a.startUtc) - Date.parse(b.startUtc))
+
+  if (dryRun) {
+    console.log(debug.join('\n'))
+    for (const b of schedule.banners) {
+      console.log(`${b.startUtc.slice(0, 10)} +${b.durationDays}d [${b.type}]${b.title ? ' ' + b.title : ''}${b.kind ? ' (' + b.kind + ')' : ''}: ${b.heroes.map((h) => h.name).join(', ') || '—'}`)
+    }
+    console.log(`\n✅ (dry-run) ${schedule.source} 배너 ${schedule.banners.length}건`)
+    return
+  }
+
   const body = `// ⚠️ 이 파일은 scripts/sync-banners.mjs 크롤 결과로 자동 덮어쓰입니다 (직접 수정 금지).
 import type { BannerSchedule } from './types'
 
@@ -223,8 +352,8 @@ export const generatedSchedule: BannerSchedule | null = ${JSON.stringify(schedul
 `
   await writeFile(OUTPUT_FILE, body, 'utf8')
   await unlink(DEBUG_FILE).catch(() => {}) // 성공 시 디버그 파일 제거
-  const newCount = banners.reduce((n, b) => n + b.heroes.filter((h) => !h.slug).length, 0)
-  console.log(`✅ 배너 ${banners.length}건 갱신 (신캐 ${newCount}명) → schedule.generated.ts`)
+  const heroCount = schedule.banners.reduce((n, b) => n + b.heroes.length, 0)
+  console.log(`✅ ${schedule.source} 배너 ${schedule.banners.length}건 (영웅 ${heroCount}명) → schedule.generated.ts`)
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {

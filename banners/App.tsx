@@ -12,7 +12,7 @@ import {
 
 const BASE = '/wor-gear-simulator/'
 
-/** prospector 슬러그(kebab) → 한글명. 매핑 없으면 원본 영문 표기. */
+/** 출처 슬러그(kebab) → 한글명. 매핑 없으면 원본 영문 표기. */
 function koName(h: BannerHero): string {
   const key = (h.slug ?? h.name).replace(/-/g, '_').toLowerCase()
   return heroNameKo[key] ?? h.name
@@ -44,13 +44,14 @@ function fmtRemain(ms: number): string {
   return `${m}분`
 }
 
-const HERO_PAGE = 'https://prospector.gg/hero/'
+const HERO_PAGE = bannerSchedule.heroPageUrl ?? 'https://prospector.gg/hero/'
+const SOURCE = bannerSchedule.source
 
 /** 배너 종류 영문 → 한글 (변형에 견디도록 키워드 매칭, 미매칭은 원문). */
 function typeKo(type: string): string {
+  if (/limited/i.test(type)) return /ancient/i.test(type) ? '한정 고대 소환' : '한정 소환'
   if (/ancient/i.test(type)) return '고대 소환'
   if (/invocation|spirit|divine/i.test(type)) return '일반 소환'
-  if (/limited/i.test(type)) return '한정 소환'
   return type
 }
 
@@ -63,9 +64,9 @@ const dayKeyUTC = (ts: number) => {
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
 }
 const shortType = (type: string) =>
-  /ancient/i.test(type) ? '고대' : /limited/i.test(type) ? '한정' : '일반'
+  /limited/i.test(type) ? '한정' : /ancient/i.test(type) ? '고대' : '일반'
 const typeColorClass = (type: string) =>
-  /ancient/i.test(type) ? 'cal--ancient' : /limited/i.test(type) ? 'cal--limited' : 'cal--invocation'
+  /limited/i.test(type) ? 'cal--limited' : /ancient/i.test(type) ? 'cal--ancient' : 'cal--invocation'
 const hasNewHero = (b: ScheduledBanner) =>
   b.heroes.some((h) => !h.icon || /preview/i.test(h.icon))
 /** 신캐(미공개) 영웅 이름 목록 — koName 적용 */
@@ -218,11 +219,13 @@ function BannerCard({ banner, now }: { banner: ScheduledBanner; now: number }) {
         {banner.durationDays != null && (
           <span className="bannerDuration">{banner.durationDays}일 배너</span>
         )}
+        {banner.kind && <span className="bannerDuration">{banner.kind}</span>}
         <span className="bannerCountdown">⏳ {countdown}</span>
       </div>
 
       <h2 className="bannerType" title={banner.type}>
         {typeKo(banner.type)}
+        {banner.title && <span className="bannerTitle"> · {banner.title}</span>}
       </h2>
       <p className="bannerRange">📅 {fmtRange(banner.startUtc, banner.endUtc)}</p>
 
@@ -248,7 +251,7 @@ function BannerCard({ banner, now }: { banner: ScheduledBanner; now: number }) {
               href={`${HERO_PAGE}${h.slug}/`}
               target="_blank"
               rel="noopener noreferrer"
-              title={`${h.name} 정보 (prospector.gg)`}
+              title={`${h.name} 정보 (${SOURCE})`}
             >
               {inner}
             </a>
@@ -259,7 +262,7 @@ function BannerCard({ banner, now }: { banner: ScheduledBanner; now: number }) {
           )
         })}
       </div>
-      <p className="bannerCredit">출처 · prospector.gg</p>
+      <p className="bannerCredit">출처 · {SOURCE}</p>
     </article>
   )
 }
@@ -308,7 +311,7 @@ export default function App() {
         <p className="bannersSource">
           데이터 출처 ·{' '}
           <a href={bannerSchedule.sourceUrl} target="_blank" rel="noopener noreferrer">
-            prospector.gg
+            {SOURCE}
           </a>{' '}
           · 영웅명은 인게임 한글 표기로 변환(미등록 영웅은 영문)
         </p>
@@ -342,7 +345,7 @@ export default function App() {
       <footer className="bannersFooter">
         데이터 출처 ·{' '}
         <a href={bannerSchedule.sourceUrl} target="_blank" rel="noopener noreferrer">
-          prospector.gg
+          {SOURCE}
         </a>{' '}
         · 갱신 {updatedLabel}
         <span className="bannersFooterNote">
