@@ -42,6 +42,10 @@ jobs:
         run: npm run sync:banners
         continue-on-error: true
 
+      - name: Sync 한글 영웅명 (worwiki.kr 공개 영웅 페이지, 새 영웅만)
+        run: npm run sync:names-ko
+        continue-on-error: true
+
       - name: Sync 마병 아이콘 (없는 것만 받고, 목록에서 빠진 것은 삭제)
         run: npm run sync:soldiers
         continue-on-error: true
@@ -63,11 +67,12 @@ jobs:
           add-paths: |
             src/data/heroes.generated.ts
             src/data/heroes.pending.generated.json
+            src/data/heroNamesKo.generated.json
             summon/data/banners.generated.ts
             banners/data/schedule.generated.ts
             guild/assets/soldiers
           body: |
-            자동 크롤 갱신 (sync:heroes / sync:summon / sync:banners / sync:soldiers).
+            자동 크롤 갱신 (sync:heroes / sync:summon / sync:banners / sync:names-ko / sync:soldiers).
             소환율·배너 파싱은 best-effort 이며 소스 차단/구조 변경 시 기존 데이터 유지.
           delete-branch: true
 

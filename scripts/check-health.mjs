@@ -74,7 +74,17 @@ await check('영웅 데이터', async () => {
   const heroes = parseGenerated(await read('src/data/heroes.generated.ts'), 'export const heroes')
   const baseline = JSON.parse(await read('scripts/health-baseline.json'))
   const koSrc = await read('src/data/heroNamesKo.ts')
-  const koKeys = new Set([...koSrc.matchAll(/^\s*'?([a-z0-9_]+)'?\s*:/gm)].map((m) => m[1]))
+  const manualKo = Object.fromEntries([...koSrc.matchAll(/^\s*'?([a-z0-9_]+)'?\s*:\s*(['"])(.+?)\2/gm)].map((m) => [m[1], m[3]]))
+  // worwiki 크롤 결과 (영문명 → id 규칙은 sync-heroes 와 동일)
+  const idOf = (en) => en.toLowerCase().replace(/'/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+  let crawledKo = {}
+  let crawledAt = null
+  try {
+    const g = JSON.parse(await read('src/data/heroNamesKo.generated.json'))
+    crawledAt = g.fetchedAt
+    crawledKo = Object.fromEntries(Object.values(g.pages ?? {}).map((p) => [idOf(p.en), p.ko]))
+  } catch {}
+  const koKeys = new Set([...Object.keys(manualKo), ...Object.keys(crawledKo)])
   const ignore = new Set(baseline.heroesWithoutKo)
   let pending = []
   try {
@@ -95,6 +105,20 @@ await check('영웅 데이터', async () => {
     )
   }
   const oldMissing = heroes.filter((h) => !koKeys.has(h.id) && ignore.has(h.id)).length
+
+  // 수동 한글명과 worwiki 표기가 다른 영웅 (수동이 우선 적용됨 — 어느 쪽이 맞는지 확인용)
+  const heroIds = new Set(heroes.map((h) => h.id))
+  const conflicts = Object.entries(manualKo).filter(([id, ko]) => heroIds.has(id) && crawledKo[id] && crawledKo[id] !== ko)
+  if (conflicts.length) {
+    warnings.push(
+      `**한글명 불일치 (${conflicts.length}명)** — 수동 매핑(적용 중)과 worwiki 표기가 다름. 수동 쪽이 틀렸으면 \`heroNamesKo.ts\` 에서 해당 줄을 지우면 worwiki 표기가 적용됨\n` +
+        conflicts.map(([id, ko]) => `  - \`${id}\`: 수동 '${ko}' / worwiki '${crawledKo[id]}'`).join('\n'),
+    )
+  }
+  if (crawledAt && ageDays(crawledAt) > 14) {
+    errors.push(`**한글명 크롤**: 마지막 성공이 ${ageDays(crawledAt)}일 전 (${fmtDate(crawledAt)}) — sync:names-ko 실패 중`)
+  }
+  infos.push(`한글명: 수동 ${Object.keys(manualKo).length}개 + worwiki ${Object.keys(crawledKo).length}개 (크롤 ${fmtDate(crawledAt)})`)
 
   // 시뮬레이터 진영 효과(영주 효과/진영 반지)에 없는 진영
   const factionSrc = (await read('src/data/lordEffects.ts')) + (await read('src/data/factionAccessories.ts'))
