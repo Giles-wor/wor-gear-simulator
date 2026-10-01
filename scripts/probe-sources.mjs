@@ -74,31 +74,23 @@ async function fandom(params) {
 
 
 
-// ── 라운드 3: wornuts 배너 페이지 데이터 구조 ───────────────────────
-section('wornuts /en/banners — RSC 페이로드 구조')
-const bp = await get('https://wornuts.com/en/banners')
-const html = bp.text
-console.log(`len=${html.length}`)
-const pushes = [...html.matchAll(/self\.__next_f\.push\(\[1,"((?:[^"\\]|\\.)*)"\]\)/g)].map((m) => JSON.parse(`"${m[1]}"`))
-console.log(`__next_f chunks=${pushes.length}, sizes=${pushes.map((p) => p.length).slice(0, 40).join(',')}`)
-const payload = pushes.join('')
-for (const key of ["Sage's Invocation", 'Sage', '2026-10-02', '"startAt"', '"start', 'featured', 'heroes":[', 'Amelia']) {
-  const i = payload.indexOf(key)
-  console.log(`\n[payload "${key}" @${i}] ${i < 0 ? '' : payload.slice(Math.max(0, i - 1200), i + 1800)}`)
-}
-// HTML 쪽 카드 마크업
-const hi = html.indexOf('Sage')
-console.log(`\n[html Sage @${hi}] ${hi < 0 ? '' : html.slice(Math.max(0, hi - 2500), hi + 1500)}`)
 
-section('wornuts 배너 상세 / 영웅 상세 URL 패턴')
-const links = [...new Set([...html.matchAll(/href="(\/en\/(?:banners|heroes)\/[^"]+)"/g)].map((m) => m[1]))]
-console.log(links.slice(0, 30).join('\n'))
-if (links[0]) {
-  const d = await get(`https://wornuts.com${links.find((l) => l.includes('/banners/')) ?? links[0]}`)
-  const dp = [...d.text.matchAll(/self\.__next_f\.push\(\[1,"((?:[^"\\]|\\.)*)"\]\)/g)].map((m) => JSON.parse(`"${m[1]}"`)).join('')
-  const j = dp.indexOf('hero')
-  console.log(`\n[banner detail len=${d.text.length} payload=${dp.length}] ${dp.slice(Math.max(0, j - 500), j + 3000)}`)
+
+
+// ── 라운드 6: worwiki heroes.json 구조 ────────────────────────────
+section('worwiki heroes.json')
+const hj = await get('https://worwiki.kr/heroes.json', 'application/json')
+console.log(`heroes.json ${hj.status} ${hj.type} len=${hj.text.length}`)
+try {
+  const data = JSON.parse(hj.text)
+  const arr = Array.isArray(data) ? data : data.heroes ?? Object.values(data)
+  console.log(`top-level: ${Array.isArray(data) ? 'array' : 'object keys=' + Object.keys(data).slice(0, 20).join(',')}  count=${arr.length}`)
+  console.log(`keys(0): ${Object.keys(arr[0] ?? {}).join(', ')}`)
+  for (const h of arr.slice(0, 3)) console.log(JSON.stringify(h).slice(0, 1500))
+  const find = (en) => arr.find((h) => JSON.stringify(h).includes(`"${en}"`))
+  for (const en of ['Bayek', 'Veyrathia', 'Garroq', 'Sun Wukong', 'Graves Greybeard', 'Ezio della Notte']) console.log(`${en}: ${JSON.stringify(find(en) ?? null).slice(0, 400)}`)
+} catch (e) {
+  console.log(`parse 실패: ${e.message} / ${hj.text.slice(0, 500)}`)
 }
 
 console.log('\n(probe 끝)')
-// round 4: 실제 크롤은 probe-sources.yml 의 Crawl on work branch 단계

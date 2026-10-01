@@ -23,6 +23,9 @@ jobs:
         with:
           node-version: 20
 
+      - name: Probe sources (로그 출력)
+        run: node scripts/probe-sources.mjs
+
       - name: Banner crawl (dry-run)
         run: node scripts/sync-banners.mjs --dry-run
 
@@ -32,10 +35,11 @@ jobs:
         run: |
           node scripts/sync-heroes.mjs
           node scripts/sync-banners.mjs || echo "banners 실패"
+          node scripts/sync-names-ko.mjs || echo "names-ko 실패"
           node scripts/sync-soldiers.mjs || echo "soldiers 일부 실패"
           node scripts/check-health.mjs
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/data/heroes.generated.ts src/data/heroes.pending.generated.json banners/data/schedule.generated.ts guild/assets/soldiers
+          git add src/data/heroes.generated.ts src/data/heroes.pending.generated.json src/data/heroNamesKo.generated.json banners/data/schedule.generated.ts guild/assets/soldiers
           git diff --staged --stat
-          git diff --staged --quiet || { git commit -m "chore: 작업 브랜치에서 크롤 갱신 (heroes / banners / soldiers)"; git push; }
+          git diff --staged --quiet || { git commit -m "chore: 작업 브랜치에서 크롤 갱신 (heroes / banners / names-ko / soldiers)"; git push; }

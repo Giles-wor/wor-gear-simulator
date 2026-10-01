@@ -1,8 +1,23 @@
 // 영웅 영문 → 한글 매핑.
-// 출처: ref_fig/ 스크린샷 인게임 소환 풀 OCR (Rare/Ancient 영주·일반 그룹).
-// 추가/수정은 여기서. 매핑 없는 영웅은 영문 그대로 표시.
+// 1순위: 아래 수동 매핑 (ref_fig/ 스크린샷 인게임 소환 풀 OCR 등) — 추가/수정은 여기서.
+// 2순위: heroNamesKo.generated.json — worwiki.kr(나만겜 한국 영웅 위키) 공개 영웅 페이지 크롤 (scripts/sync-names-ko.mjs, 주간 자동)
+// 매핑 없는 영웅은 영문 그대로 표시.
+import generated from './heroNamesKo.generated.json'
 
-export const heroNameKo: Record<string, string> = {
+/** sync-heroes.mjs 의 id 규칙과 동일 (영문명 → id) */
+const heroIdOf = (en: string) =>
+  en
+    .toLowerCase()
+    .replace(/'/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+
+/** worwiki 크롤 결과: id → 한글명 */
+export const crawledHeroNameKo: Record<string, string> = Object.fromEntries(
+  Object.values(generated.pages as Record<string, { ko: string; en: string }>).map((p) => [heroIdOf(p.en), p.ko]),
+)
+
+export const manualHeroNameKo: Record<string, string> = {
   // ─────── Rare 영주 그룹 (스피릿 0.04%) — screenshot 2 ───────
   aracha: '아라샤',
   morrigan: '모리건',
@@ -129,7 +144,13 @@ export const heroNameKo: Record<string, string> = {
   aurelius_gale: '아우렐리우스',
   jezebelle: '지제벨',
   leikan: '레이칸', // 위 raizan(prospector 슬러그)과 동일 영웅의 fandom id
+
+  // ─────── worwiki 영문 표기가 fandom 과 달라 자동 매칭 안 되는 영웅 ───────
+  akira: '아키라', // worwiki: AkiraStar
 }
+
+/** 최종 매핑: 크롤 결과 위에 수동 매핑을 덮어씀 */
+export const heroNameKo: Record<string, string> = { ...crawledHeroNameKo, ...manualHeroNameKo }
 
 /** Hero id → 한글 이름. 매핑 없으면 undefined. */
 export function getHeroNameKo(heroId: string): string | undefined {

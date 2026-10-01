@@ -11,6 +11,7 @@
     "sync:summon": "node scripts/sync-summon.mjs",
     "sync:banners": "node scripts/sync-banners.mjs",
     "sync:soldiers": "node scripts/sync-soldiers.mjs",
+    "sync:names-ko": "node scripts/sync-names-ko.mjs",
     "check:health": "node scripts/check-health.mjs",
     "probe:sources": "node scripts/probe-sources.mjs",
     "encrypt:guild": "node scripts/encrypt-guild.mjs",

@@ -32,13 +32,15 @@ npm run build
 ## 데이터 자동화 (GitHub Actions)
 | 워크플로 | 언제 | 하는 일 |
 |---|---|---|
-| `sync-data.yml` | 매주 월 03:00 UTC (수동 가능) | 영웅(fandom)·소환 확률·배너(wornuts → prospector 폴백)·마병 아이콘 크롤 → PR 자동 머지 → **배포 실행** |
+| `sync-data.yml` | 매주 월 03:00 UTC (수동 가능) | 영웅(fandom)·소환 확률·배너(wornuts → prospector 폴백)·한글 영웅명(worwiki.kr)·마병 아이콘 크롤 → PR 자동 머지 → **배포 실행** |
 | `health-check.yml` | 주간 크롤 직후 (수동 가능) | `scripts/check-health.mjs` 로 데이터 점검 → `data-health` 라벨 이슈 하나를 생성/갱신, 다 해결되면 자동 종료 |
 | `sync-soldiers.yml` | `guild/soldiers.json` 이 main 에 반영될 때 | 없는 마병 아이콘만 받고 목록에서 빠진 아이콘 삭제 → 배포 실행 |
 | `probe-sources.yml` | 수동 / `claude/**` 브랜치에서 probe 스크립트 수정 시 | 크롤 후보 출처 조사(로그 출력) + 작업 브랜치에 크롤 결과 커밋 |
 
 - 봇(GITHUB_TOKEN)이 머지·푸시한 커밋은 `deploy.yml` 의 push 트리거를 깨우지 않으므로, 각 워크플로가 `gh workflow run deploy.yml` 로 배포를 직접 실행합니다.
-- 사람이 채워야 하는 것(신캐 한글명 `src/data/heroNamesKo.ts`, 신규 진영 효과, 유출 정보)은 상태 점검 이슈에 목록으로 올라옵니다.
+- 한글 영웅명: `src/data/heroNamesKo.ts` 수동 매핑이 우선, 없으면 worwiki.kr(나만겜 한국 영웅 위키) 공개 영웅 페이지에서 크롤한 이름(`heroNamesKo.generated.json`).
+  worwiki 는 데이터 파일 직접 열람을 막아 두어 상세 페이지만 새 영웅 위주로 천천히 읽습니다. 두 표기가 다르면 점검 이슈에 표시됩니다.
+- 사람이 채워야 하는 것(크롤로도 못 찾은 한글명, 신규 진영 효과, 유출 정보)은 상태 점검 이슈에 목록으로 올라옵니다.
   한글명이 없는 구 영웅은 `scripts/health-baseline.json` 기준선으로 경고에서 제외합니다.
 - 로컬 점검: `npm run check:health`
 
