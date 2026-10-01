@@ -1,0 +1,67 @@
+name: Data health check
+
+# 주간 크롤(Sync game data)이 끝나면 main 최신 상태를 점검해
+# "🩺 데이터 상태 점검" 이슈 하나를 생성/갱신하고, 문제가 모두 풀리면 닫는다.
+on:
+  workflow_run:
+    workflows: ["Sync game data"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: health-check
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (main 최신 — 자동 머지된 크롤 결과 포함)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run checks
+        id: health
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/check-health.mjs health-report.md
+
+      - name: Update tracking issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HAS_ISSUES: ${{ steps.health.outputs.has_issues }}
+        run: |
+          LABEL="data-health"
+          TITLE="🩺 데이터 상태 점검"
+          gh label create "$LABEL" --color D93F0B --description "자동 데이터 상태 점검" 2>/dev/null || true
+          NUM=$(gh issue list --label "$LABEL" --state open --json number -q '.[0].number')
+
+          if [ "$HAS_ISSUES" = "true" ]; then
+            if [ -z "$NUM" ]; then
+              gh issue create --title "$TITLE" --label "$LABEL" --body-file health-report.md
+            else
+              # 점검 시각 줄을 뺀 내용이 바뀌었을 때만 갱신 + 알림 댓글
+              OLD=$(gh issue view "$NUM" --json body -q .body | grep -v '^점검 시각:')
+              NEW=$(grep -v '^점검 시각:' health-report.md)
+              if [ "$OLD" != "$NEW" ]; then
+                gh issue edit "$NUM" --body-file health-report.md
+                gh issue comment "$NUM" --body "점검 결과가 바뀌었습니다 (오류 ${{ steps.health.outputs.errors }} / 경고 ${{ steps.health.outputs.warnings }}). 본문을 확인하세요."
+              else
+                echo "변화 없음 — 이슈 #$NUM 유지"
+              fi
+            fi
+          elif [ -n "$NUM" ]; then
+            gh issue comment "$NUM" --body "✅ 모든 점검 통과 — 자동으로 닫습니다."
+            gh issue close "$NUM"
+          fi

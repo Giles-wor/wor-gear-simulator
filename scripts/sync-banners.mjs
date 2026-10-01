@@ -200,6 +200,13 @@ async function main() {
     await writeFile(DEBUG_FILE, debug.join('\n'), 'utf8')
     throw new Error('배너 0건 파싱 — _debug_fetch.txt 확인. 기존 데이터 유지.')
   }
+  // 카드는 있는데 영웅이 전부 비면(출처 미갱신/구조 변경) 빈 일정을 '정상'으로 덮어쓰지 않는다.
+  // → fetchedAt 이 갱신되지 않아 상태 점검(check-health)이 크롤 실패로 잡아낸다.
+  if (banners.every((b) => !b.heroes.length)) {
+    debug.push(debugSlice('REST content.rendered', restHtml), debugSlice('PAGE html', pageHtml))
+    await writeFile(DEBUG_FILE, debug.join('\n'), 'utf8')
+    throw new Error(`배너 ${banners.length}건 모두 영웅 목록 비어 있음 — _debug_fetch.txt 확인. 기존 데이터 유지.`)
+  }
   banners.sort((a, b) => Date.parse(a.startUtc) - Date.parse(b.startUtc))
 
   const schedule = {

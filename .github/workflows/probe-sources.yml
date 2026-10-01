@@ -1,0 +1,25 @@
+name: Probe crawl sources
+
+# 크롤 후보 출처 조사(읽기 전용, 커밋 없음). 결과는 실행 로그로 확인.
+# 수동 실행 또는 probe 스크립트를 수정해 claude/** 브랜치에 푸시하면 실행된다.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/**"]
+    paths:
+      - "scripts/probe-sources.mjs"
+      - ".github/workflows/probe-sources.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/probe-sources.mjs

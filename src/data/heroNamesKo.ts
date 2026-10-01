@@ -128,6 +128,7 @@ export const heroNameKo: Record<string, string> = {
   cainan: '카이난',
   aurelius_gale: '아우렐리우스',
   jezebelle: '지제벨',
+  leikan: '레이칸', // 위 raizan(prospector 슬러그)과 동일 영웅의 fandom id
 }
 
 /** Hero id → 한글 이름. 매핑 없으면 undefined. */
