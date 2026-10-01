@@ -76,12 +76,22 @@ await check('영웅 데이터', async () => {
   const koSrc = await read('src/data/heroNamesKo.ts')
   const koKeys = new Set([...koSrc.matchAll(/^\s*'?([a-z0-9_]+)'?\s*:/gm)].map((m) => m[1]))
   const ignore = new Set(baseline.heroesWithoutKo)
+  let pending = []
+  try {
+    pending = JSON.parse(await read('src/data/heroes.pending.generated.json'))
+  } catch {}
+  if (pending.length) {
+    warnings.push(
+      `**스탯 미기재 신캐 (${pending.length}명)** — 위키 문서는 있으나 ATK/공격간격이 비어 시뮬레이터에 아직 없음 (위키가 채워지면 주간 크롤이 자동 반영)\n` +
+        pending.map((h) => `  - ${h.name} (${[h.rarity, h.heroClass].filter(Boolean).join(' ') || '정보 없음'}${h.factions?.length ? ', ' + h.factions.join('/') : ''})`).join('\n'),
+    )
+  }
 
-  const missing = heroes.filter((h) => !koKeys.has(h.id) && !ignore.has(h.id))
+  const missing = [...heroes, ...pending].filter((h) => !koKeys.has(h.id) && !ignore.has(h.id))
   if (missing.length) {
     warnings.push(
       `**신규 영웅 한글명 없음 (${missing.length}명)** — \`src/data/heroNamesKo.ts\` 에 추가 필요 (없으면 영문으로 표시)\n` +
-        missing.map((h) => `  - \`${h.id}\` ${h.name} (${h.rarity} ${h.heroClass}, ${(h.factions || []).join('/')})`).join('\n'),
+        missing.map((h) => `  - \`${h.id}\` ${h.name} (${[h.rarity, h.heroClass].filter(Boolean).join(' ')}${h.factions?.length ? ', ' + h.factions.join('/') : ''})`).join('\n'),
     )
   }
   const oldMissing = heroes.filter((h) => !koKeys.has(h.id) && ignore.has(h.id)).length
@@ -90,10 +100,11 @@ await check('영웅 데이터', async () => {
   const factionSrc = (await read('src/data/lordEffects.ts')) + (await read('src/data/factionAccessories.ts'))
   const covered = new Set([...factionSrc.matchAll(/faction:\s*'([^']+)'/g)].map((m) => m[1]))
   const ignoredF = new Set(baseline.factionsIgnored ?? [])
-  const all = [...new Set(heroes.flatMap((h) => h.factions || []))]
+  const everyone = [...heroes, ...pending]
+  const all = [...new Set(everyone.flatMap((h) => h.factions || []))]
   const uncovered = all.filter((f) => !covered.has(f) && !ignoredF.has(f))
   for (const f of uncovered) {
-    const members = heroes.filter((h) => (h.factions || []).includes(f)).map((h) => h.name)
+    const members = everyone.filter((h) => (h.factions || []).includes(f)).map((h) => h.name)
     warnings.push(
       `**진영 효과 데이터 없음: ${f}** (${members.join(', ')}) — \`src/data/lordEffects.ts\` / \`factionAccessories.ts\` 에 영주 효과·진영 반지 추가 필요`,
     )

@@ -73,44 +73,31 @@ async function fandom(params) {
 }
 
 
-// ── 라운드 2 ─────────────────────────────────────────────────────
-section('A. wornuts.com — 사이트 구조 / API / 언어')
-const wn = await probePage('https://wornuts.com/', { body: 2000, raw: 2500 })
-for (const path of ['/api', '/api/heroes', '/api/banners', '/api/v1/heroes', '/heroes', '/banners', '/demon-soldiers', '/ko', '/en', '/robots.txt', '/sitemap.xml']) {
-  await probePage(`https://wornuts.com${path}`, { scripts: false, body: 1200 })
-}
 
-section('B. 공식 가이드 사이트 — hero 청크의 API 호출부')
-const idx = await get(`${OFFICIAL}/worcommunity/assets/index-Dyum3Q5e.js`, '*/*')
-for (const key of ['/api/gms/data/app/', '/api/gms/source/', '/api/content/inner/query/', 'language', 'lang']) {
-  let from = 0
-  for (let n = 0; n < 3; n++) {
-    const i = idx.text.indexOf(key, from)
-    if (i < 0) break
-    console.log(`\n[index ${key} @${i}] ${idx.text.slice(Math.max(0, i - 400), i + 400)}`)
-    from = i + key.length
-  }
+// ── 라운드 3: wornuts 배너 페이지 데이터 구조 ───────────────────────
+section('wornuts /en/banners — RSC 페이로드 구조')
+const bp = await get('https://wornuts.com/en/banners')
+const html = bp.text
+console.log(`len=${html.length}`)
+const pushes = [...html.matchAll(/self\.__next_f\.push\(\[1,"((?:[^"\\]|\\.)*)"\]\)/g)].map((m) => JSON.parse(`"${m[1]}"`))
+console.log(`__next_f chunks=${pushes.length}, sizes=${pushes.map((p) => p.length).slice(0, 40).join(',')}`)
+const payload = pushes.join('')
+for (const key of ["Sage's Invocation", 'Sage', '2026-10-02', '"startAt"', '"start', 'featured', 'heroes":[', 'Amelia']) {
+  const i = payload.indexOf(key)
+  console.log(`\n[payload "${key}" @${i}] ${i < 0 ? '' : payload.slice(Math.max(0, i - 1200), i + 1800)}`)
 }
-const heroChunk = await get(`${OFFICIAL}/worcommunity/assets/hero-DqKyI2DG.js`, '*/*')
-console.log(`\nhero chunk ${heroChunk.status} len=${heroChunk.text.length}`)
-for (const key of ['api', 'source', 'query', 'lang']) {
-  let from = 0
-  for (let n = 0; n < 3; n++) {
-    const i = heroChunk.text.indexOf(key, from)
-    if (i < 0) break
-    console.log(`[hero ${key} @${i}] ${heroChunk.text.slice(Math.max(0, i - 250), i + 250)}`)
-    from = i + key.length
-  }
-}
+// HTML 쪽 카드 마크업
+const hi = html.indexOf('Sage')
+console.log(`\n[html Sage @${hi}] ${hi < 0 ? '' : html.slice(Math.max(0, hi - 2500), hi + 1500)}`)
 
-section('C. fandom — Grey Blades 신캐 스탯 기재 여부 (sync-heroes 는 atk/atkinterval 없으면 건너뜀)')
-for (const t of ['Garroq', 'Rorkesh', 'Galloway', 'Amelia Ainsworth', 'Oakenvar']) {
-  const r = await fandom({ action: 'parse', page: t, prop: 'text' })
-  const html = r?.parse?.text?.['*'] ?? ''
-  const field = (k) => html.match(new RegExp(`data-source="${k}"[\\s\\S]*?<div class="pi-data-value pi-font">([\\s\\S]*?)</div>`, 'i'))?.[1]?.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-  console.log(`${t}: rarity=${field('rarity')} class=${field('class')} faction=${field('faction')} atk=${field('atk')} atkinterval=${field('atkinterval')} hp=${field('hp')}`)
+section('wornuts 배너 상세 / 영웅 상세 URL 패턴')
+const links = [...new Set([...html.matchAll(/href="(\/en\/(?:banners|heroes)\/[^"]+)"/g)].map((m) => m[1]))]
+console.log(links.slice(0, 30).join('\n'))
+if (links[0]) {
+  const d = await get(`https://wornuts.com${links.find((l) => l.includes('/banners/')) ?? links[0]}`)
+  const dp = [...d.text.matchAll(/self\.__next_f\.push\(\[1,"((?:[^"\\]|\\.)*)"\]\)/g)].map((m) => JSON.parse(`"${m[1]}"`)).join('')
+  const j = dp.indexOf('hero')
+  console.log(`\n[banner detail len=${d.text.length} payload=${dp.length}] ${dp.slice(Math.max(0, j - 500), j + 3000)}`)
 }
-const fs = await fandom({ action: 'parse', page: 'Doomripper', prop: 'wikitext' })
-console.log('Doomripper wikitext: ' + String(fs?.parse?.wikitext?.['*'] ?? '').slice(0, 800))
 
 console.log('\n(probe 끝)')

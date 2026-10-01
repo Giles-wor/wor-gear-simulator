@@ -4,6 +4,8 @@ const API_BASE = 'https://watcher-of-realms.fandom.com/api.php'
 const SOURCE = 'Watcher of Realms Wiki'
 const SOURCE_LEVEL = 'Lv.60'
 const OUTPUT_FILE = new URL('../src/data/heroes.generated.ts', import.meta.url)
+// 위키 문서는 있지만 스탯(atk/atkinterval) 미기재로 건너뛴 영웅 — 상태 점검(check-health)이 읽음
+const PENDING_FILE = new URL('../src/data/heroes.pending.generated.json', import.meta.url)
 
 const FIELD_KEYS = [
   'faction',
@@ -176,7 +178,19 @@ async function fetchHeroPage(title) {
     prop: 'text',
   })
 
-  return heroFromPage(title, data.parse?.text?.['*'] ?? '')
+  const html = data.parse?.text?.['*'] ?? ''
+  return { hero: heroFromPage(title, html), html }
+}
+
+/** 스탯 미기재 영웅의 기본 정보 (출시 직전/직후 신캐) */
+function pendingFromPage(title, html) {
+  return {
+    id: slugifyTitle(title),
+    name: stripHtml(title),
+    rarity: stripHtml(extractField(html, 'rarity') ?? ''),
+    heroClass: stripHtml(extractField(html, 'class') ?? ''),
+    factions: textList(extractField(html, 'faction')),
+  }
 }
 
 function toTsModule(heroes) {
@@ -186,18 +200,24 @@ function toTsModule(heroes) {
 async function main() {
   const titles = await fetchHeroTitles()
   const heroes = []
+  const pending = []
 
   for (const title of titles) {
-    const hero = await fetchHeroPage(title)
+    const { hero, html } = await fetchHeroPage(title)
     if (hero) {
       heroes.push(hero)
       console.log(`Fetched ${title}`)
+    } else if (html) {
+      pending.push(pendingFromPage(title, html))
+      console.log(`Skipped ${title} (스탯 미기재)`)
     }
   }
 
   heroes.sort((a, b) => a.name.localeCompare(b.name))
+  pending.sort((a, b) => a.name.localeCompare(b.name))
   await writeFile(OUTPUT_FILE, toTsModule(heroes), 'utf8')
-  console.log(`Wrote ${heroes.length} heroes to ${OUTPUT_FILE.pathname}`)
+  await writeFile(PENDING_FILE, JSON.stringify(pending, null, 2) + '\n', 'utf8')
+  console.log(`Wrote ${heroes.length} heroes to ${OUTPUT_FILE.pathname} (스탯 미기재 ${pending.length}명 → ${PENDING_FILE.pathname})`)
 }
 
 main().catch((error) => {

@@ -62,6 +62,7 @@ jobs:
           # 크롤 결과 데이터 파일만 커밋 — 실패 시 생성되는 _debug_fetch.txt 등이 딸려가지 않게.
           add-paths: |
             src/data/heroes.generated.ts
+            src/data/heroes.pending.generated.json
             summon/data/banners.generated.ts
             banners/data/schedule.generated.ts
             guild/assets/soldiers
