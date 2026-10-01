@@ -75,21 +75,33 @@ async function fandom(params) {
 
 
 
-// ── 라운드 4: worwiki.kr (한글 영웅명 출처 후보) ─────────────────────
-section('worwiki.kr — 구조 / 한글 영웅명')
-const home = await probePage('https://worwiki.kr/', { body: 2500, raw: 3000 })
-for (const path of ['/robots.txt', '/sitemap.xml', '/heroes', '/hero', '/heroes/', '/api/heroes', '/wiki/영웅']) {
-  await probePage(`https://worwiki.kr${encodeURI(path)}`, { scripts: false, body: 2000 })
+
+// ── 라운드 5: worwiki.kr 데이터 위치 ───────────────────────────────
+section('worwiki app.js — 데이터 로드 지점')
+const app = await get('https://worwiki.kr/app.js?v=2.14.96', '*/*')
+console.log(`app.js ${app.status} len=${app.text.length}`)
+for (const re of [/fetch\(([^)]{0,200})\)/g, /["'`]([^"'`\s]*\.json[^"'`\s]*)["'`]/g, /["'`](\/api\/[^"'`\s]*)["'`]/g]) {
+  console.log(`${re}: ${[...new Set([...app.text.matchAll(re)].map((m) => m[1]))].slice(0, 30).join(' | ')}`)
 }
-// 홈에서 내부 링크 수집
-const internal = [...new Set([...(home.text || '').matchAll(/href="([^"#]+)"/g)].map((m) => m[1]).filter((h) => h.startsWith('/') || h.includes('worwiki.kr')))]
-console.log(`\ninternal links(${internal.length}):\n${internal.slice(0, 80).join('\n')}`)
-// 영웅 관련으로 보이는 첫 링크 2개 열기
-for (const l of internal.filter((h) => /hero|영웅|character|unit/i.test(decodeURI(h))).slice(0, 3)) {
-  const url = new URL(l, 'https://worwiki.kr/').href
-  const r = await probePage(url, { scripts: false, body: 2500, raw: 2500 })
-  const names = [...(r.text || '').matchAll(/>([가-힣][가-힣 ·'\-]{0,14})</g)].map((m) => m[1]).slice(0, 80)
-  console.log(`ko-like texts: ${[...new Set(names)].join(' | ')}`)
+const home = await get('https://worwiki.kr/')
+for (const re of [/<script[^>]*src="([^"]+)"/g, /["'`]([^"'`\s]*\.json[^"'`\s]*)["'`]/g, /window\.([A-Z_a-z]+)\s*=/g]) {
+  console.log(`home ${re}: ${[...new Set([...home.text.matchAll(re)].map((m) => m[1]))].slice(0, 30).join(' | ')}`)
 }
+// 홈 HTML 의 영웅 카드 마크업 1개
+const ci = home.text.indexOf('Rosalia')
+console.log(`\n[home card raw] ${home.text.slice(Math.max(0, ci - 1500), ci + 600)}`)
+
+section('worwiki 영웅 상세 페이지')
+for (const slug of ['bayek', 'beirasia', 'oakenvar']) {
+  const r = await get(`https://worwiki.kr/hero/${slug}/`)
+  const title = r.text.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]
+  const h1 = r.text.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]
+  const og = r.text.match(/property="og:title" content="([^"]+)"/)?.[1]
+  const ld = r.text.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)?.[1]
+  console.log(`\n${slug} → ${r.status} len=${r.text.length}\n title=${title}\n og=${og}\n h1=${h1?.replace(/<[^>]+>/g, ' ').trim()}\n ld=${ld?.slice(0, 1500)}\n text=${strip(r.text).slice(0, 800)}`)
+}
+const sm = await get('https://worwiki.kr/sitemap.xml')
+const heroUrls = [...sm.text.matchAll(/<loc>(https:\/\/worwiki\.kr\/hero\/[^<]+)<\/loc>/g)].map((m) => m[1])
+console.log(`\nsitemap hero pages: ${heroUrls.length}`)
 
 console.log('\n(probe 끝)')
