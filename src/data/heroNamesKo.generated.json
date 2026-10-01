@@ -1,5 +1,594 @@
 {
   "source": "https://worwiki.kr",
-  "fetchedAt": null,
-  "pages": {}
+  "fetchedAt": "2026-10-01T06:27:10.752Z",
+  "pages": {
+    "abomination": {
+      "ko": "증오",
+      "en": "Abomination"
+    },
+    "abyss": {
+      "ko": "아비스",
+      "en": "Abyzou"
+    },
+    "admiral-claw": {
+      "ko": "크로우장군",
+      "en": "Admiral Claw"
+    },
+    "aeon": {
+      "ko": "이안",
+      "en": "Aeon"
+    },
+    "ai": {
+      "ko": "엘",
+      "en": "Ai"
+    },
+    "ain": {
+      "ko": "아인",
+      "en": "Ain"
+    },
+    "akirastar": {
+      "ko": "아키라",
+      "en": "AkiraStar"
+    },
+    "alaura": {
+      "ko": "엘로라",
+      "en": "Alaura"
+    },
+    "alistair": {
+      "ko": "오리스테",
+      "en": "Alistair"
+    },
+    "anora": {
+      "ko": "아노라",
+      "en": "Anora"
+    },
+    "apsan": {
+      "ko": "에프사",
+      "en": "Apsan"
+    },
+    "ardeth": {
+      "ko": "알더스",
+      "en": "Ardeth"
+    },
+    "atrox": {
+      "ko": "아테로크스",
+      "en": "Atrox"
+    },
+    "autumn": {
+      "ko": "오드무",
+      "en": "Autumn"
+    },
+    "aveline": {
+      "ko": "에블린",
+      "en": "Aveline"
+    },
+    "aylin": {
+      "ko": "에일린",
+      "en": "Aylin"
+    },
+    "azhor": {
+      "ko": "아젤",
+      "en": "Azhor"
+    },
+    "azzoth": {
+      "ko": "아토스",
+      "en": "Azzoth"
+    },
+    "baron": {
+      "ko": "바론",
+      "en": "Baron"
+    },
+    "bayek": {
+      "ko": "바예크",
+      "en": "Bayek"
+    },
+    "beirasia": {
+      "ko": "베이라시아",
+      "en": "Veyrathia"
+    },
+    "boreas": {
+      "ko": "포레스",
+      "en": "Boreas"
+    },
+    "borut": {
+      "ko": "브루트",
+      "en": "Borut"
+    },
+    "brienne": {
+      "ko": "브레이니",
+      "en": "Brienne"
+    },
+    "brunor": {
+      "ko": "브루노",
+      "en": "Brunor"
+    },
+    "camille": {
+      "ko": "카미엘",
+      "en": "Camille"
+    },
+    "captain-reve": {
+      "ko": "리프선장",
+      "en": "Captain Reve"
+    },
+    "carnelian": {
+      "ko": "카헬리안",
+      "en": "Carnelian"
+    },
+    "carosa": {
+      "ko": "카로사",
+      "en": "Carosa"
+    },
+    "cassiel": {
+      "ko": "카시르",
+      "en": "Cassiel"
+    },
+    "clarissa": {
+      "ko": "클라리사",
+      "en": "Clarissa"
+    },
+    "corven": {
+      "ko": "코원",
+      "en": "Corven"
+    },
+    "count-dracula": {
+      "ko": "드라큘라",
+      "en": "Count Dracula"
+    },
+    "crach": {
+      "ko": "크레시",
+      "en": "Crach"
+    },
+    "cutter": {
+      "ko": "커터",
+      "en": "cutter"
+    },
+    "cyclone": {
+      "ko": "세크론",
+      "en": "Cyclone"
+    },
+    "cyrene": {
+      "ko": "셀레니",
+      "en": "Cyrene"
+    },
+    "cyrus": {
+      "ko": "키로스",
+      "en": "Cyrus"
+    },
+    "daemon": {
+      "ko": "디몽",
+      "en": "Daemon"
+    },
+    "dagna": {
+      "ko": "다그나",
+      "en": "Dagna"
+    },
+    "dahlia": {
+      "ko": "달리아",
+      "en": "Dahlia"
+    },
+    "decimus": {
+      "ko": "데시무스",
+      "en": "Decimus"
+    },
+    "deimos": {
+      "ko": "데모스",
+      "en": "Deimos"
+    },
+    "diaochan": {
+      "ko": "초선",
+      "en": "DiaoChan"
+    },
+    "dolores": {
+      "ko": "델로레스",
+      "en": "Dolores"
+    },
+    "dr-van-helsing": {
+      "ko": "반헬싱",
+      "en": "Dr. Van Helsing"
+    },
+    "drayga": {
+      "ko": "드레가",
+      "en": "Drayga"
+    },
+    "drogo": {
+      "ko": "드로고",
+      "en": "Drogo"
+    },
+    "eirlys": {
+      "ko": "에일리스",
+      "en": "Eirlys"
+    },
+    "eivor-varinsdottir": {
+      "ko": "에이보르",
+      "en": "Eivor Varinsdottir"
+    },
+    "eliza": {
+      "ko": "일라샤",
+      "en": "Eliza"
+    },
+    "elukas": {
+      "ko": "우르카스",
+      "en": "Elukas"
+    },
+    "elysia": {
+      "ko": "에릴시아",
+      "en": "Elysia"
+    },
+    "eona": {
+      "ko": "이오나",
+      "en": "Eona"
+    },
+    "esme": {
+      "ko": "에스미",
+      "en": "Esme"
+    },
+    "evie-frye": {
+      "ko": "이비 프라이",
+      "en": "Evie Frye"
+    },
+    "ezio-auditore": {
+      "ko": "에지오 아디토레",
+      "en": "Ezio Auditore"
+    },
+    "ezio-della-notte": {
+      "ko": "어둠의 에지오",
+      "en": "Ezio della Notte"
+    },
+    "ezryn": {
+      "ko": "에젠",
+      "en": "Ezryn"
+    },
+    "faelin": {
+      "ko": "페이린",
+      "en": "Faelin"
+    },
+    "falcia": {
+      "ko": "페르샤",
+      "en": "Falcia"
+    },
+    "filippa": {
+      "ko": "필리파",
+      "en": "Filippa"
+    },
+    "glacius": {
+      "ko": "그레시우스",
+      "en": "Glacius"
+    },
+    "gluttony": {
+      "ko": "포셸",
+      "en": "Gluttony"
+    },
+    "gonkba": {
+      "ko": "군바",
+      "en": "Gonkba"
+    },
+    "greed": {
+      "ko": "탐욕",
+      "en": "Greed"
+    },
+    "gu-shi": {
+      "ko": "고결",
+      "en": "Gu Shi"
+    },
+    "gul-drak": {
+      "ko": "굴드락",
+      "en": "Gul'Drak"
+    },
+    "gwendolyn": {
+      "ko": "그웬돌린",
+      "en": "Gwendolyn"
+    },
+    "harpun": {
+      "ko": "하르벤",
+      "en": "Harpun"
+    },
+    "hatssut": {
+      "ko": "하츠트",
+      "en": "Hatssut"
+    },
+    "hollow": {
+      "ko": "할로우",
+      "en": "Hollow"
+    },
+    "idril": {
+      "ko": "가드리엘",
+      "en": "Idril"
+    },
+    "imani": {
+      "ko": "엘마",
+      "en": "Imani"
+    },
+    "init": {
+      "ko": "이니트",
+      "en": "Init"
+    },
+    "isolde": {
+      "ko": "이졸데",
+      "en": "Isolde"
+    },
+    "janqhar": {
+      "ko": "젠카이어",
+      "en": "Janqhar"
+    },
+    "jeera": {
+      "ko": "젤라",
+      "en": "Jeera"
+    },
+    "jorge": {
+      "ko": "조지",
+      "en": "Jorge"
+    },
+    "kai": {
+      "ko": "켄",
+      "en": "Kai"
+    },
+    "kalina": {
+      "ko": "카리넬",
+      "en": "Kalina"
+    },
+    "kassandra": {
+      "ko": "카산드라",
+      "en": "Kassandra"
+    },
+    "kigiri": {
+      "ko": "키기리",
+      "en": "Kigiri"
+    },
+    "kineza": {
+      "ko": "카니샤",
+      "en": "Kineza"
+    },
+    "komodo": {
+      "ko": "코모도",
+      "en": "Komodo"
+    },
+    "kria": {
+      "ko": "클리아",
+      "en": "Kria"
+    },
+    "lady-alexandra": {
+      "ko": "알렉산드라부인",
+      "en": "Lady Alexandra"
+    },
+    "lady-mina": {
+      "ko": "미나",
+      "en": "Lady Mina"
+    },
+    "laurel": {
+      "ko": "라우렐",
+      "en": "Laurel"
+    },
+    "liam": {
+      "ko": "리암",
+      "en": "Liam"
+    },
+    "lightlocke": {
+      "ko": "라트로크",
+      "en": "Lightlocke"
+    },
+    "lili": {
+      "ko": "릴리",
+      "en": "Lili"
+    },
+    "livian": {
+      "ko": "리비안",
+      "en": "Livian"
+    },
+    "lulu": {
+      "ko": "루루",
+      "en": "Lulu"
+    },
+    "luneria": {
+      "ko": "루나레아",
+      "en": "Luneria"
+    },
+    "lust": {
+      "ko": "러스트",
+      "en": "Lust"
+    },
+    "lynx": {
+      "ko": "릴크스",
+      "en": "Lynx"
+    },
+    "marri": {
+      "ko": "마리엘",
+      "en": "Marri"
+    },
+    "maul": {
+      "ko": "모르",
+      "en": "Maul"
+    },
+    "meriel": {
+      "ko": "메리엘",
+      "en": "Meriel"
+    },
+    "morene": {
+      "ko": "모레이나",
+      "en": "Morene"
+    },
+    "moriden": {
+      "ko": "모리던",
+      "en": "Moriden"
+    },
+    "nauvras": {
+      "ko": "나블레스",
+      "en": "Nauvras"
+    },
+    "niro": {
+      "ko": "네로",
+      "en": "Niro"
+    },
+    "nisalt": {
+      "ko": "나사트",
+      "en": "Nisalt"
+    },
+    "nissandei": {
+      "ko": "니상드",
+      "en": "Nissandei"
+    },
+    "oakenvar": {
+      "ko": "오켄바르",
+      "en": "Oakenvar"
+    },
+    "osiren": {
+      "ko": "오스렌",
+      "en": "Osiren"
+    },
+    "pyros": {
+      "ko": "파로스",
+      "en": "Pyros"
+    },
+    "raiden": {
+      "ko": "레이든",
+      "en": "Raiden"
+    },
+    "razaak": {
+      "ko": "레자겔",
+      "en": "Razaak"
+    },
+    "rex": {
+      "ko": "렉스",
+      "en": "Rex"
+    },
+    "rhox": {
+      "ko": "로크스",
+      "en": "Rhox"
+    },
+    "rivenhald": {
+      "ko": "레이븐홀드",
+      "en": "Rivenhald"
+    },
+    "rork": {
+      "ko": "로크",
+      "en": "Rork"
+    },
+    "rygar": {
+      "ko": "레고",
+      "en": "Rygar"
+    },
+    "sadie": {
+      "ko": "사티",
+      "en": "Sadie"
+    },
+    "scorch": {
+      "ko": "스코치",
+      "en": "Scorch"
+    },
+    "selkath": {
+      "ko": "셀카스",
+      "en": "Selkath"
+    },
+    "setram": {
+      "ko": "사트라무",
+      "en": "Setram"
+    },
+    "silas": {
+      "ko": "세라스",
+      "en": "Silas"
+    },
+    "solaris": {
+      "ko": "솔라리스",
+      "en": "Solaris"
+    },
+    "soleil": {
+      "ko": "소레일",
+      "en": "Soleil"
+    },
+    "sorzus": {
+      "ko": "소르제스",
+      "en": "Sorzus"
+    },
+    "su-yue": {
+      "ko": "소설백",
+      "en": "Su Yue"
+    },
+    "sythra": {
+      "ko": "시슬라",
+      "en": "Sythra"
+    },
+    "talula": {
+      "ko": "타롤라",
+      "en": "Talula"
+    },
+    "tazira": {
+      "ko": "타즈라",
+      "en": "Tazira"
+    },
+    "thunkles": {
+      "ko": "상크",
+      "en": "Thunkles"
+    },
+    "titus": {
+      "ko": "티투스",
+      "en": "Titus"
+    },
+    "torodor": {
+      "ko": "톨레도",
+      "en": "Torodor"
+    },
+    "valara": {
+      "ko": "발레리아",
+      "en": "Valara"
+    },
+    "valkyra": {
+      "ko": "바크라",
+      "en": "Valkyra"
+    },
+    "vargus": {
+      "ko": "바르가스",
+      "en": "Vargus"
+    },
+    "varro-draccus": {
+      "ko": "바로드라쿠스",
+      "en": "Varro Draccus"
+    },
+    "vera": {
+      "ko": "베라",
+      "en": "Vera"
+    },
+    "vixera": {
+      "ko": "베신라",
+      "en": "Vixera"
+    },
+    "vlad-draculea": {
+      "ko": "블라드3세",
+      "en": "Vlad Draculea"
+    },
+    "vladov": {
+      "ko": "블라도프",
+      "en": "Vladov"
+    },
+    "volka": {
+      "ko": "볼카",
+      "en": "Volka"
+    },
+    "voltus": {
+      "ko": "볼타스",
+      "en": "Voltus"
+    },
+    "vorn": {
+      "ko": "페르네",
+      "en": "Vorn"
+    },
+    "vortex": {
+      "ko": "와엘",
+      "en": "Vortex"
+    },
+    "xasny": {
+      "ko": "사스니",
+      "en": "Xasny"
+    },
+    "xena": {
+      "ko": "젠나",
+      "en": "Xena"
+    },
+    "zelus": {
+      "ko": "제로스",
+      "en": "Zelus"
+    },
+    "zilitu": {
+      "ko": "제리엘",
+      "en": "Zilitu"
+    }
+  }
 }
