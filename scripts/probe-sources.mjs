@@ -77,20 +77,54 @@ async function fandom(params) {
 
 
 
-// ── 라운드 6: worwiki heroes.json 구조 ────────────────────────────
-section('worwiki heroes.json')
-const hj = await get('https://worwiki.kr/heroes.json', 'application/json')
-console.log(`heroes.json ${hj.status} ${hj.type} len=${hj.text.length}`)
-try {
-  const data = JSON.parse(hj.text)
-  const arr = Array.isArray(data) ? data : data.heroes ?? Object.values(data)
-  console.log(`top-level: ${Array.isArray(data) ? 'array' : 'object keys=' + Object.keys(data).slice(0, 20).join(',')}  count=${arr.length}`)
-  console.log(`keys(0): ${Object.keys(arr[0] ?? {}).join(', ')}`)
-  for (const h of arr.slice(0, 3)) console.log(JSON.stringify(h).slice(0, 1500))
-  const find = (en) => arr.find((h) => JSON.stringify(h).includes(`"${en}"`))
-  for (const en of ['Bayek', 'Veyrathia', 'Garroq', 'Sun Wukong', 'Graves Greybeard', 'Ezio della Notte']) console.log(`${en}: ${JSON.stringify(find(en) ?? null).slice(0, 400)}`)
-} catch (e) {
-  console.log(`parse 실패: ${e.message} / ${hj.text.slice(0, 500)}`)
+// ── 라운드 7: 한글명 없는 35명 재조사 ──────────────────────────────
+const MISSING = ['Amahle', 'Amelia Ainsworth', 'Arlow', 'Aryn', 'Barclay', 'Cuke', 'Duradel', 'Gale', 'Galloway', 'Garroq', 'Ghorza', 'Glen', 'Gnash', 'Gogran', 'Halder', 'Hayden', 'Jonas', 'Josh', 'Lancer', 'Langlyn', 'Lilia', 'Narvi', 'Nunea', 'Ogrul', 'Preter', 'Rhutu', 'Rogers', 'Rorkesh', 'Rum-Nose', 'Ryder', 'Shelor', 'Skreef', 'Skulf', 'Spring', 'Wagrak']
+const slugOf = (en) => en.toLowerCase().replace(/'/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+const ctx = (text, needle, n = 3, w = 250) => {
+  const out = []
+  let i = -1
+  while (out.length < n && (i = text.indexOf(needle, i + 1)) >= 0) out.push(text.slice(Math.max(0, i - w), i + needle.length + w).replace(/\s+/g, ' '))
+  return out
+}
+
+section('worwiki 상세 페이지 직접 조회 (sitemap 미등재 여부)')
+for (const en of MISSING) {
+  const slugs = [...new Set([slugOf(en), en.toLowerCase().replace(/[^a-z0-9]+/g, ''), en.toLowerCase().replace(/[^a-z0-9]+/g, '_')])]
+  for (const slug of slugs) {
+    const r = await get(`https://worwiki.kr/hero/${slug}/`)
+    const og = r.text.match(/property="og:title" content="([^"]+)"/)?.[1]
+    const ld = r.text.match(/"mainEntity"[\s\S]{0,300}/)?.[0]
+    console.log(`${en} /hero/${slug}/ → ${r.status} og=${og ?? '-'} ld=${(ld ?? '-').replace(/\s+/g, ' ').slice(0, 200)}`)
+    if (r.status === 200) break
+  }
+}
+
+section('worwiki 홈 / app.js 에서 영문명 언급')
+const home = await get('https://worwiki.kr/')
+const appSrc = home.text.match(/<script[^>]*src="([^"]*app\.js[^"]*)"/)?.[1] ?? '/app.js'
+const app = await get(new URL(appSrc, 'https://worwiki.kr/').href, '*/*')
+console.log(`home ${home.status} len=${home.text.length} / app ${appSrc} ${app.status} len=${app.text.length}`)
+for (const en of MISSING) {
+  const hits = [...ctx(home.text, en, 1, 200).map((c) => 'home: ' + c), ...ctx(app.text, en, 2, 200).map((c) => 'app: ' + c)]
+  console.log(`\n[${en}] ${hits.length ? hits.join('\n   ') : '없음'}`)
+}
+
+section('나무위키 / 기타 한글 출처')
+for (const url of [
+  'https://namu.wiki/w/%EC%9B%8C%EC%B2%98%20%EC%98%A4%EB%B8%8C%20%EB%A0%90%EB%A6%84/%EC%98%81%EC%9B%85',
+  'https://namu.wiki/w/%EC%9B%8C%EC%B2%98%20%EC%98%A4%EB%B8%8C%20%EB%A0%90%EB%A6%84',
+  `${OFFICIAL}/ko`,
+  `${OFFICIAL}/ko/heroes`,
+]) {
+  const r = await get(url)
+  const t = strip(r.text)
+  console.log(`\n### ${url} → ${r.status} len=${r.text.length} final=${r.url}`)
+  console.log(`title: ${r.text.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.trim() ?? '-'}`)
+  for (const en of ['Amahle', 'Garroq', 'Rorkesh', 'Galloway', 'Lancer', 'Gnash']) {
+    const c = ctx(r.text, en, 1, 150)
+    if (c.length) console.log(`  ${en}: ${c[0]}`)
+  }
+  console.log(`text: ${t.slice(0, 600)}`)
 }
 
 console.log('\n(probe 끝)')
