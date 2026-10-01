@@ -147,6 +147,47 @@ export const manualHeroNameKo: Record<string, string> = {
 
   // ─────── worwiki 영문 표기가 fandom 과 달라 자동 매칭 안 되는 영웅 ───────
   akira: '아키라', // worwiki: AkiraStar
+
+  // ─────── worwiki 미등재 — 영문 발음 음역 (추정, 인게임 표기 확인되면 교체) ───────
+  // 회색 칼날 신규
+  amelia_ainsworth: '아멜리아 에인즈워스',
+  galloway: '갤로웨이',
+  garroq: '가로크',
+  rorkesh: '로르케쉬',
+  // Rare
+  amahle: '아말레',
+  aryn: '아린',
+  barclay: '바클레이',
+  cuke: '큐크',
+  duradel: '두라델',
+  ghorza: '고르자',
+  glen: '글렌',
+  gnash: '내쉬',
+  gogran: '고그란',
+  narvi: '나르비',
+  nunea: '누네아',
+  ogrul: '오그룰',
+  rhutu: '루투',
+  shelor: '셸로',
+  skulf: '스컬프',
+  spring: '스프링',
+  // Uncommon
+  arlow: '알로우',
+  halder: '할더',
+  hayden: '헤이든',
+  jonas: '조나스',
+  langlyn: '랭린',
+  preter: '프레터',
+  rogers: '로저스',
+  rum_nose: '럼노즈',
+  ryder: '라이더',
+  skreef: '스크리프',
+  wagrak: '와그락',
+  // Common
+  gale: '게일',
+  josh: '조쉬',
+  lancer: '랜서',
+  lilia: '릴리아',
 }
 
 /** 최종 매핑: 크롤 결과 위에 수동 매핑을 덮어씀 */
