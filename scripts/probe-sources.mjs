@@ -74,31 +74,22 @@ async function fandom(params) {
 
 
 
-// ── 라운드 3: wornuts 배너 페이지 데이터 구조 ───────────────────────
-section('wornuts /en/banners — RSC 페이로드 구조')
-const bp = await get('https://wornuts.com/en/banners')
-const html = bp.text
-console.log(`len=${html.length}`)
-const pushes = [...html.matchAll(/self\.__next_f\.push\(\[1,"((?:[^"\\]|\\.)*)"\]\)/g)].map((m) => JSON.parse(`"${m[1]}"`))
-console.log(`__next_f chunks=${pushes.length}, sizes=${pushes.map((p) => p.length).slice(0, 40).join(',')}`)
-const payload = pushes.join('')
-for (const key of ["Sage's Invocation", 'Sage', '2026-10-02', '"startAt"', '"start', 'featured', 'heroes":[', 'Amelia']) {
-  const i = payload.indexOf(key)
-  console.log(`\n[payload "${key}" @${i}] ${i < 0 ? '' : payload.slice(Math.max(0, i - 1200), i + 1800)}`)
-}
-// HTML 쪽 카드 마크업
-const hi = html.indexOf('Sage')
-console.log(`\n[html Sage @${hi}] ${hi < 0 ? '' : html.slice(Math.max(0, hi - 2500), hi + 1500)}`)
 
-section('wornuts 배너 상세 / 영웅 상세 URL 패턴')
-const links = [...new Set([...html.matchAll(/href="(\/en\/(?:banners|heroes)\/[^"]+)"/g)].map((m) => m[1]))]
-console.log(links.slice(0, 30).join('\n'))
-if (links[0]) {
-  const d = await get(`https://wornuts.com${links.find((l) => l.includes('/banners/')) ?? links[0]}`)
-  const dp = [...d.text.matchAll(/self\.__next_f\.push\(\[1,"((?:[^"\\]|\\.)*)"\]\)/g)].map((m) => JSON.parse(`"${m[1]}"`)).join('')
-  const j = dp.indexOf('hero')
-  console.log(`\n[banner detail len=${d.text.length} payload=${dp.length}] ${dp.slice(Math.max(0, j - 500), j + 3000)}`)
+// ── 라운드 4: worwiki.kr (한글 영웅명 출처 후보) ─────────────────────
+section('worwiki.kr — 구조 / 한글 영웅명')
+const home = await probePage('https://worwiki.kr/', { body: 2500, raw: 3000 })
+for (const path of ['/robots.txt', '/sitemap.xml', '/heroes', '/hero', '/heroes/', '/api/heroes', '/wiki/영웅']) {
+  await probePage(`https://worwiki.kr${encodeURI(path)}`, { scripts: false, body: 2000 })
+}
+// 홈에서 내부 링크 수집
+const internal = [...new Set([...(home.text || '').matchAll(/href="([^"#]+)"/g)].map((m) => m[1]).filter((h) => h.startsWith('/') || h.includes('worwiki.kr')))]
+console.log(`\ninternal links(${internal.length}):\n${internal.slice(0, 80).join('\n')}`)
+// 영웅 관련으로 보이는 첫 링크 2개 열기
+for (const l of internal.filter((h) => /hero|영웅|character|unit/i.test(decodeURI(h))).slice(0, 3)) {
+  const url = new URL(l, 'https://worwiki.kr/').href
+  const r = await probePage(url, { scripts: false, body: 2500, raw: 2500 })
+  const names = [...(r.text || '').matchAll(/>([가-힣][가-힣 ·'\-]{0,14})</g)].map((m) => m[1]).slice(0, 80)
+  console.log(`ko-like texts: ${[...new Set(names)].join(' | ')}`)
 }
 
 console.log('\n(probe 끝)')
-// round 4: 실제 크롤은 probe-sources.yml 의 Crawl on work branch 단계
