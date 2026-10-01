@@ -72,66 +72,45 @@ async function fandom(params) {
   }
 }
 
-// ── 1. 공식 가이드 사이트 (한국어 데이터 여부) ──────────────────────────
-section('1. 공식 가이드 사이트 (skystone) — 한국어/영웅 데이터 API?')
-await probePage(`${OFFICIAL}/worcommunity/heroes/heroDetail?id=3503775`, { raw: 3000 })
-await probePage(`${OFFICIAL}/worcommunity/heroes`, { scripts: false })
-await probePage(`${OFFICIAL}/worcommunity/`, { scripts: false })
-await probePage(`${OFFICIAL}/`, { scripts: false })
-for (const lang of ['ko', 'kr', 'ko-KR']) {
-  await probePage(`${OFFICIAL}/worcommunity/heroes/heroDetail?id=3503775&lang=${lang}`, { scripts: false, body: 600 })
+
+// ── 라운드 2 ─────────────────────────────────────────────────────
+section('A. wornuts.com — 사이트 구조 / API / 언어')
+const wn = await probePage('https://wornuts.com/', { body: 2000, raw: 2500 })
+for (const path of ['/api', '/api/heroes', '/api/banners', '/api/v1/heroes', '/heroes', '/banners', '/demon-soldiers', '/ko', '/en', '/robots.txt', '/sitemap.xml']) {
+  await probePage(`https://wornuts.com${path}`, { scripts: false, body: 1200 })
 }
 
-// ── 2. 배너 출처 후보 ───────────────────────────────────────────────
-section('2. 배너 — prospector 현재 구조 / 대체 출처')
-const pg = await get('https://prospector.gg/wp-json/wp/v2/pages/8803', 'application/json')
-console.log(`prospector REST → ${pg.status} len=${pg.text.length}`)
-try {
-  const j = JSON.parse(pg.text)
-  const html = j?.content?.rendered ?? ''
-  console.log(`modified_gmt=${j.modified_gmt} rendered len=${html.length}`)
-  const i = html.indexOf('data-pgub-start')
-  console.log(`first card raw: ${html.slice(Math.max(0, i - 200), i + 2500)}`)
-} catch {
-  console.log(pg.text.slice(0, 500))
+section('B. 공식 가이드 사이트 — hero 청크의 API 호출부')
+const idx = await get(`${OFFICIAL}/worcommunity/assets/index-Dyum3Q5e.js`, '*/*')
+for (const key of ['/api/gms/data/app/', '/api/gms/source/', '/api/content/inner/query/', 'language', 'lang']) {
+  let from = 0
+  for (let n = 0; n < 3; n++) {
+    const i = idx.text.indexOf(key, from)
+    if (i < 0) break
+    console.log(`\n[index ${key} @${i}] ${idx.text.slice(Math.max(0, i - 400), i + 400)}`)
+    from = i + key.length
+  }
 }
-await probePage('https://prospector.gg/upcoming-hero-banners/', { scripts: false, body: 2500 })
-await probePage('https://prospector.gg/category/wor-updates/', { scripts: false, body: 1500 })
-await probePage('https://www.watcherofrealms.com/', { body: 1000 })
-const banners = await fandom({ action: 'query', list: 'search', srsearch: 'banner summon event 2026', srlimit: 15 })
-console.log('\nfandom search(banner): ' + JSON.stringify(banners?.query?.search?.map((s) => s.title) ?? banners))
-const bannerPage = await fandom({ action: 'parse', page: 'Banner', prop: 'sections|wikitext' })
-console.log('fandom Banner sections: ' + JSON.stringify(bannerPage?.parse?.sections?.map((s) => s.line) ?? bannerPage))
-console.log('fandom Banner wikitext head: ' + String(bannerPage?.parse?.wikitext?.['*'] ?? '').slice(0, 3000))
-
-// ── 3. fandom 신규 문서 (신캐·신규 마병·신규 보스 반영 속도) ─────────────
-section('3. fandom — 최근 생성 문서 / 신규 콘텐츠 존재 여부')
-const created = await fandom({ action: 'query', list: 'logevents', letype: 'create', lenamespace: 0, lelimit: 80 })
-console.log(
-  (created?.query?.logevents ?? []).map((e) => `${e.timestamp.slice(0, 10)} ${e.title}`).join('\n') || JSON.stringify(created),
-)
-const titles = ['Rorkesh', 'Galloway', 'Garroq', 'Amelia Ainsworth', 'Grey Blades', 'Doomripper', 'Blasting Corpse', 'Fallen Covenant', 'Demon Soldier', 'Corven', 'Ruen Hollow']
-const exist = await fandom({ action: 'query', titles: titles.join('|'), redirects: 1, prop: 'pageimages|info' })
-for (const p of Object.values(exist?.query?.pages ?? {})) {
-  console.log(`${p.missing !== undefined ? '✗ 없음' : '✓ 있음'}  ${p.title}${p.touched ? ' touched=' + p.touched : ''}${p.thumbnail ? ' img' : ''}`)
+const heroChunk = await get(`${OFFICIAL}/worcommunity/assets/hero-DqKyI2DG.js`, '*/*')
+console.log(`\nhero chunk ${heroChunk.status} len=${heroChunk.text.length}`)
+for (const key of ['api', 'source', 'query', 'lang']) {
+  let from = 0
+  for (let n = 0; n < 3; n++) {
+    const i = heroChunk.text.indexOf(key, from)
+    if (i < 0) break
+    console.log(`[hero ${key} @${i}] ${heroChunk.text.slice(Math.max(0, i - 250), i + 250)}`)
+    from = i + key.length
+  }
 }
-const gb = await fandom({ action: 'parse', page: 'Grey Blades', prop: 'wikitext' })
-console.log('Grey Blades wikitext: ' + String(gb?.parse?.wikitext?.['*'] ?? JSON.stringify(gb)).slice(0, 2500))
-const ds = await fandom({ action: 'parse', page: 'Demon Soldier', prop: 'wikitext' })
-console.log('Demon Soldier wikitext: ' + String(ds?.parse?.wikitext?.['*'] ?? JSON.stringify(ds)).slice(0, 2500))
 
-// ── 4. 한글명 출처 후보 ────────────────────────────────────────────
-section('4. 한글명 후보')
-await probePage('https://namu.wiki/w/%EC%9B%8C%EC%B2%98%20%EC%98%A4%EB%B8%8C%20%EB%A0%90%EB%A6%84/%EC%98%81%EC%9B%85', { scripts: false, body: 1500 })
-await probePage('https://apps.apple.com/kr/app/id6470362045', { scripts: false, body: 1200 })
-
-// ── 5. 유출 출처 ──────────────────────────────────────────────────
-section('5. 유출 — 텔레그램 공개 채널 미리보기')
-const tg = await get('https://t.me/s/worNuts')
-console.log(`t.me/s/worNuts → ${tg.status} len=${tg.text.length}`)
-const posts = [...tg.text.matchAll(/<div class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>/g)].map((m) => strip(m[1]))
-const dates = [...tg.text.matchAll(/<time[^>]*datetime="([^"]+)"/g)].map((m) => m[1])
-console.log(`posts=${posts.length}, dates=${dates.slice(-5).join(', ')}`)
-posts.slice(-6).forEach((p, i) => console.log(`  [${i}] ${p.slice(0, 400)}`))
+section('C. fandom — Grey Blades 신캐 스탯 기재 여부 (sync-heroes 는 atk/atkinterval 없으면 건너뜀)')
+for (const t of ['Garroq', 'Rorkesh', 'Galloway', 'Amelia Ainsworth', 'Oakenvar']) {
+  const r = await fandom({ action: 'parse', page: t, prop: 'text' })
+  const html = r?.parse?.text?.['*'] ?? ''
+  const field = (k) => html.match(new RegExp(`data-source="${k}"[\\s\\S]*?<div class="pi-data-value pi-font">([\\s\\S]*?)</div>`, 'i'))?.[1]?.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+  console.log(`${t}: rarity=${field('rarity')} class=${field('class')} faction=${field('faction')} atk=${field('atk')} atkinterval=${field('atkinterval')} hp=${field('hp')}`)
+}
+const fs = await fandom({ action: 'parse', page: 'Doomripper', prop: 'wikitext' })
+console.log('Doomripper wikitext: ' + String(fs?.parse?.wikitext?.['*'] ?? '').slice(0, 800))
 
 console.log('\n(probe 끝)')
