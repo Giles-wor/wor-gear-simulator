@@ -5,101 +5,11 @@ export const generatedSchedule: BannerSchedule | null = {
   "source": "wornuts.com",
   "sourceUrl": "https://wornuts.com/en/banners",
   "heroPageUrl": "https://wornuts.com/en/heroes/",
-  "fetchedAt": "2026-10-01T06:42:19.887Z",
-  "sourceModified": "2026-09-30T00:00:00Z",
+  "fetchedAt": "2026-10-12T10:25:35.879Z",
+  "sourceModified": "2026-10-12T00:00:00Z",
   "banners": [
     {
-      "status": "upcoming",
-      "type": "Invocation of Spirits · Divine Summoning",
-      "durationDays": 4,
-      "startUtc": "2026-09-25T07:00:00.000Z",
-      "endUtc": "2026-09-29T07:00:00.000Z",
-      "heroes": [
-        {
-          "name": "Oakenvar",
-          "slug": "oakenvar",
-          "rarity": "legendary",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2361.0b5376.w1009.webp"
-        },
-        {
-          "name": "Guan Yu",
-          "slug": "guan-yu",
-          "rarity": "legendary",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2302.2282be.w865.webp"
-        },
-        {
-          "name": "Hollow",
-          "slug": "hollow",
-          "rarity": "epic",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2103.14c790.w656.webp"
-        },
-        {
-          "name": "Faelin",
-          "slug": "faelin",
-          "rarity": "epic",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2247.b64484.w911.webp"
-        },
-        {
-          "name": "Dalyn",
-          "slug": "dalyn",
-          "rarity": "epic",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2053.42bfe9.w550.webp"
-        }
-      ],
-      "kind": "x20"
-    },
-    {
-      "status": "upcoming",
-      "type": "Ancient Summoning",
-      "durationDays": 3,
-      "startUtc": "2026-09-26T07:00:00.000Z",
-      "endUtc": "2026-09-29T07:00:00.000Z",
-      "heroes": [],
-      "title": "Surprise Ancient Summoning",
-      "kind": "1+1"
-    },
-    {
-      "status": "upcoming",
-      "type": "Invocation of Spirits · Divine Summoning",
-      "durationDays": 3,
-      "startUtc": "2026-10-02T07:00:00.000Z",
-      "endUtc": "2026-10-05T07:00:00.000Z",
-      "heroes": [
-        {
-          "name": "Beatrix",
-          "slug": "beatrix",
-          "rarity": "legendary",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2250.d32f05.w865.webp"
-        },
-        {
-          "name": "\"Graves\" Greybeard",
-          "slug": "graves-greybeard",
-          "rarity": "legendary",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2319.2361e8.w210.webp"
-        },
-        {
-          "name": "Aveline",
-          "slug": "aveline",
-          "rarity": "epic",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2087.1c8d63.w566.webp"
-        },
-        {
-          "name": "Azzoth",
-          "slug": "azzoth",
-          "rarity": "epic",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2141.7e7f7d.w657.webp"
-        },
-        {
-          "name": "Idril",
-          "slug": "idril",
-          "rarity": "epic",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2097.a57a8c.w528.webp"
-        }
-      ],
-      "kind": "x20"
-    },
-    {
-      "status": "upcoming",
+      "status": "active",
       "type": "Limited · Invocation of Spirits",
       "durationDays": 5,
       "startUtc": "2026-10-08T07:00:00.000Z",
@@ -123,7 +33,7 @@ export const generatedSchedule: BannerSchedule | null = {
       "limited": true
     },
     {
-      "status": "upcoming",
+      "status": "active",
       "type": "Invocation of Spirits · Divine Summoning",
       "durationDays": 4,
       "startUtc": "2026-10-09T07:00:00.000Z",
@@ -163,7 +73,7 @@ export const generatedSchedule: BannerSchedule | null = {
       "kind": "x20"
     },
     {
-      "status": "upcoming",
+      "status": "active",
       "type": "Ancient Summoning",
       "durationDays": 3,
       "startUtc": "2026-10-10T07:00:00.000Z",
