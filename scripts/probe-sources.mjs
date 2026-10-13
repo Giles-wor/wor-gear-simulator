@@ -77,13 +77,7 @@ async function fandom(params) {
 
 
 
-// ── 라운드 7: Grey Blades 진영 효과 (fandom) ──────────────────────
-section('fandom 검색: Grey Blades / Lord / 진영 악세서리')
-for (const q of ['Grey Blades', 'Grey Blades Lord', 'Grey Blades ring', 'faction accessory set']) {
-  const r = await fandom({ action: 'query', list: 'search', srsearch: q, srlimit: 20 })
-  console.log(`\n[search] ${q}: ${(r.query?.search ?? []).map((x) => x.title).join(' | ') || JSON.stringify(r).slice(0, 300)}`)
-}
-
+// ── 라운드 8: Grey Blades 진영 반지(전용 장비) ──────────────────────
 async function wikitext(title, max = 12000) {
   const r = await fandom({ action: 'parse', page: title, prop: 'wikitext', redirects: 1 })
   const t = r.parse?.wikitext?.['*']
@@ -92,60 +86,39 @@ async function wikitext(title, max = 12000) {
   return t ?? ''
 }
 
-section('fandom 문서: Grey Blades / 진영·영주·악세서리 공용 문서')
-for (const t of ['Grey Blades', 'Factions', 'Faction', 'Lord', 'Lords', 'Accessories', 'Faction Accessories', 'Rings']) {
-  await wikitext(t, 15000)
-}
-
-section('fandom 문서: Grey Blades 영웅 (영주 스킬 확인)')
-for (const t of ['Amelia Ainsworth', 'Corven', 'Galloway', 'Garroq', 'Rorkesh', 'Ruen Hollow']) {
-  const w = await wikitext(t, 0)
-  // 영주/진영 관련 줄만
-  const lines = w.split('\n').filter((l) => /lord|faction|grey blade|ring|accessor/i.test(l))
-  console.log(lines.slice(0, 60).join('\n'))
-}
-
-section('비교용: 기존 진영(Watchguard) 영주 Ingrid 문서의 영주 관련 줄')
+section('fandom: Exclusive Gear 문서 (Grey Blades 주변 + 기존 진영 형식 비교)')
 {
-  const w = await wikitext('Ingrid', 0)
-  console.log(w.split('\n').filter((l) => /lord|faction|ring|accessor/i.test(l)).slice(0, 40).join('\n'))
+  const w = await wikitext('Exclusive Gear', 0)
+  const lines = w.split('\n')
+  lines.forEach((l, i) => {
+    if (/grey blade/i.test(l)) console.log(`[${i}] ` + lines.slice(Math.max(0, i - 3), i + 12).join('\n'))
+  })
+  console.log('\n--- Watchguard 주변(형식 비교) ---')
+  const wi = lines.findIndex((l) => /watchguard/i.test(l))
+  if (wi >= 0) console.log(lines.slice(Math.max(0, wi - 3), wi + 15).join('\n'))
+  console.log('\n--- 문서 앞부분 ---\n' + w.slice(0, 3000))
 }
 
-// ── 라운드 7: 유출 정보 출처 (텔레그램 @worNuts 공개 미리보기) ─────────
-section('Telegram t.me/s/worNuts — 최근 게시물')
-{
-  const posts = []
-  let before = ''
-  for (let page = 0; page < 8; page++) {
-    const r = await get(`https://t.me/s/worNuts${before ? `?before=${before}` : ''}`)
-    console.log(`page ${page}: HTTP ${r.status} len=${r.text.length}`)
-    const blocks = r.text.split('tgme_widget_message_wrap').slice(1)
-    if (!blocks.length) break
-    const got = blocks.map((b) => {
-      const id = b.match(/data-post="worNuts\/(\d+)"/)?.[1]
-      const date = b.match(/datetime="([^"]+)"/)?.[1]
-      const text = strip(b.match(/tgme_widget_message_text[^>]*>([\s\S]*?)<\/div>/)?.[1] ?? '')
-      const photos = [...b.matchAll(/background-image:url\('([^']+)'\)/g)].map((m) => m[1]).filter((u) => !/emoji|userpic/i.test(u))
-      return { id: Number(id), date, text, photos }
-    })
-    posts.push(...got)
-    const minId = Math.min(...got.map((p) => p.id).filter(Boolean))
-    if (!Number.isFinite(minId)) break
-    before = String(minId)
-    if (got.some((p) => p.date && p.date < '2026-06-20')) break
-  }
-  const uniq = [...new Map(posts.map((p) => [p.id, p])).values()].sort((a, b) => b.id - a.id)
-  console.log(`게시물 ${uniq.length}개`)
-  for (const p of uniq) {
-    console.log(`\n--- #${p.id} ${p.date} photos=${p.photos.length}`)
-    console.log(p.text.slice(0, 2500))
-    if (p.photos.length) console.log(`photos: ${p.photos.slice(0, 10).join('  ')}`)
-  }
+section('fandom: Grey Blades 영웅 문서의 faction_excl 필드')
+for (const t of ['Amelia Ainsworth', 'Galloway', 'Garroq', 'Rorkesh', 'Corven', 'Ruen Hollow']) {
+  const r = await fandom({ action: 'parse', page: t, prop: 'wikitext', redirects: 1 })
+  const w = r.parse?.wikitext?.['*'] ?? ''
+  console.log(`\n${t}: ` + (w.split('\n').filter((l) => /excl/i.test(l)).join('\n') || '(excl 없음)'))
 }
 
-section('wornuts.com 유출/신캐 페이지 후보')
-for (const u of ['https://wornuts.com/en/leaks', 'https://wornuts.com/ru/leaks', 'https://wornuts.com/en/heroes', 'https://wornuts.com/en']) {
-  await probePage(u, { body: 2500, scripts: false })
+section('fandom 검색: Grey Blades exclusive / Fulcrum ring')
+for (const q of ['"Grey Blades" exclusive', 'Grey Blades1', 'Sync DMG ring']) {
+  const r = await fandom({ action: 'query', list: 'search', srsearch: q, srlimit: 15, srwhat: 'text' })
+  console.log(`[search] ${q}: ${(r.query?.search ?? []).map((x) => `${x.title} — ${strip(x.snippet ?? '').slice(0, 160)}`).join('\n  ') || JSON.stringify(r).slice(0, 300)}`)
+}
+
+section('wornuts: 장비(gear) 페이지에서 Grey Blades')
+for (const u of ['https://wornuts.com/en/gear', 'https://wornuts.com/en/heroes/amelia-ainsworth', 'https://wornuts.com/en/heroes/galloway']) {
+  const r = await get(u)
+  console.log(`\n### ${u} → HTTP ${r.status} len=${r.text.length}`)
+  const t = strip(r.text)
+  const hits = [...t.matchAll(/.{0,300}(?:Grey Blades|Sync DMG|Lord).{0,500}/gi)].map((m) => m[0])
+  console.log(hits.slice(0, 12).join('\n...\n') || t.slice(0, 1500))
 }
 
 console.log('\n(probe 끝)')
