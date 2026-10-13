@@ -77,48 +77,20 @@ async function fandom(params) {
 
 
 
-// ── 라운드 8: Grey Blades 진영 반지(전용 장비) ──────────────────────
-async function wikitext(title, max = 12000) {
-  const r = await fandom({ action: 'parse', page: title, prop: 'wikitext', redirects: 1 })
-  const t = r.parse?.wikitext?.['*']
-  console.log(`\n### [wikitext] ${title} → ${t ? `len=${t.length}` : JSON.stringify(r).slice(0, 300)}`)
-  if (t) console.log(t.slice(0, max))
-  return t ?? ''
-}
-
-section('fandom: Exclusive Gear 문서 (Grey Blades 주변 + 기존 진영 형식 비교)')
-{
-  const w = await wikitext('Exclusive Gear', 0)
-  const lines = w.split('\n')
-  lines.forEach((l, i) => {
-    if (/grey blade/i.test(l)) console.log(`[${i}] ` + lines.slice(Math.max(0, i - 3), i + 12).join('\n'))
-  })
-  console.log('\n--- Watchguard 주변(형식 비교) ---')
-  const wi = lines.findIndex((l) => /watchguard/i.test(l))
-  if (wi >= 0) console.log(lines.slice(Math.max(0, wi - 3), wi + 15).join('\n'))
-  console.log('\n--- 문서 앞부분 ---\n' + w.slice(0, 3000))
-}
-
-section('fandom: Grey Blades 영웅 문서의 faction_excl 필드')
-for (const t of ['Amelia Ainsworth', 'Galloway', 'Garroq', 'Rorkesh', 'Corven', 'Ruen Hollow']) {
-  const r = await fandom({ action: 'parse', page: t, prop: 'wikitext', redirects: 1 })
-  const w = r.parse?.wikitext?.['*'] ?? ''
-  console.log(`\n${t}: ` + (w.split('\n').filter((l) => /excl/i.test(l)).join('\n') || '(excl 없음)'))
-}
-
-section('fandom 검색: Grey Blades exclusive / Fulcrum ring')
-for (const q of ['"Grey Blades" exclusive', 'Grey Blades1', 'Sync DMG ring']) {
-  const r = await fandom({ action: 'query', list: 'search', srsearch: q, srlimit: 15, srwhat: 'text' })
-  console.log(`[search] ${q}: ${(r.query?.search ?? []).map((x) => `${x.title} — ${strip(x.snippet ?? '').slice(0, 160)}`).join('\n  ') || JSON.stringify(r).slice(0, 300)}`)
-}
-
-section('wornuts: 장비(gear) 페이지에서 Grey Blades')
-for (const u of ['https://wornuts.com/en/gear', 'https://wornuts.com/en/heroes/amelia-ainsworth', 'https://wornuts.com/en/heroes/galloway']) {
-  const r = await get(u)
-  console.log(`\n### ${u} → HTTP ${r.status} len=${r.text.length}`)
-  const t = strip(r.text)
-  const hits = [...t.matchAll(/.{0,300}(?:Grey Blades|Sync DMG|Lord).{0,500}/gi)].map((m) => m[0])
-  console.log(hits.slice(0, 12).join('\n...\n') || t.slice(0, 1500))
+// ── 라운드 6: worwiki heroes.json 구조 ────────────────────────────
+section('worwiki heroes.json')
+const hj = await get('https://worwiki.kr/heroes.json', 'application/json')
+console.log(`heroes.json ${hj.status} ${hj.type} len=${hj.text.length}`)
+try {
+  const data = JSON.parse(hj.text)
+  const arr = Array.isArray(data) ? data : data.heroes ?? Object.values(data)
+  console.log(`top-level: ${Array.isArray(data) ? 'array' : 'object keys=' + Object.keys(data).slice(0, 20).join(',')}  count=${arr.length}`)
+  console.log(`keys(0): ${Object.keys(arr[0] ?? {}).join(', ')}`)
+  for (const h of arr.slice(0, 3)) console.log(JSON.stringify(h).slice(0, 1500))
+  const find = (en) => arr.find((h) => JSON.stringify(h).includes(`"${en}"`))
+  for (const en of ['Bayek', 'Veyrathia', 'Garroq', 'Sun Wukong', 'Graves Greybeard', 'Ezio della Notte']) console.log(`${en}: ${JSON.stringify(find(en) ?? null).slice(0, 400)}`)
+} catch (e) {
+  console.log(`parse 실패: ${e.message} / ${hj.text.slice(0, 500)}`)
 }
 
 console.log('\n(probe 끝)')

@@ -66,6 +66,7 @@ export const factionAccessoryEffects: Record<string, FactionAccessoryEffect> = {
     summary: '배치 시 ATK +5%',
     atkPctBonus: 0.05,
   },
+  // Grey Blades: 진영 반지는 위키(Exclusive Gear)·wornuts 에 아직 없음 (2026-10-13 조사). 확인되면 추가.
   chaos_dominion: {
     id: 'chaos_dominion',
     faction: 'Chaos Dominion',
