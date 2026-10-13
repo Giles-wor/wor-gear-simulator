@@ -10,13 +10,19 @@
 //   npm run sync:hero-icons            ← 프로필 없는 영웅만 받고, 목록에서 빠진 영웅 프로필은 삭제
 //   npm run sync:hero-icons -- --force ← 전부 다시 받기
 // (앱은 프로필 파일이 없으면 줄임 이름 텍스트로 표시 — 폴백)
+// 받은 이미지는 세로 카드라서 ImageMagick(convert)이 있으면 위쪽(얼굴) 기준 128px 정사각형 webp 로 줄여 저장.
 //
 // 슬러그 규칙은 guild/defenseHeroes.ts 의 heroKey 와 동일.
-import { readFile, writeFile, mkdir, readdir, unlink } from 'node:fs/promises'
+import { readFile, writeFile, mkdir, readdir, unlink, rename } from 'node:fs/promises'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import { fileURLToPath } from 'node:url'
 import { parseWornuts } from './sync-banners.mjs'
 
 const UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36 wor-gear-simulator'
+// fandom 이미지 서버(static.wikia)는 브라우저형 UA 를 403 으로 막음 → 마병 크롤과 같은 봇 UA 사용
+const BOT_UA = 'wor-gear-simulator/0.1 (+https://github.com/Giles-wor/wor-gear-simulator)'
 const WORNUTS_BANNERS = 'https://wornuts.com/en/banners'
 const WORNUTS_HERO = 'https://wornuts.com/en/heroes/'
 const FANDOM_API = 'https://watcher-of-realms.fandom.com/api.php'
@@ -30,8 +36,10 @@ const heroKey = (name) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
 
+const uaFor = (url) => (/wornuts\.com/.test(url) ? UA : BOT_UA)
+
 async function fetchText(url) {
-  const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'text/html,application/json' } })
+  const res = await fetch(url, { headers: { 'User-Agent': uaFor(url), Accept: 'text/html,application/json' } })
   if (!res.ok) throw new Error(`HTTP ${res.status} (${url})`)
   return res.text()
 }
@@ -54,12 +62,21 @@ async function bannerPortraits() {
   return map
 }
 
-/** 2) 영웅 상세 페이지: og:image 가 head card 면 그것, 아니면 첫 head card */
+/** 2) 영웅 상세 페이지: og:image 가 head card 면 그것, 아니면 첫 head card. 슬러그는 칭호(lady-/count- 등) 뺀 것도 시도. */
 async function heroPagePortrait(slug) {
-  const html = await fetchText(WORNUTS_HERO + slug)
-  const og = html.match(/<meta[^>]+property="og:image"[^>]+content="([^"]+)"/i)?.[1]
-  if (og && /hero_head_card/.test(og)) return og
-  return html.match(HEAD_RE)?.[0] ?? null
+  const tries = [slug, slug.replace(/^(lady|lord|count|knight|captain|admiral|king|dr)-/, '')]
+  for (const s of [...new Set(tries)]) {
+    try {
+      const html = await fetchText(WORNUTS_HERO + s)
+      const og = html.match(/<meta[^>]+property="og:image"[^>]+content="([^"]+)"/i)?.[1]
+      if (og && /hero_head_card/.test(og)) return og
+      const first = html.match(HEAD_RE)?.[0]
+      if (first) return first
+    } catch (e) {
+      console.warn(`  wornuts 영웅 페이지 ${s}: ${e.message}`)
+    }
+  }
+  return null
 }
 
 /** 3) fandom 위키 대표 이미지 */
@@ -85,9 +102,34 @@ function extOf(url) {
 }
 
 async function download(url, dest) {
-  const res = await fetch(url, { headers: { 'User-Agent': UA } })
+  const res = await fetch(url, { headers: { 'User-Agent': uaFor(url) } })
   if (!res.ok) throw new Error(`IMG ${res.status} (${url})`)
   await writeFile(dest, Buffer.from(await res.arrayBuffer()))
+}
+
+const SIZE = 128
+/** 위쪽 기준 정사각형으로 잘라 SIZE px webp 로. convert 가 없거나 실패하면 원본 그대로(파일명 반환). */
+async function shrink(src, slug) {
+  const out = new URL(`${slug}.webp`, OUT_DIR)
+  const tmp = new URL(`${slug}.tmp.webp`, OUT_DIR)
+  try {
+    await promisify(execFile)('convert', [
+      fileURLToPath(src),
+      '-resize', `${SIZE}x`,
+      '-background', 'none',
+      '-gravity', 'north',
+      '-extent', `${SIZE}x${SIZE}`,
+      '-quality', '85',
+      fileURLToPath(tmp),
+    ])
+    if (src.href !== out.href) await unlink(src)
+    await rename(tmp, out)
+    return `${slug}.webp`
+  } catch (e) {
+    await unlink(tmp).catch(() => {})
+    console.warn(`  (축소 생략: ${e.message.split('\n')[0]})`)
+    return src.pathname.split('/').pop()
+  }
 }
 
 const FORCE = process.argv.includes('--force')
@@ -122,7 +164,7 @@ for (const { nick, name } of todo) {
   try {
     if (!url) {
       src = 'wornuts 영웅 페이지'
-      url = await heroPagePortrait(slug).catch(() => null)
+      url = await heroPagePortrait(slug)
     }
     if (!url) {
       src = 'fandom'
@@ -134,9 +176,10 @@ for (const { nick, name } of todo) {
       continue
     }
     for (const f of files.filter((f) => slugOf(f) === slug)) await unlink(new URL(f, OUT_DIR)).catch(() => {})
-    const file = `${slug}.${extOf(url)}`
-    await download(url, new URL(file, OUT_DIR))
-    console.log(`✓ ${nick} (${name}) ← ${src}: ${url}`)
+    const raw = new URL(`${slug}.${extOf(url)}`, OUT_DIR)
+    await download(url, raw)
+    const file = await shrink(raw, slug)
+    console.log(`✓ ${nick} (${name}) → ${file} ← ${src}: ${url}`)
     ok++
   } catch (e) {
     console.warn(`✗ ${nick} (${name}): ${e.message}`)
