@@ -5,11 +5,19 @@ import { ResponsiveTable, cellOf, titleColIndex } from './components/ResponsiveT
 import { ContentEditor } from './components/ContentEditor'
 import { decryptContent, encryptContent, guildIdFromCode } from './crypto'
 import { ensureSoldierTable, soldierIcon, SOLDIERS, SOLDIER_TABLE_TITLE } from './soldiers'
+import {
+  awakenLabel,
+  DEFENSE_HEROES,
+  DEFENSE_TABLE_TITLE,
+  defenseHeroIcon,
+  ensureDefenseTable,
+} from './defenseHeroes'
+import { memberValues } from './memberTable'
 import { migrateMainTable, MAIN_HEADERS } from './migrate'
 import { parseNum } from './thresholds'
 import { loadRemoteBlob, saveRemoteBlob, supabaseEnabled, LEGACY_ID } from './supabase'
 import { mergeMemberChanges } from './merge'
-import type { EncryptedBlob, GuildContent, GuildTable } from './types'
+import type { EncryptedBlob, GuildContent } from './types'
 import bundledBlob from './data/content.encrypted.json'
 
 const SEED = bundledBlob as EncryptedBlob
@@ -72,7 +80,7 @@ function freshContent(): GuildContent {
 }
 
 function prepare(content: GuildContent): GuildContent {
-  return ensureSoldierTable({ ...content, tables: content.tables.map(migrateMainTable) })
+  return ensureDefenseTable(ensureSoldierTable({ ...content, tables: content.tables.map(migrateMainTable) }))
 }
 
 /**
@@ -248,21 +256,8 @@ function LockScreen({
   )
 }
 
-/** 마병 표에서 멤버별 레벨 맵 추출. */
-function buildSoldierLevels(soldierTable?: GuildTable): Map<string, Record<string, string>> {
-  const map = new Map<string, Record<string, string>>()
-  if (!soldierTable) return map
-  const tc = titleColIndex(soldierTable.headers)
-  soldierTable.rows.forEach((r) => {
-    const name = cellOf(r[tc] ?? '').v
-    const lv: Record<string, string> = {}
-    soldierTable.headers.forEach((h, ci) => {
-      if (ci !== tc) lv[h] = cellOf(r[ci] ?? '').v
-    })
-    map.set(name, lv)
-  })
-  return map
-}
+/** 헤더 아이콘: 마병 → 방어덱 영웅 순. */
+const headerIcon = (h: string) => soldierIcon(h) ?? defenseHeroIcon(h)
 
 /** 길드원 패널 안에 들어가는 마병 한 줄 strip(아이콘 + 레벨, 끝에 계). */
 function MarStrip({ levels }: { levels?: Record<string, string> }) {
@@ -288,6 +283,24 @@ function MarStrip({ levels }: { levels?: Record<string, string> }) {
   )
 }
 
+/** 길드원 패널 안에 들어가는 길드전 방어덱 영웅 각성 strip(프로필 + 각성, 미보유 X). */
+function DefStrip({ values }: { values?: Record<string, string> }) {
+  return (
+    <div className="marStrip defStrip">
+      {DEFENSE_HEROES.map((h) => {
+        const icon = defenseHeroIcon(h.name)
+        const v = awakenLabel(values?.[h.name] ?? '')
+        return (
+          <span key={h.name} className={v === 'X' ? 'marItem defItem none' : 'marItem defItem'} title={`${h.nick} (${h.name})`}>
+            {icon ? <img src={icon} alt={h.nick} loading="lazy" /> : <span className="marAbbr">{h.nick}</span>}
+            <b className={v === 'X' ? 'marLv empty' : 'marLv'}>{v}</b>
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
 function ReadView({
   content,
   onShot,
@@ -298,12 +311,20 @@ function ReadView({
   onEditMember: (name: string) => void
 }) {
   const soldierTable = content.tables.find((t) => t.title === SOLDIER_TABLE_TITLE)
-  const levels = buildSoldierLevels(soldierTable)
-  // 마병 표는 별도 표로 보여주지 않고, 각 멤버 패널 안에 strip 으로 삽입.
-  const tables = content.tables.filter((t) => t.title !== SOLDIER_TABLE_TITLE)
-  const marExtra = soldierTable
-    ? (name: string) => <MarStrip levels={levels.get(name)} />
-    : undefined
+  const defenseTable = content.tables.find((t) => t.title === DEFENSE_TABLE_TITLE)
+  const levels = memberValues(soldierTable)
+  const awakens = memberValues(defenseTable)
+  // 마병·방어덱 표는 별도 표로 보여주지 않고, 각 멤버 패널 안에 strip 으로 삽입(마병 아래 방어덱).
+  const tables = content.tables.filter((t) => t.title !== SOLDIER_TABLE_TITLE && t.title !== DEFENSE_TABLE_TITLE)
+  const marExtra =
+    soldierTable || defenseTable
+      ? (name: string) => (
+          <>
+            {soldierTable && <MarStrip levels={levels.get(name)} />}
+            {defenseTable && <DefStrip values={awakens.get(name)} />}
+          </>
+        )
+      : undefined
 
   return (
     <>
@@ -323,7 +344,7 @@ function ReadView({
             <ResponsiveTable
               table={table}
               fallbackDate={content.updatedAt}
-              headerIcon={soldierIcon}
+              headerIcon={headerIcon}
               memberExtra={marExtra}
               onMemberClick={onEditMember}
             />
@@ -559,7 +580,7 @@ export default function App() {
               busy={saving}
               error={saveError}
               canPublish={supabaseEnabled()}
-              headerIcon={soldierIcon}
+              headerIcon={headerIcon}
             />
           ) : (
             <ReadView

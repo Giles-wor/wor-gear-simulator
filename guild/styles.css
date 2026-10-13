@@ -926,3 +926,50 @@ td.guildColName .guildMemberLink {
     transform: none;
   }
 }
+
+/* 길드전 방어덱 영웅 각성 — 읽기 화면 strip(마병 strip 아래) */
+.defStrip {
+  margin-top: 6px;
+}
+.defItem {
+  width: 26px;
+}
+.defItem img {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+.defItem.none img {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+.defItem .marAbbr {
+  font-size: 0.6rem;
+  color: #c9b69f;
+  white-space: nowrap;
+}
+/* 방어덱 편집: 프로필 + 줄임 이름 + 각성 선택 */
+.guildEditMemberGrid.defense .guildEditFieldLabel {
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.guildEditMemberGrid.defense .guildHeaderIcon.sm {
+  border-radius: 50%;
+}
+.guildDefNick {
+  font-size: 0.72rem;
+  color: #c9b69f;
+}
+.guildEditField select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 6px 4px;
+  border-radius: 7px;
+  border: 1px solid rgba(231, 166, 95, 0.28);
+  background: rgba(12, 10, 9, 0.55);
+  color: #e7d6c6;
+  font-size: 0.95rem;
+  text-align: center;
+}

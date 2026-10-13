@@ -50,6 +50,10 @@ jobs:
         run: npm run sync:soldiers
         continue-on-error: true
 
+      - name: Sync 방어덱 영웅 프로필 (없는 것만 받고, 목록에서 빠진 것은 삭제)
+        run: npm run sync:hero-icons
+        continue-on-error: true
+
       - name: Typecheck
         run: |
           npm run typecheck
@@ -71,8 +75,9 @@ jobs:
             summon/data/banners.generated.ts
             banners/data/schedule.generated.ts
             guild/assets/soldiers
+            guild/assets/heroes
           body: |
-            자동 크롤 갱신 (sync:heroes / sync:summon / sync:banners / sync:names-ko / sync:soldiers).
+            자동 크롤 갱신 (sync:heroes / sync:summon / sync:banners / sync:names-ko / sync:soldiers / sync:hero-icons).
             소환율·배너 파싱은 best-effort 이며 소스 차단/구조 변경 시 기존 데이터 유지.
           delete-branch: true
 
