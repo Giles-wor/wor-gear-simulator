@@ -5,7 +5,7 @@ export const generatedSchedule: BannerSchedule | null = {
   "source": "wornuts.com",
   "sourceUrl": "https://wornuts.com/en/banners",
   "heroPageUrl": "https://wornuts.com/en/heroes/",
-  "fetchedAt": "2026-10-13T03:24:58.896Z",
+  "fetchedAt": "2026-10-13T03:34:10.413Z",
   "sourceModified": "2026-10-12T00:00:00Z",
   "banners": [
     {
