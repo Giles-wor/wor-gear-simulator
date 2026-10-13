@@ -77,20 +77,75 @@ async function fandom(params) {
 
 
 
-// ── 라운드 6: worwiki heroes.json 구조 ────────────────────────────
-section('worwiki heroes.json')
-const hj = await get('https://worwiki.kr/heroes.json', 'application/json')
-console.log(`heroes.json ${hj.status} ${hj.type} len=${hj.text.length}`)
-try {
-  const data = JSON.parse(hj.text)
-  const arr = Array.isArray(data) ? data : data.heroes ?? Object.values(data)
-  console.log(`top-level: ${Array.isArray(data) ? 'array' : 'object keys=' + Object.keys(data).slice(0, 20).join(',')}  count=${arr.length}`)
-  console.log(`keys(0): ${Object.keys(arr[0] ?? {}).join(', ')}`)
-  for (const h of arr.slice(0, 3)) console.log(JSON.stringify(h).slice(0, 1500))
-  const find = (en) => arr.find((h) => JSON.stringify(h).includes(`"${en}"`))
-  for (const en of ['Bayek', 'Veyrathia', 'Garroq', 'Sun Wukong', 'Graves Greybeard', 'Ezio della Notte']) console.log(`${en}: ${JSON.stringify(find(en) ?? null).slice(0, 400)}`)
-} catch (e) {
-  console.log(`parse 실패: ${e.message} / ${hj.text.slice(0, 500)}`)
+// ── 라운드 7: Grey Blades 진영 효과 (fandom) ──────────────────────
+section('fandom 검색: Grey Blades / Lord / 진영 악세서리')
+for (const q of ['Grey Blades', 'Grey Blades Lord', 'Grey Blades ring', 'faction accessory set']) {
+  const r = await fandom({ action: 'query', list: 'search', srsearch: q, srlimit: 20 })
+  console.log(`\n[search] ${q}: ${(r.query?.search ?? []).map((x) => x.title).join(' | ') || JSON.stringify(r).slice(0, 300)}`)
+}
+
+async function wikitext(title, max = 12000) {
+  const r = await fandom({ action: 'parse', page: title, prop: 'wikitext', redirects: 1 })
+  const t = r.parse?.wikitext?.['*']
+  console.log(`\n### [wikitext] ${title} → ${t ? `len=${t.length}` : JSON.stringify(r).slice(0, 300)}`)
+  if (t) console.log(t.slice(0, max))
+  return t ?? ''
+}
+
+section('fandom 문서: Grey Blades / 진영·영주·악세서리 공용 문서')
+for (const t of ['Grey Blades', 'Factions', 'Faction', 'Lord', 'Lords', 'Accessories', 'Faction Accessories', 'Rings']) {
+  await wikitext(t, 15000)
+}
+
+section('fandom 문서: Grey Blades 영웅 (영주 스킬 확인)')
+for (const t of ['Amelia Ainsworth', 'Corven', 'Galloway', 'Garroq', 'Rorkesh', 'Ruen Hollow']) {
+  const w = await wikitext(t, 0)
+  // 영주/진영 관련 줄만
+  const lines = w.split('\n').filter((l) => /lord|faction|grey blade|ring|accessor/i.test(l))
+  console.log(lines.slice(0, 60).join('\n'))
+}
+
+section('비교용: 기존 진영(Watchguard) 영주 Ingrid 문서의 영주 관련 줄')
+{
+  const w = await wikitext('Ingrid', 0)
+  console.log(w.split('\n').filter((l) => /lord|faction|ring|accessor/i.test(l)).slice(0, 40).join('\n'))
+}
+
+// ── 라운드 7: 유출 정보 출처 (텔레그램 @worNuts 공개 미리보기) ─────────
+section('Telegram t.me/s/worNuts — 최근 게시물')
+{
+  const posts = []
+  let before = ''
+  for (let page = 0; page < 8; page++) {
+    const r = await get(`https://t.me/s/worNuts${before ? `?before=${before}` : ''}`)
+    console.log(`page ${page}: HTTP ${r.status} len=${r.text.length}`)
+    const blocks = r.text.split('tgme_widget_message_wrap').slice(1)
+    if (!blocks.length) break
+    const got = blocks.map((b) => {
+      const id = b.match(/data-post="worNuts\/(\d+)"/)?.[1]
+      const date = b.match(/datetime="([^"]+)"/)?.[1]
+      const text = strip(b.match(/tgme_widget_message_text[^>]*>([\s\S]*?)<\/div>/)?.[1] ?? '')
+      const photos = [...b.matchAll(/background-image:url\('([^']+)'\)/g)].map((m) => m[1]).filter((u) => !/emoji|userpic/i.test(u))
+      return { id: Number(id), date, text, photos }
+    })
+    posts.push(...got)
+    const minId = Math.min(...got.map((p) => p.id).filter(Boolean))
+    if (!Number.isFinite(minId)) break
+    before = String(minId)
+    if (got.some((p) => p.date && p.date < '2026-06-20')) break
+  }
+  const uniq = [...new Map(posts.map((p) => [p.id, p])).values()].sort((a, b) => b.id - a.id)
+  console.log(`게시물 ${uniq.length}개`)
+  for (const p of uniq) {
+    console.log(`\n--- #${p.id} ${p.date} photos=${p.photos.length}`)
+    console.log(p.text.slice(0, 2500))
+    if (p.photos.length) console.log(`photos: ${p.photos.slice(0, 10).join('  ')}`)
+  }
+}
+
+section('wornuts.com 유출/신캐 페이지 후보')
+for (const u of ['https://wornuts.com/en/leaks', 'https://wornuts.com/ru/leaks', 'https://wornuts.com/en/heroes', 'https://wornuts.com/en']) {
+  await probePage(u, { body: 2500, scripts: false })
 }
 
 console.log('\n(probe 끝)')
