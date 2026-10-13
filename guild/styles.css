@@ -932,16 +932,16 @@ td.guildColName .guildMemberLink {
   margin-top: 6px;
 }
 .defItem {
-  width: 26px;
+  width: 30px;
 }
 .defItem img {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
 }
 .defItem.none img {
-  opacity: 0.35;
-  filter: grayscale(1);
+  opacity: 0.45;
+  filter: grayscale(0.85);
 }
 .defItem .marAbbr {
   font-size: 0.6rem;
@@ -955,6 +955,8 @@ td.guildColName .guildMemberLink {
   gap: 2px;
 }
 .guildEditMemberGrid.defense .guildHeaderIcon.sm {
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
 }
 .guildDefNick {
@@ -972,4 +974,10 @@ td.guildColName .guildMemberLink {
   color: #e7d6c6;
   font-size: 0.95rem;
   text-align: center;
+}
+@media (min-width: 641px) {
+  .guildEditMemberGrid.defense .guildHeaderIcon.sm {
+    width: 46px;
+    height: 46px;
+  }
 }
