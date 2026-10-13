@@ -48,14 +48,17 @@ export type LeakHero = {
   portrait: string
   /** 원문 스크린샷 (검증용) */
   shots: string[]
+  /** 정식 출시된 경우 출시 영문명 (시뮬레이터에 반영됨). 유출 당시 내용이라 실제와 다를 수 있음. */
+  releasedAs?: string
 }
 
 export const leakSourceCredit = 'Telegram @worNuts (러시아어 원문)'
-export const leakUpdatedAt = '2026-06-24'
+export const leakUpdatedAt = '2026-10-13'
 
 export const leakHeroes: LeakHero[] = [
   {
     key: 'vera',
+    releasedAs: 'Vera',
     nameKo: '베라',
     nameRu: 'Вера',
     titleKo: '황야의 조준경 (Оптика Пустоши)',
@@ -195,6 +198,7 @@ export const leakHeroes: LeakHero[] = [
   },
   {
     key: 'kainan',
+    releasedAs: 'Cainan',
     nameKo: '카이난',
     nameRu: 'Кайнан',
     titleKo: '인정받지 못한 후계자 (Непризнанный Наследник)',
@@ -263,6 +267,7 @@ export const leakHeroes: LeakHero[] = [
   },
   {
     key: 'aurelius',
+    releasedAs: 'Aurelius Gale',
     nameKo: '아우렐리우스',
     nameRu: 'Аврелий Буреносный',
     titleKo: '불타는 리라 (Пылающая Лира)',
