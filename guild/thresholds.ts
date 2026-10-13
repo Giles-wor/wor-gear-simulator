@@ -17,6 +17,7 @@ export const THRESHOLDS: Record<string, number> = {
   지하성1: 13,
   지하성2: 13,
   지하성3: 13,
+  '타천한 쌍둥이 유해': 43000,
 }
 
 /** 문자열 셀에서 숫자만 파싱. 숫자가 없으면 null. */
