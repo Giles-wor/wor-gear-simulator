@@ -125,7 +125,8 @@ export const leakHeroes: LeakHero[] = [
   },
   {
     key: 'izabel',
-    nameKo: '이자벨',
+    releasedAs: 'Jezebelle',
+    nameKo: '지제벨 (유출명 이자벨)',
     nameRu: 'Изабель',
     titleKo: '원죄 (Первородный Грех)',
     rarity: '레전더리(전설)',
