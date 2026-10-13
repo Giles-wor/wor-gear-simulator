@@ -414,6 +414,35 @@ export const lordEffects: Record<string, LordEffect[]> = {
       ],
     },
   ],
+  grey_blades: [
+    {
+      id: 'grey_blades_amelia_ainsworth',
+      faction: 'Grey Blades',
+      name: 'Amelia Ainsworth',
+      sourceName: 'Grey Blades Lord: Amelia Ainsworth',
+      summary: '기본 속성 +15%, Sync 발동마다 Sync 피해 +4%(최대 10중첩)를 최대 조건으로 반영',
+      atkPctBonus: 0.15,
+      damageBonus: 0.4,
+      damageBreakdown: [
+        { label: 'Lord 배치 기본 공격력 보너스', value: 0.15 },
+        { label: 'Sync 피해 (최대 10중첩)', value: 0.4, note: 'Sync 피해에만 붙지만 단순화해 전체 피해로 반영' },
+        { label: '궁극기 중 Sync 쿨타임 -50% / Rage 50% 회복', text: '쿨감 / Rage +', note: 'DPS 식에는 미반영' },
+      ],
+    },
+    {
+      id: 'grey_blades_galloway',
+      faction: 'Grey Blades',
+      name: 'Galloway',
+      sourceName: 'Grey Blades Lord: Galloway',
+      summary: '기본 속성 +10%, Sync 발동마다 Sync 피해 +4%(최대 10중첩)를 최대 조건으로 반영',
+      atkPctBonus: 0.1,
+      damageBonus: 0.4,
+      damageBreakdown: [
+        { label: 'Lord 배치 기본 공격력 보너스 (Epic Lord)', value: 0.1 },
+        { label: 'Sync 피해 (최대 10중첩)', value: 0.4, note: 'Sync 피해에만 붙지만 단순화해 전체 피해로 반영' },
+      ],
+    },
+  ],
 }
 
 export function getLordOptionsForFactions(factions: string[]) {

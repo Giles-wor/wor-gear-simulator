@@ -47,6 +47,7 @@ function HeroSection({ hero, onShot }: { hero: LeakHero; onShot: (src: string, a
             <span className="leakBadge rarity">{hero.rarity}</span>
             <span className="leakBadge">팩션 · {hero.faction}</span>
             <span className="leakBadge">클래스 · {hero.className}</span>
+            {hero.releasedAs && <span className="leakBadge released">✅ 정식 출시 · {hero.releasedAs}</span>}
           </div>
           <div className="leakTags">
             {hero.tags.map((t) => (
@@ -132,6 +133,10 @@ function HeroSection({ hero, onShot }: { hero: LeakHero; onShot: (src: string, a
   )
 }
 
+// 미출시 영웅을 앞에, 정식 출시된 영웅은 뒤로
+const orderedHeroes = [...leakHeroes].sort((a, b) => Number(!!a.releasedAs) - Number(!!b.releasedAs))
+const releasedCount = leakHeroes.filter((h) => h.releasedAs).length
+
 export default function App() {
   const [shot, setShot] = useState<{ src: string; alt: string } | null>(null)
   const openShot = useCallback((src: string, alt: string) => setShot({ src, alt }), [])
@@ -153,26 +158,28 @@ export default function App() {
           <span>
             정식 출시 시 수치·효과·이름이 바뀔 수 있습니다. 일부 원문은 OCR/번역 한계로 추정이 섞여 있어요
             (해당 항목엔 “추정” 표기). 정확한 검증을 위해 각 영웅 하단에 <b>원문 스크린샷</b>을 함께
-            실었습니다. 출처: {leakSourceCredit} · 정리일 {leakUpdatedAt}.
+            실었습니다. ✅ 표시는 이미 정식 출시된 영웅으로, 유출 당시 내용이라 실제와 다를 수 있어요. 출처:{' '}
+            {leakSourceCredit} · 정리일 {leakUpdatedAt}.
           </span>
         </div>
         <nav className="leakJump" aria-label="영웅 바로가기">
-          {leakHeroes.map((h) => (
+          {orderedHeroes.map((h) => (
             <a key={h.key} href={`#${h.key}`} className="leakJumpLink">
               {h.nameKo}
+              {h.releasedAs && ' ✅'}
             </a>
           ))}
         </nav>
       </header>
 
       <main className="leakList">
-        {leakHeroes.map((h) => (
+        {orderedHeroes.map((h) => (
           <HeroSection key={h.key} hero={h} onShot={openShot} />
         ))}
       </main>
 
       <footer className="leakFooter">
-        유출 영웅 {leakHeroes.length}명 · 번역 정리 Time 길드 · 원문 {leakSourceCredit}
+        유출 영웅 {leakHeroes.length}명 (정식 출시 {releasedCount}명) · 번역 정리 Time 길드 · 원문 {leakSourceCredit}
       </footer>
 
       {shot && <ShotLightbox src={shot.src} alt={shot.alt} onClose={closeShot} />}
