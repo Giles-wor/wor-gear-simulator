@@ -10,7 +10,7 @@
 //   npm run sync:hero-icons            ← 프로필 없는 영웅만 받고, 목록에서 빠진 영웅 프로필은 삭제
 //   npm run sync:hero-icons -- --force ← 전부 다시 받기
 // (앱은 프로필 파일이 없으면 줄임 이름 텍스트로 표시 — 폴백)
-// 받은 이미지는 세로 카드라서 ImageMagick(convert)이 있으면 위쪽(얼굴) 기준 128px 정사각형 webp 로 줄여 저장.
+// 받은 이미지는 세로 카드라서 ImageMagick/ffmpeg 가 있으면 위쪽(얼굴) 기준 128px 정사각형 webp 로 줄여 저장.
 //
 // 슬러그 규칙은 guild/defenseHeroes.ts 의 heroKey 와 동일.
 import { readFile, writeFile, mkdir, readdir, unlink, rename } from 'node:fs/promises'
@@ -108,28 +108,33 @@ async function download(url, dest) {
 }
 
 const SIZE = 128
-/** 위쪽 기준 정사각형으로 잘라 SIZE px webp 로. convert 가 없거나 실패하면 원본 그대로(파일명 반환). */
+const run = promisify(execFile)
+/** 이미지 변환 도구 후보(러너마다 있는 게 달라 순서대로 시도): ImageMagick 7 → 6 → ffmpeg */
+const SHRINKERS = [
+  (i, o) => run('magick', [i, '-resize', `${SIZE}x`, '-background', 'none', '-gravity', 'north', '-extent', `${SIZE}x${SIZE}`, '-quality', '85', o]),
+  (i, o) => run('convert', [i, '-resize', `${SIZE}x`, '-background', 'none', '-gravity', 'north', '-extent', `${SIZE}x${SIZE}`, '-quality', '85', o]),
+  // 가로를 SIZE 로 맞춘 뒤 위쪽 정사각형만 (세로가 더 짧으면 그만큼만)
+  (i, o) => run('ffmpeg', ['-y', '-loglevel', 'error', '-i', i, '-vf', `scale=${SIZE}:-2,crop=${SIZE}:'min(ih,${SIZE})':0:0`, '-quality', '85', o]),
+]
+
+/** 위쪽 기준 정사각형으로 잘라 SIZE px webp 로. 도구가 없거나 모두 실패하면 원본 그대로(파일명 반환). */
 async function shrink(src, slug) {
   const out = new URL(`${slug}.webp`, OUT_DIR)
   const tmp = new URL(`${slug}.tmp.webp`, OUT_DIR)
-  try {
-    await promisify(execFile)('convert', [
-      fileURLToPath(src),
-      '-resize', `${SIZE}x`,
-      '-background', 'none',
-      '-gravity', 'north',
-      '-extent', `${SIZE}x${SIZE}`,
-      '-quality', '85',
-      fileURLToPath(tmp),
-    ])
-    if (src.href !== out.href) await unlink(src)
-    await rename(tmp, out)
-    return `${slug}.webp`
-  } catch (e) {
-    await unlink(tmp).catch(() => {})
-    console.warn(`  (축소 생략: ${e.message.split('\n')[0]})`)
-    return src.pathname.split('/').pop()
+  const errors = []
+  for (const tool of SHRINKERS) {
+    try {
+      await tool(fileURLToPath(src), fileURLToPath(tmp))
+      if (src.href !== out.href) await unlink(src)
+      await rename(tmp, out)
+      return `${slug}.webp`
+    } catch (e) {
+      await unlink(tmp).catch(() => {})
+      errors.push(e.message.split('\n')[0])
+    }
   }
+  console.warn(`  (축소 생략: ${errors.join(' / ')})`)
+  return src.pathname.split('/').pop()
 }
 
 const FORCE = process.argv.includes('--force')
