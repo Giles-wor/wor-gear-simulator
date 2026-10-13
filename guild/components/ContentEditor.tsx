@@ -2,6 +2,7 @@ import { useState, type ChangeEvent } from 'react'
 import type { GuildCell, GuildContent, GuildTable, RowMeta } from '../types'
 import { cellOf, titleColIndex } from './ResponsiveTable'
 import { parseNum } from '../thresholds'
+import { AWAKEN_OPTIONS, awakenLabel, DEFENSE_TABLE_TITLE, defenseHeroNick } from '../defenseHeroes'
 
 /** 길전 투력 칸인지(영주/각성 산식 적용 대상). */
 const isLordHeader = (h: string) => /길전\s*투력/.test(h)
@@ -226,7 +227,7 @@ export function ContentEditor({
           <span>👤 길드원 편집</span>
           <span className="guildMemberCount">{members.length}명</span>
         </div>
-        <p className="guildEditHint">길드원을 골라 그 사람의 진행 현황·마병만 입력하세요.</p>
+        <p className="guildEditHint">길드원을 골라 그 사람의 진행 현황·마병·방어덱 각성만 입력하세요.</p>
 
         <div className="guildMemberBar">
           <select
@@ -262,13 +263,47 @@ export function ContentEditor({
               const ri = rowIndexOf(table, selected)
               if (ri < 0) return null
               const tc = titleColIndex(table.headers)
+              const isDefense = table.title === DEFENSE_TABLE_TITLE
+              const gridClass = table.sumColumn
+                ? 'guildEditMemberGrid soldiers'
+                : isDefense
+                  ? 'guildEditMemberGrid soldiers defense'
+                  : 'guildEditMemberGrid'
               return (
                 <div className="guildMemberSection" key={ti}>
                   <h3 className="guildMemberSecTitle">{table.title || `표 ${ti + 1}`}</h3>
-                  <div className={table.sumColumn ? 'guildEditMemberGrid soldiers' : 'guildEditMemberGrid'}>
+                  {isDefense && <p className="guildEditHint">X = 미보유, 0 = 노각성, 1~5 = 각성</p>}
+                  <div className={gridClass}>
                     {table.headers.map((h, ci) => {
                       if (ci === tc) return null
                       const cell = table.rows[ri][ci] ?? ''
+
+                      // 방어덱 영웅: 프로필 + 각성 선택(X/0~5)
+                      if (isDefense) {
+                        const icon = headerIcon?.(h)
+                        const nick = defenseHeroNick(h)
+                        const v = awakenLabel(cellOf(cell).v)
+                        return (
+                          <label key={ci} className="guildEditField" title={`${nick} (${h})`}>
+                            <span className="guildEditFieldLabel">
+                              {icon && <img className="guildHeaderIcon sm" src={icon} alt="" />}
+                              <span className="guildDefNick">{nick}</span>
+                            </span>
+                            <select
+                              value={v === 'X' ? '' : v}
+                              onChange={(e) => setCell(ti, ri, ci, e.target.value)}
+                              onWheel={(e) => e.currentTarget.blur()}
+                              aria-label={`${selected} ${nick} 각성`}
+                            >
+                              {AWAKEN_OPTIONS.map((o) => (
+                                <option key={o} value={o}>
+                                  {o === '' ? 'X' : o}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        )
+                      }
 
                       // 길전 투력: 투력 + 영주 체크 + 각성(0~5) → 자동 계산
                       if (isLordHeader(h)) {

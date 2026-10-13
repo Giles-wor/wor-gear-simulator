@@ -152,6 +152,21 @@ await check('마병 아이콘', async () => {
   infos.push(`마병: ${names.length}종, 아이콘 ${names.length - noIcon.length}개`)
 })
 
+await check('방어덱 영웅 프로필', async () => {
+  const list = JSON.parse(await read('guild/defenseHeroes.json'))
+  const key = (n) => n.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  let files = []
+  try {
+    files = await readdir(new URL('guild/assets/heroes/', root))
+  } catch {}
+  const have = new Set(files.map((f) => f.replace(/\.[a-z]+$/i, '').toLowerCase()))
+  const noIcon = list.filter((h) => !have.has(key(h.name))).map((h) => `${h.nick}(${h.name})`)
+  if (noIcon.length) {
+    warnings.push(`**방어덱 영웅 프로필 없음**: ${noIcon.join(', ')} — \`guild/defenseHeroes.json\` 영문명 확인 (길드 화면에 줄임 이름으로 표시됨)`)
+  }
+  infos.push(`방어덱 영웅: ${list.length}명, 프로필 ${list.length - noIcon.length}개`)
+})
+
 // ── 5. 유출 정보 ──────────────────────────────────────────────
 await check('유출 정보', async () => {
   const src = await read('leaks/data/leaks.ts')

@@ -1,13 +1,14 @@
 name: Sync 마병 아이콘 (Demon Soldier Icons)
 
-# guild/soldiers.json 이 main 에 반영되면 자동 실행 (수동 실행도 가능).
-# 아이콘 없는 마병만 fandom 위키에서 받고, 목록에서 빠진 마병 아이콘은 지운 뒤 커밋 → 재배포.
+# guild/soldiers.json · guild/defenseHeroes.json 이 main 에 반영되면 자동 실행 (수동 실행도 가능).
+# 아이콘 없는 마병/방어덱 영웅만 받고, 목록에서 빠진 아이콘은 지운 뒤 커밋 → 재배포.
 # (주간 Sync game data 워크플로도 같은 동기화를 돌림 — 놓친 아이콘 재시도용)
 on:
   push:
     branches: ["main"]
     paths:
       - "guild/soldiers.json"
+      - "guild/defenseHeroes.json"
   workflow_dispatch:
 
 permissions:
@@ -33,17 +34,21 @@ jobs:
       - name: Crawl soldier icons
         run: npm run sync:soldiers
 
+      - name: Crawl defense hero portraits
+        run: npm run sync:hero-icons
+        continue-on-error: true
+
       - name: Commit icons (if changed)
         id: commit
         run: |
-          mkdir -p guild/assets/soldiers
+          mkdir -p guild/assets/soldiers guild/assets/heroes
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A guild/assets/soldiers
+          git add -A guild/assets/soldiers guild/assets/heroes
           if git diff --staged --quiet; then
             echo "변경된 아이콘이 없습니다."
           else
-            git commit -m "guild: 마병 아이콘 동기화 (sync-soldiers)"
+            git commit -m "guild: 마병 아이콘 / 방어덱 영웅 프로필 동기화 (sync-soldiers)"
             git push
             echo "pushed=true" >> "$GITHUB_OUTPUT"
           fi
