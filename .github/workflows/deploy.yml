@@ -76,10 +76,18 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      # upload-pages-artifact 는 tar 파일 목록을 공개 로그에 찍어서 stats/<토큰>/ 주소가 드러남.
+      # 같은 형식(artifact.tar, 이름 github-pages)으로 목록 출력 없이 직접 묶어 올림.
+      - name: Archive site (파일 목록 출력 안 함)
+        run: tar --dereference --hard-dereference --directory dist -cf "$RUNNER_TEMP/artifact.tar" --exclude=.git --exclude=.github .
+
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          path: ./dist
+          name: github-pages
+          path: ${{ runner.temp }}/artifact.tar
+          retention-days: 1
+          if-no-files-found: error
 
       - name: Deploy
         id: deployment
