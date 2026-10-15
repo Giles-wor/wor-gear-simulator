@@ -45,9 +45,19 @@ const sbKey = cfgSrc.match(/anonKey:\s*'([^']*)'/)?.[1]
 
 async function loadRemoteBlob(id) {
   if (!sbUrl || !sbKey) return null
-  const res = await fetch(`${sbUrl}/rest/v1/guild_content?id=eq.${encodeURIComponent(id)}&select=blob`, {
-    headers: { apikey: sbKey, Authorization: `Bearer ${sbKey}` },
+  const headers = { apikey: sbKey, Authorization: `Bearer ${sbKey}`, 'Content-Type': 'application/json' }
+  // 앱과 같이 load_guild_content RPC 로 한 행만 읽음. RPC 가 없는 DB(404)면 예전 직접 조회로 폴백.
+  const rpc = await fetch(`${sbUrl}/rest/v1/rpc/load_guild_content`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ p_id: id }),
   })
+  if (rpc.ok) {
+    const text = await rpc.text()
+    return (text ? JSON.parse(text) : null) ?? null
+  }
+  if (rpc.status !== 404) throw new Error(`Supabase 불러오기 실패 (${rpc.status})`)
+  const res = await fetch(`${sbUrl}/rest/v1/guild_content?id=eq.${encodeURIComponent(id)}&select=blob`, { headers })
   if (!res.ok) throw new Error(`Supabase 불러오기 실패 (${res.status})`)
   const rows = await res.json()
   return rows[0]?.blob ?? null
