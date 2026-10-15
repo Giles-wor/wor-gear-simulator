@@ -1,7 +1,7 @@
 // 카톡 방장봇용 길드 집계 이미지 생성 (마병 레벨 / 방어덱 영웅 각성).
 //
 // Supabase 의 길드 암호문을 GUILD_CODE 로 복호화 → 표 HTML 을 그려 PNG 로 캡처 →
-//   dist/stats/<토큰>/soldiers.png, heroes.png, index.html
+//   dist/stats/<토큰>/soldiers.png, heroes.png (+ -og.png 썸네일), soldiers.html, heroes.html, index.html
 // 토큰 = sha256(`${GUILD_CODE}:${GUILD_STATS_SALT}`) 앞 32자.
 //   - 접속코드가 리포(README)에 공개돼 있어도 salt(Secret) 없이는 주소를 못 만듦
 //   - 접속코드를 바꾸면(= GUILD_CODE Secret 갱신) 주소도 바뀌어 옛 링크는 죽음
@@ -257,24 +257,42 @@ try {
   for (const p of pages) {
     await page.setContent(p.html, { waitUntil: 'load' })
     await page.evaluate(() => document.fonts.ready)
-    await page.locator('.wrap').screenshot({ path: resolve(outDir, p.file) })
+    const wrap = page.locator('.wrap')
+    await wrap.screenshot({ path: resolve(outDir, p.file) })
+    // 카톡 링크 미리보기 썸네일: 표 윗부분만 1200×630 으로
+    const box = await wrap.boundingBox()
+    await page.screenshot({
+      path: resolve(outDir, p.file.replace('.png', '-og.png')),
+      clip: { x: box.x, y: box.y, width: Math.min(box.width, 1200), height: Math.min(box.height, 630) },
+    })
   }
 } finally {
   await browser.close()
 }
 
-// 두 장을 한 번에 보는 페이지 (검색엔진 색인 금지).
+// 카톡 방장봇 답변에 넣을 페이지. 카톡은 이미지 주소(.png)는 링크로만 보여주고,
+// HTML 페이지의 og:image 는 썸네일 카드로 보여주므로 이 페이지들의 주소를 씀.
 const v = now.getTime()
+const base = `${SITE}/stats/${token}`
+const page = (title, imgs, og) =>
+  `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width,initial-scale=1">` +
+  `<title>${esc(title)}</title><meta property="og:type" content="website"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(stamp)} 기준 · 눌러서 전체 보기">` +
+  `<meta property="og:image" content="${base}/${og}?v=${v}">` +
+  `<style>body{margin:0;background:#14161c;color:#e8e8ea;font-family:sans-serif}img{display:block;max-width:none;margin:0 0 12px}</style></head><body>` +
+  imgs.map(([src, alt]) => `<img src="${src}?v=${v}" alt="${esc(alt)}">`).join('') +
+  `</body></html>`
+writeFileSync(resolve(outDir, 'soldiers.html'), page('마병 보유 현황', [['soldiers.png', '마병 보유 현황']], 'soldiers-og.png'))
+writeFileSync(resolve(outDir, 'heroes.html'), page('방어덱 영웅 각성 현황', [['heroes.png', '방어덱 영웅 각성 현황']], 'heroes-og.png'))
 writeFileSync(
   resolve(outDir, 'index.html'),
-  `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width,initial-scale=1"><title>길드 집계</title><style>body{margin:0;background:#14161c;color:#e8e8ea;font-family:sans-serif}img{display:block;max-width:none;margin:0 0 12px}</style></head><body><img src="soldiers.png?v=${v}" alt="마병 보유 현황"><img src="heroes.png?v=${v}" alt="방어덱 영웅 각성 현황"></body></html>`,
+  page('길드 집계', [['soldiers.png', '마병 보유 현황'], ['heroes.png', '방어덱 영웅 각성 현황']], 'soldiers-og.png'),
 )
 // 상위 경로에 빈 페이지를 둬서 /stats/ 가 404 대신 아무 정보 없는 페이지가 되게 함.
 writeFileSync(resolve(OUT_ROOT, 'index.html'), '<!doctype html><meta name="robots" content="noindex">')
 
 console.log(`✓ 길드 집계 이미지 생성: 멤버 ${members.length}명, 마병 ${soldiers.length}종, 영웅 ${heroes.length}명`)
 if (process.argv.includes('--print-url')) {
-  console.log(`  ${SITE}/stats/${token}/          (두 장 모아보기)`)
-  console.log(`  ${SITE}/stats/${token}/soldiers.png`)
-  console.log(`  ${SITE}/stats/${token}/heroes.png`)
+  console.log(`  ${base}/soldiers.html   (마병, 카톡 미리보기 카드)`)
+  console.log(`  ${base}/heroes.html     (영웅, 카톡 미리보기 카드)`)
+  console.log(`  ${base}/                (두 장 모아보기)`)
 }
