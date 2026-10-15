@@ -8,6 +8,7 @@ import {
 } from 'react'
 import { GlobalNav } from './components/GlobalNav'
 import { SiteCredit } from './components/SiteCredit'
+import { BlacklistPanel } from './blacklist/BlacklistPanel'
 import { boardIdFromCode, decryptJson, encryptJson } from './crypto'
 import { loadBoardBlob, loadLogRows, saveBoardBlob, supabaseEnabled } from './supabase'
 import {
@@ -86,6 +87,9 @@ export default function App() {
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
+
+  // 리더보드 / 운영진 전용 블랙리스트(별도 코드) 전환
+  const [tab, setTab] = useState<'board' | 'blacklist'>('board')
 
   /** 편집 로그를 받아 코드로 복호화. 실패해도 본문 표시는 막지 않는다. */
   const readLog = useCallback(async (c: string, id: string): Promise<EditLog[]> => {
@@ -273,6 +277,19 @@ export default function App() {
     )
   }
 
+  if (tab === 'blacklist') {
+    return (
+      <div className="gvgPage">
+        <SiteCredit />
+        <GlobalNav active="gvg" />
+        <div className="gvgActions">
+          <button onClick={() => setTab('board')}>← 리더보드</button>
+        </div>
+        <BlacklistPanel />
+      </div>
+    )
+  }
+
   return (
     <div className="gvgPage">
       <SiteCredit />
@@ -303,6 +320,9 @@ export default function App() {
             </>
           )}
           <button onClick={() => setShowLog((v) => !v)}>{showLog ? '로그 닫기' : '편집 로그'}</button>
+          {!editing && (
+            <button onClick={() => setTab('blacklist')} title="운영진 전용(별도 코드)">🚫 블랙리스트</button>
+          )}
           <button onClick={lock} title="코드 입력 화면으로">🔒 잠금</button>
         </div>
         {error && <p className="gvgError">불러오기 오류: {error}</p>}
