@@ -2,7 +2,7 @@
 //
 // 사용법:
 //   1) guild/content.source.json 에 평문 콘텐츠를 작성 (스키마는 guild/types.ts 의 GuildContent)
-//   2) npm run encrypt:guild      (암호 기본값 time0303, 바꾸려면 GUILD_CODE=xxxx npm run encrypt:guild)
+//   2) GUILD_CODE=<접속코드> npm run encrypt:guild
 //   3) guild/data/content.encrypted.json 이 갱신됨 → 이 파일만 커밋
 //
 // 평문(content.source.json)은 .gitignore 되어 리포에 올라가지 않습니다.
@@ -15,7 +15,11 @@ const ROOT = resolve(__dirname, '..')
 const SRC = resolve(ROOT, 'guild/content.source.json')
 const OUT = resolve(ROOT, 'guild/data/content.encrypted.json')
 const ITERATIONS = 250000
-const code = process.env.GUILD_CODE || 'time0303'
+const code = process.env.GUILD_CODE
+if (!code) {
+  console.error('✗ GUILD_CODE 환경변수로 접속코드를 지정하세요 (예: GUILD_CODE=xxxx npm run encrypt:guild).')
+  process.exit(1)
+}
 
 let plaintext
 try {

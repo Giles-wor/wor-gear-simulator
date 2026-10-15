@@ -46,6 +46,6 @@ $$;
 
 grant execute on function public.save_guild_content(text, jsonb, text) to anon;
 
--- 참고: 단일 길드 시절(코드 time0303) 데이터는 행 id='main' 에 있습니다.
--- 앱이 로드 시 'main' 을 폴백으로 읽고, time0303 으로 저장하면 sha256('time0303') 행으로 옮겨집니다.
+-- 참고: 단일 길드 시절 데이터는 행 id='main' 에 있습니다.
+-- 앱이 로드 시 'main' 을 폴백으로 읽고, 코드로 저장하면 sha256(코드) 행으로 옮겨집니다.
 -- (별도 마이그레이션 불필요. 'main' 행은 그대로 둬도 무방)
