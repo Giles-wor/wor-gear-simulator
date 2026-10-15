@@ -58,6 +58,19 @@ Time 길드 길드원만 볼 수 있는 잠금 페이지입니다. 콘텐츠는 
 > 번들 기본값은 Supabase에 아직 저장 기록이 없을 때의 시드입니다. 한 번이라도 페이지에서
 > 저장하면 그 이후는 Supabase 값이 우선합니다.
 
+## 카톡 방장봇용 집계 이미지
+
+배포할 때 `scripts/render-guild-stats.mjs` 가 길드 데이터를 복호화해 **마병 보유 현황 / 방어덱 영웅 각성 현황** PNG 두 장을 만듭니다.
+`deploy.yml` 이 매시간(:07) 재배포하므로 이미지도 매시간 최신으로 바뀝니다.
+
+- 주소: `/wor-gear-simulator/stats/<토큰>/soldiers.png`, `heroes.png`, 두 장 모아보기는 `/stats/<토큰>/`
+- 토큰 = `sha256("<접속코드>:<GUILD_STATS_SALT>")` 앞 32자. salt 는 Secret 이라 리포만 봐서는 주소를 알 수 없음
+- **접속코드를 바꾸면** 저장소 Secret `GUILD_CODE` 도 새 코드로 바꾸세요 → 주소가 바뀌어 옛 링크는 죽고, 방장봇 답변 링크만 새 주소로 교체
+- 이미지는 커밋하지 않고 배포 산출물에만 들어가며, 로그에도 주소를 찍지 않음. 모아보기 페이지는 `noindex`
+- 필요한 저장소 Secret: `GUILD_CODE`(접속코드), `GUILD_STATS_SALT`(임의의 긴 문자열). 없으면 이미지 생성만 건너뜀
+- 주소 확인(로컬): `GUILD_CODE=... GUILD_STATS_SALT=... npm run render:guild-stats -- --print-url`
+- 표에 나오는 마병·영웅은 `guild/soldiers.json`, `guild/defenseHeroes.json` 목록을 따름(빼면 이미지에서도 빠짐)
+
 ## 빌드
 
 - 개발: `npm run dev:guild` / 빌드: `npm run build:guild`
