@@ -263,30 +263,42 @@ h1{font-size:40px;margin:0}.sub{font-size:20px;color:#9a9ca5;margin:4px 0 16px}
   return `<!doctype html><meta charset="utf-8"><style>${css}</style><div class="og"><h1>${esc(title)}</h1><div class="sub">${esc(stamp)} 기준 · 길드원 ${total}명 중 보유 인원 · 눌러서 전체 표 보기</div><div class="g">${cells}</div></div>`
 }
 
-// 길전 투력: 투력1(귀속 투력) 내림차순 순위표 + 막대. 합계는 참고용.
+// 귀속 투력(길전 투력1~3) 순위표 4종: 1귀투·2귀투·3귀투·귀투총합. 카톡 카드가 서로 구분되게 색과 제목을 다르게 함.
 const fmt = (n) => Math.round(n).toLocaleString('ko-KR')
-const powerRows = members
-  .map((m) => {
-    const vals = power.get(m) ?? [null, null, null]
-    const filled = vals.filter(Boolean)
-    const key = vals[0]?.n ?? 0
-    return { m, vals, key, sum: filled.reduce((a, v) => a + v.n, 0), has: vals[0] != null }
-  })
-  .sort((a, b) => b.has - a.has || b.key - a.key || b.sum - a.sum)
-const ranked = powerRows.filter((r) => r.has)
+const POWER_VIEWS = [
+  { slug: 'power1', col: 0, title: '1귀투', color: '#ffd27a' },
+  { slug: 'power2', col: 1, title: '2귀투', color: '#8fe3a8' },
+  { slug: 'power3', col: 2, title: '3귀투', color: '#9cc8ff' },
+  { slug: 'power-total', col: -1, title: '귀투총합', color: '#ff9f8f' },
+]
+const powerBase = members.map((m) => {
+  const vals = power.get(m) ?? [null, null, null]
+  return { m, vals, sum: vals.filter(Boolean).reduce((a, v) => a + v.n, 0) }
+})
+const powerView = (view) => {
+  const keyOf = (r) => (view.col < 0 ? (r.sum || null) : (r.vals[view.col]?.n ?? null))
+  const rows = powerBase
+    .map((r) => ({ ...r, key: keyOf(r) }))
+    .sort((a, b) => (b.key != null) - (a.key != null) || (b.key ?? 0) - (a.key ?? 0) || b.sum - a.sum)
+  return { rows, ranked: rows.filter((r) => r.key != null) }
+}
+const ranked = powerView(POWER_VIEWS[3]).ranked
 
-function renderPowerHtml() {
+function renderPowerHtml(view) {
+  const { rows: powerRows, ranked } = powerView(view)
   const max = Math.max(1, ...ranked.map((r) => r.key))
+  const bar = (r) => `<span class="bar" style="width:${(r.key / max) * 100}%"></span>`
   const cell = (v, i, r) => {
     if (!v) return '<td class="pw lx">·</td>'
-    const bar = i === 0 ? `<span class="bar" style="width:${(r.key / max) * 100}%"></span>` : ''
-    return `<td class="pw${i === 0 ? ' p1' : ''}">${bar}<b>${fmt(v.n)}</b>${v.lord ? `<i>영주(${v.awaken})</i>` : ''}</td>`
+    const on = i === view.col
+    return `<td class="pw${on ? ' on' : ''}">${on ? bar(r) : ''}<b>${fmt(v.n)}</b>${v.lord ? `<i>영주(${v.awaken})</i>` : ''}</td>`
   }
   let rank = 0
   const rows = powerRows
     .map((r) => {
-      const rk = r.has ? ++rank : ''
-      return `<tr><td class="rk">${rk}</td><td class="nm">${esc(r.m)}</td>${r.vals.map((v, i) => cell(v, i, r)).join('')}<td class="tot">${r.sum ? fmt(r.sum) : '·'}</td></tr>`
+      const rk = r.key != null ? ++rank : ''
+      const tot = view.col < 0 ? `<td class="pw on">${r.key != null ? bar(r) : ''}<b>${r.sum ? fmt(r.sum) : '·'}</b></td>` : `<td class="tot">${r.sum ? fmt(r.sum) : '·'}</td>`
+      return `<tr><td class="rk">${rk}</td><td class="nm">${esc(r.m)}</td>${r.vals.map((v, i) => cell(v, i, r)).join('')}${tot}</tr>`
     })
     .join('')
   const colAvg = POWER_HEADERS.map((_, i) => {
@@ -295,25 +307,27 @@ function renderPowerHtml() {
   })
   const total = powerRows.reduce((a, r) => a + r.sum, 0)
   const css = `${CSS}
-td.rk{width:34px;color:#9a9ca5;font-size:13px}td.pw{width:120px;font-size:14px;padding:0 8px;text-align:right}
+td.rk{width:34px;color:#9a9ca5;font-size:13px}td.pw{width:110px;font-size:14px;padding:0 8px;text-align:right}
 td.pw b{position:relative;font-weight:normal}td.pw i{position:relative;display:block;font-style:normal;font-size:10px;color:#e0b0ff;line-height:1}
-td.p1{width:260px;position:relative}td.p1 b{color:#ffd27a;font-weight:bold}
-td.p1 .bar{position:absolute;left:0;top:3px;bottom:3px;background:#2b3f63;border-radius:0 4px 4px 0}
-td.tot{width:120px;text-align:right;padding:0 8px;color:#9a9ca5;font-size:13px}`
-  return `<!doctype html><meta charset="utf-8"><style>${css}</style><div class="wrap"><h1>귀속 투력 현황</h1><div class="sub">${esc(stamp)} 기준 · 영주는 산식 적용 최종값 · 투력1(귀속) 순</div><table><tr><th>#</th><th>캐릭명</th>${POWER_HEADERS.map((h) => `<th>${esc(h.replace('길전 ', ''))}</th>`).join('')}<th>합계</th></tr>${rows}<tr class="stat"><td></td><td class="nm">평균</td>${colAvg.map((a) => `<td>${a}</td>`).join('')}<td>길드 합계 ${fmt(total)}</td></tr></table></div>`
+td.on{width:240px;position:relative}td.on b{color:${view.color};font-weight:bold}
+td.on .bar{position:absolute;left:0;top:3px;bottom:3px;background:#2b3f63;border-radius:0 4px 4px 0}
+td.tot{width:110px;text-align:right;padding:0 8px;color:#9a9ca5;font-size:13px}`
+  const heads = POWER_HEADERS.map((h, i) => `<th${i === view.col ? ' style="color:' + view.color + '"' : ''}>${i + 1}귀투</th>`).join('')
+  return `<!doctype html><meta charset="utf-8"><style>${css}</style><div class="wrap"><h1 style="color:${view.color}">${esc(view.title)} 순위</h1><div class="sub">${esc(stamp)} 기준 · 영주는 산식 적용 최종값 · ${esc(view.title)} 순</div><table><tr><th>#</th><th>캐릭명</th>${heads}<th${view.col < 0 ? ' style="color:' + view.color + '"' : ''}>합계</th></tr>${rows}<tr class="stat"><td></td><td class="nm">평균</td>${colAvg.map((a) => `<td>${a}</td>`).join('')}<td>길드 합계 ${fmt(total)}</td></tr></table></div>`
 }
 
-function renderPowerOg() {
+function renderPowerOg(view) {
+  const { ranked } = powerView(view)
   const top = ranked.slice(0, 10)
   const avg = ranked.length ? ranked.reduce((a, r) => a + r.key, 0) / ranked.length : 0
   const item = (r, i) => `<li><span class="r">${i + 1}</span><span class="n">${esc(r.m)}</span><b>${fmt(r.key)}</b></li>`
   const css = `body{margin:0;background:#14161c;color:#e8e8ea;font-family:'Noto Sans CJK KR','Noto Sans KR','WenQuanYi Zen Hei',sans-serif}
-.og{width:1200px;height:600px;box-sizing:border-box;padding:26px 36px;display:flex;flex-direction:column}
-h1{font-size:40px;margin:0}.sub{font-size:20px;color:#9a9ca5;margin:4px 0 14px}
+.og{width:1200px;height:600px;box-sizing:border-box;padding:26px 36px;display:flex;flex-direction:column;border-top:10px solid ${view.color}}
+h1{font-size:44px;margin:0;color:${view.color}}.sub{font-size:20px;color:#9a9ca5;margin:4px 0 14px}
 ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-flow:column;grid-template-rows:repeat(5,1fr);gap:8px 40px;flex:1}
 li{display:flex;align-items:center;gap:14px;font-size:28px;background:#1a1c23;border-radius:10px;padding:0 18px}
-li .r{color:#9cc8ff;width:30px}li .n{flex:1;overflow:hidden;white-space:nowrap}li b{color:#ffd27a}`
-  return `<!doctype html><meta charset="utf-8"><style>${css}</style><div class="og"><h1>귀속 투력 TOP 10</h1><div class="sub">${esc(stamp)} 기준 · 투력1 기준 · 입력 ${ranked.length}/${members.length}명 · 평균 ${fmt(avg)} · 눌러서 전체 보기</div><ol>${top.map(item).join('')}</ol></div>`
+li .r{color:#9a9ca5;width:30px}li .n{flex:1;overflow:hidden;white-space:nowrap}li b{color:${view.color}}`
+  return `<!doctype html><meta charset="utf-8"><style>${css}</style><div class="og"><h1>${esc(view.title)} TOP 10</h1><div class="sub">${esc(stamp)} 기준 · 입력 ${ranked.length}/${members.length}명 · 평균 ${fmt(avg)} · 눌러서 전체 보기</div><ol>${top.map(item).join('')}</ol></div>`
 }
 
 const pages = [
@@ -343,7 +357,7 @@ const pages = [
     }),
     og: renderOg({ title: '방어덱 영웅 각성 현황', cols: heroes, values: awakens, toLv: heroLv, perRow: 8 }),
   },
-  { file: 'power.png', html: renderPowerHtml(), og: renderPowerOg() },
+  ...POWER_VIEWS.map((v) => ({ file: `${v.slug}.png`, html: renderPowerHtml(v), og: renderPowerOg(v) })),
 ]
 
 // ── 캡처 ──
@@ -392,7 +406,11 @@ const page = (title, imgs, og) =>
   `</body></html>`
 writeFileSync(resolve(outDir, 'soldiers.html'), page('마병 보유 현황', [['soldiers.png', '마병 보유 현황']], 'soldiers-og.png'))
 writeFileSync(resolve(outDir, 'heroes.html'), page('방어덱 영웅 각성 현황', [['heroes.png', '방어덱 영웅 각성 현황']], 'heroes-og.png'))
-writeFileSync(resolve(outDir, 'power.html'), page('귀속 투력 현황', [['power.png', '귀속 투력 현황']], 'power-og.png'))
+for (const pv of POWER_VIEWS) {
+  writeFileSync(resolve(outDir, `${pv.slug}.html`), page(`${pv.title} 순위`, [[`${pv.slug}.png`, `${pv.title} 순위`]], `${pv.slug}-og.png`))
+}
+// 예전 power.html 링크는 1귀투로 유지.
+writeFileSync(resolve(outDir, 'power.html'), page('1귀투 순위', [['power1.png', '1귀투 순위']], 'power1-og.png'))
 writeFileSync(
   resolve(outDir, 'index.html'),
   page(
@@ -400,7 +418,7 @@ writeFileSync(
     [
       ['soldiers.png', '마병 보유 현황'],
       ['heroes.png', '방어덱 영웅 각성 현황'],
-      ['power.png', '귀속 투력 현황'],
+      ...POWER_VIEWS.map((pv) => [`${pv.slug}.png`, `${pv.title} 순위`]),
     ],
     'soldiers-og.png',
   ),
@@ -412,6 +430,6 @@ console.log(`✓ 길드 집계 이미지 생성: 멤버 ${members.length}명, �
 if (process.argv.includes('--print-url')) {
   console.log(`  ${base}/soldiers.html   (마병, 카톡 미리보기 카드)`)
   console.log(`  ${base}/heroes.html     (영웅, 카톡 미리보기 카드)`)
-  console.log(`  ${base}/power.html      (길전 투력, 카톡 미리보기 카드)`)
+  for (const pv of POWER_VIEWS) console.log(`  ${base}/${pv.slug}.html   (${pv.title}, 카톡 미리보기 카드)`)
   console.log(`  ${base}/                (두 장 모아보기)`)
 }
