@@ -342,6 +342,66 @@ li .r{color:#9a9ca5;width:30px}li .n{flex:1;overflow:hidden;white-space:nowrap}l
   return `<!doctype html><meta charset="utf-8"><style>${css}</style><div class="og"><h1>${esc(view.title)} TOP 10</h1><div class="sub">${esc(stamp)} 기준 · 입력 ${ranked.length}/${members.length}명 · 평균 ${fmt(avg)} · 눌러서 전체 보기</div><ol>${top.map(item).join('')}</ol></div>`
 }
 
+// 업데이트 오래된 순: 멤버별 마지막 수정일 = 모든 표의 rowMeta.updatedAt 중 가장 최근(편집기가 저장 시 바뀐 멤버만 갱신).
+// 수정일이 없는 행은 값이 있으면 콘텐츠 마지막 저장일로 대체(길드원 페이지와 같은 규칙), 값도 없으면 '기록 없음'(맨 위).
+const STALE_DAYS = 30 // 길드원 페이지(ResponsiveTable)의 오래됨 표시 기준과 같음
+const todayKst = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(now)
+const dayNum = (iso) => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 86400000
+const lastUpdate = (() => {
+  const map = new Map()
+  for (const t of content.tables ?? []) {
+    const tc = titleColIndex(t.headers)
+    t.rows.forEach((r, i) => {
+      const name = cellOf(r[tc] ?? '').trim()
+      if (!name) return
+      const hasData = r.some((c, ci) => ci !== tc && !/구분/.test(t.headers[ci] ?? '') && cellOf(c).trim() !== '')
+      const d = t.rowMeta?.[i]?.updatedAt ?? (hasData ? content.updatedAt : undefined)
+      if (d && /^\d{4}-\d{2}-\d{2}/.test(d) && (map.get(name) ?? '') < d) map.set(name, d.slice(0, 10))
+    })
+  }
+  return map
+})()
+const updateRows = members
+  .map((m) => {
+    const d = lastUpdate.get(m) ?? null
+    return { m, d, days: d ? Math.max(0, dayNum(todayKst) - dayNum(d)) : null }
+  })
+  .sort((a, b) => (b.days ?? Infinity) - (a.days ?? Infinity) || a.m.localeCompare(b.m, 'ko'))
+const daysLabel = (r) => (r.days == null ? '기록 없음' : r.days === 0 ? '오늘' : `${r.days}일 전`)
+const UPDATE_COLOR = '#c9a7ff'
+
+function renderUpdateHtml() {
+  const max = Math.max(1, ...updateRows.map((r) => r.days ?? 0))
+  const rows = updateRows
+    .map((r, i) => {
+      const stale = r.days == null || r.days > STALE_DAYS
+      const w = r.days == null ? 100 : (r.days / max) * 100
+      return `<tr${stale ? ' class="st"' : ''}><td class="rk">${i + 1}</td><td class="nm">${esc(r.m)}</td><td class="dt">${r.d ?? '·'}</td><td class="ag"><span class="bar" style="width:${w}%"></span><b>${daysLabel(r)}</b></td></tr>`
+    })
+    .join('')
+  const staleN = updateRows.filter((r) => r.days == null || r.days > STALE_DAYS).length
+  const css = `${CSS}
+td.rk{width:34px;color:#9a9ca5;font-size:13px}td.dt{width:120px;font-size:14px;color:#c8c9cf}
+td.ag{width:300px;position:relative;text-align:right;padding:0 10px;font-size:15px}td.ag b{position:relative;color:${UPDATE_COLOR}}
+td.ag .bar{position:absolute;left:0;top:3px;bottom:3px;background:#2b3f63;border-radius:0 4px 4px 0}
+tr.st td.ag b{color:#ff8f8f}tr.st td.ag .bar{background:#5a2b33}`
+  return `<!doctype html><meta charset="utf-8"><style>${css}</style><div class="wrap"><h1 style="color:${UPDATE_COLOR}">업데이트 오래된 순</h1><div class="sub">${esc(stamp)} 기준 · 어느 표든 마지막으로 바꾼 날 · 빨강 = ${STALE_DAYS}일 넘음 또는 기록 없음 (${staleN}명)</div><table><tr><th>#</th><th>캐릭명</th><th>마지막 업데이트</th><th>지난 날</th></tr>${rows}</table></div>`
+}
+
+function renderUpdateOg() {
+  const top = updateRows.slice(0, 10)
+  const staleN = updateRows.filter((r) => r.days == null || r.days > STALE_DAYS).length
+  const item = (r, i) =>
+    `<li><span class="r">${i + 1}</span><span class="n">${esc(r.m)}</span><b${r.days == null || r.days > STALE_DAYS ? ' class="st"' : ''}>${daysLabel(r)}</b></li>`
+  const css = `body{margin:0;background:#14161c;color:#e8e8ea;font-family:'Noto Sans CJK KR','Noto Sans KR','WenQuanYi Zen Hei',sans-serif}
+.og{width:1200px;height:600px;box-sizing:border-box;padding:26px 36px;display:flex;flex-direction:column;border-top:10px solid ${UPDATE_COLOR}}
+h1{font-size:44px;margin:0;color:${UPDATE_COLOR}}.sub{font-size:20px;color:#9a9ca5;margin:4px 0 14px}
+ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-flow:column;grid-template-rows:repeat(5,1fr);gap:8px 40px;flex:1}
+li{display:flex;align-items:center;gap:14px;font-size:28px;background:#1a1c23;border-radius:10px;padding:0 18px}
+li .r{color:#9a9ca5;width:30px}li .n{flex:1;overflow:hidden;white-space:nowrap}li b{color:${UPDATE_COLOR}}li b.st{color:#ff8f8f}`
+  return `<!doctype html><meta charset="utf-8"><style>${css}</style><div class="og"><h1>업데이트 오래된 순 TOP 10</h1><div class="sub">${esc(stamp)} 기준 · ${STALE_DAYS}일 넘음/기록 없음 ${staleN}명 · 눌러서 전체 보기</div><ol>${top.map(item).join('')}</ol></div>`
+}
+
 const pages = [
   {
     file: 'soldiers.png',
@@ -370,6 +430,7 @@ const pages = [
     og: renderOg({ title: '방어덱 영웅 각성 현황', cols: heroes, values: awakens, toLv: heroLv, perRow: 8 }),
   },
   ...POWER_VIEWS.map((v) => ({ file: `${v.slug}.png`, html: renderPowerHtml(v), og: renderPowerOg(v) })),
+  { file: 'update.png', html: renderUpdateHtml(), og: renderUpdateOg() },
 ]
 
 // ── 캡처 ──
@@ -421,6 +482,7 @@ writeFileSync(resolve(outDir, 'heroes.html'), page('방어덱 영웅 각성 현�
 for (const pv of POWER_VIEWS) {
   writeFileSync(resolve(outDir, `${pv.slug}.html`), page(`${pv.title} 순위`, [[`${pv.slug}.png`, `${pv.title} 순위`]], `${pv.slug}-og.png`))
 }
+writeFileSync(resolve(outDir, 'update.html'), page('업데이트 오래된 순', [['update.png', '업데이트 오래된 순']], 'update-og.png'))
 // 예전 power.html 링크는 1귀투로 유지.
 writeFileSync(resolve(outDir, 'power.html'), page('1귀투 순위', [['power1.png', '1귀투 순위']], 'power1-og.png'))
 writeFileSync(
@@ -431,6 +493,7 @@ writeFileSync(
       ['soldiers.png', '마병 보유 현황'],
       ['heroes.png', '방어덱 영웅 각성 현황'],
       ...POWER_VIEWS.map((pv) => [`${pv.slug}.png`, `${pv.title} 순위`]),
+      ['update.png', '업데이트 오래된 순'],
     ],
     'soldiers-og.png',
   ),
@@ -444,6 +507,7 @@ const shortPages = [
   ['m', '마병 보유 현황', 'soldiers'],
   ['h', '방어덱 영웅 각성 현황', 'heroes'],
   ...POWER_VIEWS.map((pv) => [pv.slug.replace('power-total', 'pt').replace('power', 'p'), `${pv.title} 순위`, pv.slug]),
+  ['u', '업데이트 오래된 순', 'update'],
 ]
 for (const [name, title, file] of shortPages) {
   writeFileSync(resolve(shortDir, `${name}.html`), page(title, abs([[`${file}.png`, title]]), `${file}-og.png`))
