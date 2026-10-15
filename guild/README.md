@@ -62,7 +62,7 @@ Time 길드 길드원만 볼 수 있는 잠금 페이지입니다. 콘텐츠는 
 배포할 때 `scripts/render-guild-stats.mjs` 가 길드 데이터를 복호화해 **마병 보유 현황 / 방어덱 영웅 각성 현황** PNG 두 장을 만듭니다.
 `deploy.yml` 이 매시간(:07) 재배포하므로 이미지도 매시간 최신으로 바뀝니다.
 
-- 주소: `/wor-gear-simulator/stats/<토큰>/soldiers.png`, `heroes.png`, 두 장 모아보기는 `/stats/<토큰>/`
+- 방장봇에 넣을 주소: `/wor-gear-simulator/stats/<토큰>/soldiers.html`, `heroes.html` (카톡은 .png 주소는 링크로만 보여주고, 이 페이지는 og:image 썸네일 카드로 보여줌). 두 장 모아보기는 `/stats/<토큰>/`
 - 토큰 = `sha256("<접속코드>:<GUILD_STATS_SALT>")` 앞 32자. salt 는 Secret 이라 리포만 봐서는 주소를 알 수 없음
 - **접속코드를 바꾸면** 저장소 Secret `GUILD_CODE` 도 새 코드로 바꾸세요 → 주소가 바뀌어 옛 링크는 죽고, 방장봇 답변 링크만 새 주소로 교체
 - 이미지는 커밋하지 않고 배포 산출물에만 들어가며, 로그에도 주소를 찍지 않음. 모아보기 페이지는 `noindex`
