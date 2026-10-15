@@ -35,6 +35,8 @@ if (!code || !salt) {
 const sha256 = (s) => createHash('sha256').update(s).digest('hex')
 // v2: v1 주소가 공개 배포 로그(업로드 파일 목록)에 노출돼 교체함. 로그 노출은 deploy.yml 에서 막음.
 const token = sha256(`${code}:${salt}:v2`).slice(0, 32)
+// 방장봇 답변은 100자 남짓에서 잘려서, 카톡에 넣을 주소는 /s/<짧은 토큰>/<이름> 으로 따로 둠 (16자 hex = 64비트).
+const shortToken = sha256(`${code}:${salt}:short-v1`).slice(0, 16)
 
 // ── 데이터 로드 (앱과 같은 순서: 코드 행 → 레거시 'main' 행 → 번들 기본값) ──
 const cfgSrc = readFileSync(resolve(GUILD, 'supabase.config.ts'), 'utf8')
@@ -423,13 +425,25 @@ writeFileSync(
     'soldiers-og.png',
   ),
 )
+// 짧은 주소: GitHub Pages 는 /s/<토큰>/p1 요청에 p1.html 을 돌려줌. 이미지는 긴 경로의 것을 그대로 씀.
+const SHORT_ROOT = resolve(OUT_ROOT, '..', 's')
+const shortDir = resolve(SHORT_ROOT, shortToken)
+mkdirSync(shortDir, { recursive: true })
+const abs = (imgs) => imgs.map(([src, alt]) => [`${base}/${src}`, alt])
+const shortPages = [
+  ['m', '마병 보유 현황', 'soldiers'],
+  ['h', '방어덱 영웅 각성 현황', 'heroes'],
+  ...POWER_VIEWS.map((pv) => [pv.slug.replace('power-total', 'pt').replace('power', 'p'), `${pv.title} 순위`, pv.slug]),
+]
+for (const [name, title, file] of shortPages) {
+  writeFileSync(resolve(shortDir, `${name}.html`), page(title, abs([[`${file}.png`, title]]), `${file}-og.png`))
+}
+writeFileSync(resolve(SHORT_ROOT, 'index.html'), '<!doctype html><meta name="robots" content="noindex">')
 // 상위 경로에 빈 페이지를 둬서 /stats/ 가 404 대신 아무 정보 없는 페이지가 되게 함.
 writeFileSync(resolve(OUT_ROOT, 'index.html'), '<!doctype html><meta name="robots" content="noindex">')
 
 console.log(`✓ 길드 집계 이미지 생성: 멤버 ${members.length}명, 마병 ${soldiers.length}종, 영웅 ${heroes.length}명, 투력 입력 ${ranked.length}명`)
 if (process.argv.includes('--print-url')) {
-  console.log(`  ${base}/soldiers.html   (마병, 카톡 미리보기 카드)`)
-  console.log(`  ${base}/heroes.html     (영웅, 카톡 미리보기 카드)`)
-  for (const pv of POWER_VIEWS) console.log(`  ${base}/${pv.slug}.html   (${pv.title}, 카톡 미리보기 카드)`)
-  console.log(`  ${base}/                (두 장 모아보기)`)
+  for (const [name, title] of shortPages) console.log(`  ${SITE}/s/${shortToken}/${name}   (${title})`)
+  console.log(`  ${base}/                (전체 모아보기)`)
 }
