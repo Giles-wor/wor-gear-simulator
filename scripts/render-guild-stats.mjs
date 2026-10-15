@@ -116,6 +116,39 @@ const members = main ? main.rows.map((r) => cellOf(r[titleColIndex(main.headers)
 const levels = memberValues(content.tables.find((t) => t.title === SOLDIER_TABLE_TITLE))
 const awakens = memberValues(content.tables.find((t) => t.title === DEFENSE_TABLE_TITLE))
 
+// 길전 투력(진행 현황 표의 '길전 투력1~3', 옛 헤더 '전투력 최고/최저'). 셀 v = 영주 산식 적용 최종값.
+const POWER_HEADERS = ['길전 투력1', '길전 투력2', '길전 투력3']
+const OLD_POWER = { '길전 투력1': '전투력 최고', '길전 투력2': '전투력 최저' }
+const parseNum = (v) => {
+  const n = Number(String(v ?? '').replace(/[^\d.-]/g, ''))
+  return String(v ?? '').trim() && Number.isFinite(n) ? n : null
+}
+const power = (() => {
+  const map = new Map()
+  if (!main) return map
+  const tc = titleColIndex(main.headers)
+  const col = (h) => {
+    const i = main.headers.indexOf(h)
+    return i >= 0 ? i : main.headers.indexOf(OLD_POWER[h] ?? '')
+  }
+  for (const r of main.rows) {
+    const name = cellOf(r[tc] ?? '').trim()
+    if (!name) continue
+    map.set(
+      name,
+      POWER_HEADERS.map((h) => {
+        const i = col(h)
+        const cell = i >= 0 ? r[i] : ''
+        const n = parseNum(cellOf(cell ?? ''))
+        if (n === null) return null
+        const lord = typeof cell === 'object' && cell?.lord
+        return { n, lord: !!lord, awaken: typeof cell === 'object' ? (cell?.awaken ?? 0) : 0 }
+      }),
+    )
+  }
+  return map
+})()
+
 // ── 아이콘 (guild/soldiers.ts, defenseHeroes.ts 와 같은 슬러그 규칙) ──
 const soldierKey = (n) => n.toLowerCase().replace(/[()]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 const heroKey = (n) => n.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
@@ -230,6 +263,56 @@ h1{font-size:40px;margin:0}.sub{font-size:20px;color:#9a9ca5;margin:4px 0 16px}
   return `<!doctype html><meta charset="utf-8"><style>${css}</style><div class="og"><h1>${esc(title)}</h1><div class="sub">${esc(stamp)} 기준 · 길드원 ${total}명 중 보유 인원 · 눌러서 전체 표 보기</div><div class="g">${cells}</div></div>`
 }
 
+// 길전 투력: 합계 내림차순 순위표 + 막대.
+const fmt = (n) => Math.round(n).toLocaleString('ko-KR')
+const powerRows = members
+  .map((m) => {
+    const vals = power.get(m) ?? [null, null, null]
+    const filled = vals.filter(Boolean)
+    return { m, vals, sum: filled.reduce((a, v) => a + v.n, 0), has: filled.length > 0 }
+  })
+  .sort((a, b) => b.has - a.has || b.sum - a.sum)
+const ranked = powerRows.filter((r) => r.has)
+
+function renderPowerHtml() {
+  const max = Math.max(1, ...ranked.map((r) => r.sum))
+  const cell = (v) =>
+    v ? `<td class="pw">${fmt(v.n)}${v.lord ? `<i>영주(${v.awaken})</i>` : ''}</td>` : '<td class="pw lx">·</td>'
+  let rank = 0
+  const rows = powerRows
+    .map((r) => {
+      const rk = r.has ? ++rank : ''
+      const bar = r.has ? `<span class="bar" style="width:${(r.sum / max) * 100}%"></span>` : ''
+      return `<tr><td class="rk">${rk}</td><td class="nm">${esc(r.m)}</td>${r.vals.map(cell).join('')}<td class="tot">${bar}<b>${r.has ? fmt(r.sum) : '·'}</b></td></tr>`
+    })
+    .join('')
+  const colAvg = POWER_HEADERS.map((_, i) => {
+    const ns = powerRows.map((r) => r.vals[i]?.n).filter((n) => n != null)
+    return ns.length ? fmt(ns.reduce((a, n) => a + n, 0) / ns.length) : '·'
+  })
+  const total = ranked.reduce((a, r) => a + r.sum, 0)
+  const css = `${CSS}
+td.rk{width:34px;color:#9a9ca5;font-size:13px}td.pw{width:120px;font-size:14px;padding:0 8px;text-align:right}
+td.pw i{display:block;font-style:normal;font-size:10px;color:#e0b0ff;line-height:1}
+td.tot{width:300px;position:relative;text-align:right;padding:0 8px}td.tot b{position:relative;color:#ffd27a}
+td.tot .bar{position:absolute;left:0;top:3px;bottom:3px;background:#2b3f63;border-radius:0 4px 4px 0}`
+  return `<!doctype html><meta charset="utf-8"><style>${css}</style><div class="wrap"><h1>길전 투력 현황</h1><div class="sub">${esc(stamp)} 기준 · 영주는 산식 적용 최종값 · 합계 순</div><table><tr><th>#</th><th>캐릭명</th>${POWER_HEADERS.map((h) => `<th>${esc(h.replace('길전 ', ''))}</th>`).join('')}<th>합계</th></tr>${rows}<tr class="stat"><td></td><td class="nm">평균</td>${colAvg.map((a) => `<td>${a}</td>`).join('')}<td>길드 합계 ${fmt(total)}</td></tr></table></div>`
+}
+
+function renderPowerOg() {
+  const top = ranked.slice(0, 10)
+  const total = ranked.reduce((a, r) => a + r.sum, 0)
+  const avg = ranked.length ? total / ranked.length : 0
+  const item = (r, i) => `<li><span class="r">${i + 1}</span><span class="n">${esc(r.m)}</span><b>${fmt(r.sum)}</b></li>`
+  const css = `body{margin:0;background:#14161c;color:#e8e8ea;font-family:'Noto Sans CJK KR','Noto Sans KR','WenQuanYi Zen Hei',sans-serif}
+.og{width:1200px;height:600px;box-sizing:border-box;padding:26px 36px;display:flex;flex-direction:column}
+h1{font-size:40px;margin:0}.sub{font-size:20px;color:#9a9ca5;margin:4px 0 14px}
+ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-flow:column;grid-template-rows:repeat(5,1fr);gap:8px 40px;flex:1}
+li{display:flex;align-items:center;gap:14px;font-size:28px;background:#1a1c23;border-radius:10px;padding:0 18px}
+li .r{color:#9cc8ff;width:30px}li .n{flex:1;overflow:hidden;white-space:nowrap}li b{color:#ffd27a}`
+  return `<!doctype html><meta charset="utf-8"><style>${css}</style><div class="og"><h1>길전 투력 TOP 10</h1><div class="sub">${esc(stamp)} 기준 · 입력 ${ranked.length}/${members.length}명 · 평균 ${fmt(avg)} · 눌러서 전체 보기</div><ol>${top.map(item).join('')}</ol></div>`
+}
+
 const pages = [
   {
     file: 'soldiers.png',
@@ -257,6 +340,7 @@ const pages = [
     }),
     og: renderOg({ title: '방어덱 영웅 각성 현황', cols: heroes, values: awakens, toLv: heroLv, perRow: 8 }),
   },
+  { file: 'power.png', html: renderPowerHtml(), og: renderPowerOg() },
 ]
 
 // ── 캡처 ──
@@ -305,16 +389,26 @@ const page = (title, imgs, og) =>
   `</body></html>`
 writeFileSync(resolve(outDir, 'soldiers.html'), page('마병 보유 현황', [['soldiers.png', '마병 보유 현황']], 'soldiers-og.png'))
 writeFileSync(resolve(outDir, 'heroes.html'), page('방어덱 영웅 각성 현황', [['heroes.png', '방어덱 영웅 각성 현황']], 'heroes-og.png'))
+writeFileSync(resolve(outDir, 'power.html'), page('길전 투력 현황', [['power.png', '길전 투력 현황']], 'power-og.png'))
 writeFileSync(
   resolve(outDir, 'index.html'),
-  page('길드 집계', [['soldiers.png', '마병 보유 현황'], ['heroes.png', '방어덱 영웅 각성 현황']], 'soldiers-og.png'),
+  page(
+    '길드 집계',
+    [
+      ['soldiers.png', '마병 보유 현황'],
+      ['heroes.png', '방어덱 영웅 각성 현황'],
+      ['power.png', '길전 투력 현황'],
+    ],
+    'soldiers-og.png',
+  ),
 )
 // 상위 경로에 빈 페이지를 둬서 /stats/ 가 404 대신 아무 정보 없는 페이지가 되게 함.
 writeFileSync(resolve(OUT_ROOT, 'index.html'), '<!doctype html><meta name="robots" content="noindex">')
 
-console.log(`✓ 길드 집계 이미지 생성: 멤버 ${members.length}명, 마병 ${soldiers.length}종, 영웅 ${heroes.length}명`)
+console.log(`✓ 길드 집계 이미지 생성: 멤버 ${members.length}명, 마병 ${soldiers.length}종, 영웅 ${heroes.length}명, 투력 입력 ${ranked.length}명`)
 if (process.argv.includes('--print-url')) {
   console.log(`  ${base}/soldiers.html   (마병, 카톡 미리보기 카드)`)
   console.log(`  ${base}/heroes.html     (영웅, 카톡 미리보기 카드)`)
+  console.log(`  ${base}/power.html      (길전 투력, 카톡 미리보기 카드)`)
   console.log(`  ${base}/                (두 장 모아보기)`)
 }
