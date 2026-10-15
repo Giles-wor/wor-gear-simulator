@@ -16,7 +16,7 @@ import { memberValues } from './memberTable'
 import { migrateMainTable, MAIN_HEADERS } from './migrate'
 import { parseNum } from './thresholds'
 import { loadRemoteBlob, saveRemoteBlob, supabaseEnabled, LEGACY_ID } from './supabase'
-import { mergeMemberChanges } from './merge'
+import { mergeMemberChanges, type MergeConflict } from './merge'
 import type { EncryptedBlob, GuildContent } from './types'
 import bundledBlob from './data/content.encrypted.json'
 
@@ -77,6 +77,23 @@ function freshContent(): GuildContent {
     images: [],
     links: [],
   }
+}
+
+/** 저장 충돌 확인창 문구. 확인=내 값으로 저장, 취소=먼저 저장된 값 유지. */
+function conflictMessage(conflicts: MergeConflict[]): string {
+  const shown = conflicts.slice(0, 8).map((c) => {
+    const label = c.member ? `${c.member} · ${c.column}` : c.where
+    return `- ${label}: 먼저 저장된 값 "${c.theirs || '(빈 칸)'}" / 내 값 "${c.mine || '(빈 칸)'}"`
+  })
+  if (conflicts.length > shown.length) shown.push(`- 외 ${conflicts.length - shown.length}칸`)
+  return [
+    '편집하는 동안 다른 길드원이 같은 칸을 먼저 바꿔 저장했어요.',
+    '',
+    ...shown,
+    '',
+    '[확인] 내 값으로 저장  ·  [취소] 먼저 저장된 값 유지',
+    '(나머지 수정 내용은 어느 쪽을 골라도 함께 저장됩니다)',
+  ].join('\n')
 }
 
 function prepare(content: GuildContent): GuildContent {
@@ -555,7 +572,15 @@ export default function App() {
             setSaving(false)
             return
           }
-          if (latest && content) toSave = mergeMemberChanges(latest, content, next)
+          if (latest && content) {
+            const merged = mergeMemberChanges(latest, content, next)
+            toSave = merged.content
+            // 같은 칸을 다른 길드원이 먼저 다르게 바꿨으면 어느 값을 쓸지 묻는다.
+            if (merged.conflicts.length > 0) {
+              const keepMine = window.confirm(conflictMessage(merged.conflicts))
+              if (!keepMine) toSave = mergeMemberChanges(latest, content, next, 'theirs').content
+            }
+          }
         }
         const blob = await encryptContent(code, toSave)
         if (supabaseEnabled()) await saveRemoteBlob(blob, code, guildId)
