@@ -16,6 +16,7 @@ import { memberValues } from './memberTable'
 import { migrateMainTable, MAIN_HEADERS } from './migrate'
 import { parseNum } from './thresholds'
 import { loadRemoteBlob, saveRemoteBlob, supabaseEnabled, LEGACY_ID } from './supabase'
+import { AdminPanel } from './components/AdminPanel'
 import { mergeMemberChanges, type MergeConflict } from './merge'
 import type { EncryptedBlob, GuildContent } from './types'
 import bundledBlob from './data/content.encrypted.json'
@@ -187,6 +188,7 @@ function LockScreen({
   const [newCode, setNewCode] = useState('')
   const [migBusy, setMigBusy] = useState(false)
   const [migErr, setMigErr] = useState('')
+  const [adminOpen, setAdminOpen] = useState(false)
   const doMigrate = async (e: FormEvent) => {
     e.preventDefault()
     setMigBusy(true)
@@ -267,6 +269,15 @@ function LockScreen({
               </p>
             )}
           </form>
+        )}
+
+        {supabaseEnabled() && (
+          <>
+            <button type="button" className="guildMigToggle" onClick={() => setAdminOpen((v) => !v)}>
+              🛠 관리자{adminOpen ? ' ▲' : ' ▼'}
+            </button>
+            {adminOpen && <AdminPanel />}
+          </>
         )}
       </div>
     </div>
@@ -504,6 +515,7 @@ export default function App() {
   const [saveError, setSaveError] = useState('')
   const [status, setStatus] = useState('')
   const [shot, setShot] = useState<{ src: string; alt: string } | null>(null)
+  const [adminOpen, setAdminOpen] = useState(false)
   const statusTimer = useRef<number | undefined>(undefined)
   const lockTimer = useRef<number | undefined>(undefined)
 
@@ -519,6 +531,7 @@ export default function App() {
     setCode('')
     setGuildId('')
     setEditing(false)
+    setAdminOpen(false)
     setError('')
     clearUnlock()
   }, [])
@@ -651,6 +664,11 @@ export default function App() {
                     ✏️ 편집
                   </button>
                 )}
+                {supabaseEnabled() && (
+                  <button type="button" className="guildLockOut" onClick={() => setAdminOpen((v) => !v)}>
+                    🛠 관리자
+                  </button>
+                )}
                 <button type="button" className="guildLockOut" onClick={lock}>
                   잠그기
                 </button>
@@ -665,6 +683,13 @@ export default function App() {
           </header>
 
           {status && <div className="guildToast">{status}</div>}
+
+          {adminOpen && (
+            <section className="guildBlock">
+              <h2 className="guildBlockTitle">🛠 관리자 · 길드 코드 목록</h2>
+              <AdminPanel currentId={guildId} />
+            </section>
+          )}
 
           {editing ? (
             <ContentEditor

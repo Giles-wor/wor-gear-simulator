@@ -997,3 +997,73 @@ td.guildColName .guildMemberLink {
   font-weight: 700;
   color: #e7a65f;
 }
+
+/* ── 관리자: 길드 코드 목록 ── */
+.guildAdmin {
+  gap: 10px;
+}
+.guildBlock .guildAdmin {
+  margin-top: 0;
+}
+.guildAdminHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  color: #e7a65f;
+}
+.guildAdminTableWrap {
+  overflow-x: auto;
+}
+.guildAdminTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  color: #ddcdba;
+}
+.guildAdminTable th,
+.guildAdminTable td {
+  padding: 6px 6px;
+  border-bottom: 1px solid rgba(231, 166, 95, 0.14);
+  text-align: left;
+  white-space: nowrap;
+}
+.guildAdminTable th {
+  color: #9c8c79;
+  font-weight: 700;
+}
+.guildAdminTable tr.mark td {
+  background: rgba(231, 166, 95, 0.1);
+}
+.guildAdminTable code {
+  color: #ffe1b5;
+}
+.guildAdminTag {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(231, 166, 95, 0.22);
+  color: #ffe1b5;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.guildAdminBtn {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(231, 166, 95, 0.35);
+  background: rgba(231, 166, 95, 0.1);
+  color: #ffe1b5;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.guildAdminBtn.danger {
+  border-color: rgba(255, 154, 140, 0.5);
+  color: #ff9a8c;
+}
+.guildAdminBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
