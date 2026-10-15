@@ -1,4 +1,4 @@
-import { writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 
 const API_BASE = 'https://watcher-of-realms.fandom.com/api.php'
 const SOURCE = 'Watcher of Realms Wiki'
@@ -6,6 +6,15 @@ const SOURCE_LEVEL = 'Lv.60'
 const OUTPUT_FILE = new URL('../src/data/heroes.generated.ts', import.meta.url)
 // 위키 문서는 있지만 스탯(atk/atkinterval) 미기재로 건너뛴 영웅 — 상태 점검(check-health)이 읽음
 const PENDING_FILE = new URL('../src/data/heroes.pending.generated.json', import.meta.url)
+
+// 위키 부하를 줄이고 일시 오류(503 등)를 넘기기 위한 설정
+const REQUEST_DELAY_MS = 500 // 요청 사이 간격
+const RETRY_DELAYS_MS = [5_000, 15_000, 45_000] // 실패 시 재시도 대기 (점점 늘림)
+const RETRY_STATUSES = new Set([429, 500, 502, 503, 504])
+// 이 비율보다 많이 실패하면 위키 장애로 보고 기존 파일을 건드리지 않고 중단
+const MAX_FAILED_RATIO = 0.2
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const FIELD_KEYS = [
   'faction',
@@ -41,17 +50,57 @@ function buildApiUrl(params) {
 }
 
 async function fetchJson(params) {
-  const response = await fetch(buildApiUrl(params), {
-    headers: {
-      'User-Agent': 'wor-gear-simulator/0.1 (+https://github.com/Giles-wor/wor-gear-simulator)'
-    }
-  })
+  const url = buildApiUrl(params)
 
-  if (!response.ok) {
+  for (let attempt = 0; ; attempt += 1) {
+    let response
+    try {
+      response = await fetch(url, {
+        headers: {
+          'User-Agent': 'wor-gear-simulator/0.1 (+https://github.com/Giles-wor/wor-gear-simulator)'
+        }
+      })
+    } catch (error) {
+      // 네트워크 오류도 일시 오류로 보고 재시도
+      if (attempt < RETRY_DELAYS_MS.length) {
+        console.warn(`Network error for ${url} (${error.message}) — ${RETRY_DELAYS_MS[attempt] / 1000}s 후 재시도`)
+        await sleep(RETRY_DELAYS_MS[attempt])
+        continue
+      }
+      throw error
+    }
+
+    if (response.ok) return response.json()
+
+    if (RETRY_STATUSES.has(response.status) && attempt < RETRY_DELAYS_MS.length) {
+      const retryAfter = Number(response.headers.get('retry-after'))
+      const wait = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : RETRY_DELAYS_MS[attempt]
+      console.warn(`Request failed (${response.status}) for ${url} — ${wait / 1000}s 후 재시도`)
+      await sleep(wait)
+      continue
+    }
+
     throw new Error(`Request failed (${response.status}) for ${response.url}`)
   }
+}
 
-  return response.json()
+/** 직전 크롤 결과 — 이번에 못 읽은 영웅은 이 값을 그대로 유지 */
+async function readPrevious() {
+  const heroes = new Map()
+  const pending = new Map()
+  try {
+    const src = await readFile(OUTPUT_FILE, 'utf8')
+    const json = src.slice(src.indexOf('= [') + 2).trim()
+    for (const hero of JSON.parse(json)) heroes.set(hero.id, hero)
+  } catch (error) {
+    console.warn(`기존 영웅 데이터를 읽지 못함 (${error.message}) — 실패한 영웅은 빠짐`)
+  }
+  try {
+    for (const item of JSON.parse(await readFile(PENDING_FILE, 'utf8'))) pending.set(item.id, item)
+  } catch {
+    // 없으면 무시
+  }
+  return { heroes, pending }
 }
 
 function decodeHtml(value) {
@@ -199,11 +248,27 @@ function toTsModule(heroes) {
 
 async function main() {
   const titles = await fetchHeroTitles()
+  const previous = await readPrevious()
   const heroes = []
   const pending = []
+  const failed = []
 
   for (const title of titles) {
-    const { hero, html } = await fetchHeroPage(title)
+    await sleep(REQUEST_DELAY_MS)
+    let page
+    try {
+      page = await fetchHeroPage(title)
+    } catch (error) {
+      // 한 영웅 실패로 전체를 멈추지 않음 — 직전 데이터 유지
+      failed.push(title)
+      const id = slugifyTitle(title)
+      if (previous.heroes.has(id)) heroes.push(previous.heroes.get(id))
+      else if (previous.pending.has(id)) pending.push(previous.pending.get(id))
+      console.warn(`Failed ${title} (${error.message}) — 직전 데이터 유지`)
+      continue
+    }
+
+    const { hero, html } = page
     if (hero) {
       heroes.push(hero)
       console.log(`Fetched ${title}`)
@@ -212,6 +277,11 @@ async function main() {
       console.log(`Skipped ${title} (스탯 미기재)`)
     }
   }
+
+  if (failed.length > titles.length * MAX_FAILED_RATIO) {
+    throw new Error(`${titles.length}명 중 ${failed.length}명 실패 — 위키 장애로 보고 기존 파일 유지`)
+  }
+  if (failed.length) console.warn(`실패 ${failed.length}명 (직전 데이터 유지): ${failed.join(', ')}`)
 
   heroes.sort((a, b) => a.name.localeCompare(b.name))
   pending.sort((a, b) => a.name.localeCompare(b.name))
