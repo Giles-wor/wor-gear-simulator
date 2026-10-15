@@ -314,3 +314,51 @@ tr.hi .nameEdit input.gname { color: #e6e9ef; }
   .gvgPage { padding: 8px 6px 50px; }
   .stickyCol { min-width: 120px; }
 }
+
+/* ── 운영진 전용 블랙리스트 ── */
+.blPanel { margin-top: 10px; }
+.blHead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.blHead h2 { font-size: 1.2rem; margin: 6px 0; }
+.blHead h2 .muted { font-size: 0.8rem; font-weight: 400; }
+.blToolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+.blSearch,
+.blEditor input,
+.blForm input,
+.blForm textarea {
+  background: #0f141d;
+  border: 1px solid #2a3344;
+  border-radius: 6px;
+  color: #e6e9ef;
+  padding: 7px 9px;
+  font: inherit;
+  font-size: 0.9rem;
+  min-width: 0;
+}
+.blSearch { flex: 1 1 220px; }
+.blTabs { display: inline-flex; border: 1px solid #2a3344; border-radius: 6px; overflow: hidden; }
+.blTabs button { background: #151b26; color: #aeb7c4; border: 0; padding: 7px 12px; cursor: pointer; font-size: 0.85rem; }
+.blTabs button.on { background: #2f6df0; color: #fff; }
+.blEditor { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #aeb7c4; }
+.blEditor input { width: 130px; }
+.blEmpty { margin: 18px 0; }
+.blList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.blItem { background: #151b26; border: 1px solid #252d3b; border-radius: 8px; padding: 10px 12px; }
+.blItemTop { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.blUid { font-family: ui-monospace, monospace; color: #f0a54a; font-weight: 700; word-break: break-all; }
+.blName { color: #e6e9ef; font-weight: 600; }
+.blBtns { margin-left: auto; display: inline-flex; gap: 6px; }
+.blReason { margin: 6px 0; color: #d6dce6; font-size: 0.9rem; white-space: pre-wrap; word-break: break-word; }
+.blNames { margin: 4px 0; padding-left: 20px; font-size: 0.82rem; color: #c4ccd8; }
+.blMeta { margin: 4px 0 0; font-size: 0.75rem; }
+.blForm { background: #121823; border: 1px solid #2f6df0; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px; margin: 8px 0; }
+.blForm label,
+.blFormNames { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: #aeb7c4; }
+.blForm textarea { resize: vertical; }
+.blNameRow { display: flex; gap: 6px; align-items: center; }
+.blNameRow input:first-child { flex: 1 1 auto; }
+.blNameRow input[type='date'] { flex: 0 0 auto; width: 150px; }
+.blFormNames > .miniBtn { align-self: flex-start; }
+.blFormBtns { display: flex; gap: 8px; }
+.blFormBtns button { padding: 7px 14px; border-radius: 6px; border: 1px solid #2a3344; background: #1a2130; color: #e6e9ef; cursor: pointer; }
+.blFormBtns button.primary { background: #2f6df0; border-color: #2f6df0; color: #fff; }
+.blFormBtns button:disabled { opacity: 0.5; cursor: default; }
