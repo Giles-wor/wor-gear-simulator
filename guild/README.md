@@ -71,7 +71,7 @@ Time 길드 길드원만 볼 수 있는 잠금 페이지입니다. 콘텐츠는 
 배포할 때 `scripts/render-guild-stats.mjs` 가 길드 데이터를 복호화해 **마병 보유 현황 / 방어덱 영웅 각성 현황** PNG 두 장을 만듭니다.
 `deploy.yml` 이 매시간(:07) 재배포하므로 이미지도 매시간 최신으로 바뀝니다.
 
-- 방장봇에 넣을 주소(답변이 100자 남짓에서 잘려서 짧은 주소 사용): `/wor-gear-simulator/s/<짧은 토큰>/m`(마병), `h`(영웅), `p1`·`p2`·`p3`·`pt`(1·2·3귀투, 귀투총합). 짧은 토큰 = sha256("<code>:<GUILD_STATS_SALT>:short-v1")[:16]. 긴 주소 `/stats/<토큰>/soldiers.html` 등도 그대로 있음. 카톡은 .png 주소는 링크로만 보여주고, 이 페이지는 og:image 썸네일 카드로 보여줌
+- 방장봇에 넣을 주소(답변이 100자 남짓에서 잘려서 짧은 주소 사용): `/wor-gear-simulator/s/<짧은 토큰>/m`(마병), `h`(영웅), `p1`·`p2`·`p3`·`pt`(1·2·3귀투, 귀투총합), `u`(업데이트 오래된 순). 짧은 토큰 = sha256("<code>:<GUILD_STATS_SALT>:short-v1")[:16]. 긴 주소 `/stats/<토큰>/soldiers.html` 등도 그대로 있음. 카톡은 .png 주소는 링크로만 보여주고, 이 페이지는 og:image 썸네일 카드로 보여줌
 - 갱신: 배포 때마다 + 매시간 예약 실행. GitHub 예약 실행은 몇 시간씩 건너뛸 수 있어서, 저장 즉시 갱신하려면 `guild/supabase-stats-refresh.sql` 을 한 번 실행(GitHub 토큰 필요, 파일 맨 위 설명 참고)
 - 토큰 = `sha256("<접속코드>:<GUILD_STATS_SALT>:v2")` 앞 32자 (v1 은 로그 노출로 폐기). salt 는 Secret 이라 리포만 봐서는 주소를 알 수 없음
 - **접속코드를 바꾸면** 저장소 Secret `GUILD_CODE` 도 새 코드로 바꾸세요 → 주소가 바뀌어 옛 링크는 죽고, 방장봇 답변 링크만 새 주소로 교체
