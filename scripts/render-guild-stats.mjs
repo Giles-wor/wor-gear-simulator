@@ -33,7 +33,8 @@ if (!code || !salt) {
 }
 
 const sha256 = (s) => createHash('sha256').update(s).digest('hex')
-const token = sha256(`${code}:${salt}`).slice(0, 32)
+// v2: v1 주소가 공개 배포 로그(업로드 파일 목록)에 노출돼 교체함. 로그 노출은 deploy.yml 에서 막음.
+const token = sha256(`${code}:${salt}:v2`).slice(0, 32)
 
 // ── 데이터 로드 (앱과 같은 순서: 코드 행 → 레거시 'main' 행 → 번들 기본값) ──
 const cfgSrc = readFileSync(resolve(GUILD, 'supabase.config.ts'), 'utf8')
@@ -207,6 +208,28 @@ function renderHtml({ title, legend, cols, values, toLv, unit, withSum }) {
   return `<!doctype html><meta charset="utf-8"><style>${CSS}</style><div class="wrap"><h1>${esc(title)}</h1><div class="sub">${esc(stamp)} 기준 · ${esc(legend)}</div><table><tr><th>캐릭명</th>${head}${withSum ? '<th>계</th>' : ''}</tr>${rows}</table><div class="who">${cards}</div></div>`
 }
 
+// 카톡 미리보기 카드(2:1)용 요약: 아이콘별 보유 인원 / 고레벨(3 이상) 인원.
+function renderOg({ title, cols, values, toLv, perRow }) {
+  const total = members.length
+  const cells = cols
+    .map((c) => {
+      const lvs = members.map((m) => toLv(values.get(m)?.[c.key])).filter((v) => v !== null)
+      const hi = lvs.filter((v) => v >= 3).length
+      const icon = c.icon ? `<img src="${c.icon}">` : `<span class="ab">${esc(c.alt)}</span>`
+      return `<div class="c">${icon}<b class="${lvs.length ? '' : 'z'}">${lvs.length}<i>/${total}</i></b><s>3↑ ${hi}</s></div>`
+    })
+    .join('')
+  const css = `body{margin:0;background:#14161c;color:#e8e8ea;font-family:'Noto Sans CJK KR','Noto Sans KR','WenQuanYi Zen Hei',sans-serif}
+.og{width:1200px;height:600px;box-sizing:border-box;padding:26px 30px;display:flex;flex-direction:column}
+h1{font-size:40px;margin:0}.sub{font-size:20px;color:#9a9ca5;margin:4px 0 16px}
+.g{flex:1;display:grid;grid-template-columns:repeat(${perRow},1fr);align-content:center;gap:10px 6px}
+.c{display:flex;flex-direction:column;align-items:center}.c img,.c .ab{width:72px;height:72px;border-radius:10px}
+.c .ab{display:flex;align-items:center;justify-content:center;background:#2a2d36;font-size:16px}
+.c b{font-size:26px;color:#ffd27a;line-height:1.1;margin-top:4px}.c b.z{color:#555}.c i{font-style:normal;font-size:15px;color:#9a9ca5}
+.c s{text-decoration:none;font-size:15px;color:#9cc8ff}`
+  return `<!doctype html><meta charset="utf-8"><style>${css}</style><div class="og"><h1>${esc(title)}</h1><div class="sub">${esc(stamp)} 기준 · 길드원 ${total}명 중 보유 인원 · 눌러서 전체 표 보기</div><div class="g">${cells}</div></div>`
+}
+
 const pages = [
   {
     file: 'soldiers.png',
@@ -219,6 +242,7 @@ const pages = [
       unit: 'Lv',
       withSum: true,
     }),
+    og: renderOg({ title: '마병 보유 현황', cols: soldiers, values: levels, toLv: soldierLv, perRow: 7 }),
   },
   {
     file: 'heroes.png',
@@ -231,6 +255,7 @@ const pages = [
       unit: '각',
       withSum: false,
     }),
+    og: renderOg({ title: '방어덱 영웅 각성 현황', cols: heroes, values: awakens, toLv: heroLv, perRow: 8 }),
   },
 ]
 
@@ -257,14 +282,11 @@ try {
   for (const p of pages) {
     await page.setContent(p.html, { waitUntil: 'load' })
     await page.evaluate(() => document.fonts.ready)
-    const wrap = page.locator('.wrap')
-    await wrap.screenshot({ path: resolve(outDir, p.file) })
-    // 카톡 링크 미리보기 썸네일: 표 윗부분만 1200×630 으로
-    const box = await wrap.boundingBox()
-    await page.screenshot({
-      path: resolve(outDir, p.file.replace('.png', '-og.png')),
-      clip: { x: box.x, y: box.y, width: Math.min(box.width, 1200), height: Math.min(box.height, 630) },
-    })
+    await page.locator('.wrap').screenshot({ path: resolve(outDir, p.file) })
+    // 카톡 링크 미리보기 썸네일(1200×600 요약 카드)
+    await page.setContent(p.og, { waitUntil: 'load' })
+    await page.evaluate(() => document.fonts.ready)
+    await page.locator('.og').screenshot({ path: resolve(outDir, p.file.replace('.png', '-og.png')) })
   }
 } finally {
   await browser.close()
