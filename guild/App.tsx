@@ -301,6 +301,65 @@ function DefStrip({ values }: { values?: Record<string, string> }) {
   )
 }
 
+/** 길드 보유 집계 strip: 마병/방어덱 영웅별 보유 인원(N), 끝에 "/ 총원". 멤버 strip 과 같은 정렬. */
+function OwnSummary({
+  members,
+  levels,
+  awakens,
+  showSoldiers,
+  showDefense,
+}: {
+  members: string[]
+  levels: Map<string, Record<string, string>>
+  awakens: Map<string, Record<string, string>>
+  showSoldiers: boolean
+  showDefense: boolean
+}) {
+  const total = members.length
+  // 마병: 레벨 1 이상 = 보유. 방어덱: X 가 아니면(0~5) 보유.
+  const soldierOwned = (s: string) => members.filter((m) => (parseNum(levels.get(m)?.[s] ?? '') ?? 0) > 0).length
+  const heroOwned = (h: string) => members.filter((m) => awakenLabel(awakens.get(m)?.[h] ?? '') !== 'X').length
+  return (
+    <div className="ownSummary">
+      <div className="ownSummaryTitle">📈 보유 집계 · 길드원 {total}명 중 보유 인원</div>
+      {showSoldiers && (
+        <div className="marStrip">
+          {SOLDIERS.map((s) => {
+            const icon = soldierIcon(s)
+            const n = soldierOwned(s)
+            return (
+              <span key={s} className="marItem" title={`${s}: ${n}/${total}명`}>
+                {icon ? <img src={icon} alt={s} loading="lazy" /> : <span className="marAbbr">{s.slice(0, 3)}</span>}
+                <b className={n === 0 ? 'marLv empty' : 'marLv'}>{n}</b>
+              </span>
+            )
+          })}
+          <span className="marSum">/ {total}명</span>
+        </div>
+      )}
+      {showDefense && (
+        <div className="marStrip defStrip">
+          {DEFENSE_HEROES.map((h) => {
+            const icon = defenseHeroIcon(h.name)
+            const n = heroOwned(h.name)
+            return (
+              <span
+                key={h.name}
+                className={n === 0 ? 'marItem defItem none' : 'marItem defItem'}
+                title={`${h.nick} (${h.name}): ${n}/${total}명`}
+              >
+                {icon ? <img src={icon} alt={h.nick} loading="lazy" /> : <span className="marAbbr">{h.nick}</span>}
+                <b className={n === 0 ? 'marLv empty' : 'marLv'}>{n}</b>
+              </span>
+            )
+          })}
+          <span className="marSum">/ {total}명</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ReadView({
   content,
   onShot,
@@ -325,6 +384,11 @@ function ReadView({
           </>
         )
       : undefined
+  // 집계 기준 멤버 = 진행 현황 표(첫 번째 표)의 캐릭명(빈 이름 제외).
+  const main = content.tables[0]
+  const members = main
+    ? main.rows.map((r) => cellOf(r[titleColIndex(main.headers)] ?? '').v.trim()).filter(Boolean)
+    : []
 
   return (
     <>
@@ -341,6 +405,15 @@ function ReadView({
         tables.map((table, ti) => (
           <section className="guildBlock guildTableBlock" key={ti}>
             <h2 className="guildBlockTitle">📊 {table.title || '진행 현황'}</h2>
+            {ti === 0 && marExtra && members.length > 0 && (
+              <OwnSummary
+                members={members}
+                levels={levels}
+                awakens={awakens}
+                showSoldiers={!!soldierTable}
+                showDefense={!!defenseTable}
+              />
+            )}
             <ResponsiveTable
               table={table}
               fallbackDate={content.updatedAt}

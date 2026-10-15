@@ -981,3 +981,19 @@ td.guildColName .guildMemberLink {
     height: 46px;
   }
 }
+/* 길드 보유 집계(마병/방어덱 영웅별 보유 인원) */
+.ownSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(231, 166, 95, 0.35);
+  background: rgba(231, 166, 95, 0.07);
+}
+.ownSummaryTitle {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #e7a65f;
+}
