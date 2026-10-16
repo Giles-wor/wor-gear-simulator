@@ -12,7 +12,7 @@ import {
   saveList,
   supabaseEnabled,
 } from './api'
-import { cleanNames, emptyList, findByUid, matches, sortEntries } from './list'
+import { cleanNames, emptyList, findByUid, matches, parsePasted, sortEntries } from './list'
 import type { Blacklist, BlacklistAction, BlacklistEntry, BlacklistLog, NameRecord } from './types'
 
 const SESSION_KEY = 'gvgBlacklistCode'
@@ -82,6 +82,7 @@ export function BlacklistPanel() {
   const [showTrash, setShowTrash] = useState(false)
   const [showLog, setShowLog] = useState(false)
   const [showRekey, setShowRekey] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const [draft, setDraft] = useState<Draft | null>(null)
   const [editor, setEditor] = useState(() => {
     try {
@@ -315,6 +316,30 @@ export function BlacklistPanel() {
     }
   }
 
+  /** 붙여넣은 여러 줄을 한 번에 추가. 이미 있는 고유 ID(휴지통 포함)와 붙여넣기 안 중복은 건너뛴다. */
+  const importRows = async (text: string): Promise<boolean> => {
+    const rows = parsePasted(text, editor.trim(), today(), () => newId('b'))
+    if (rows.length === 0) {
+      setError('추가할 줄이 없습니다. 첫 칸에 고유 ID가 있어야 합니다.')
+      return false
+    }
+    let added = 0
+    const ok = await commit('add', `붙여넣기 ${rows.length}줄`, (l) => {
+      added = 0
+      for (const r of rows) {
+        if (findByUid(l, r.uid)) continue
+        l.entries.push(r)
+        added++
+      }
+      if (added === 0) return '붙여넣은 고유 ID가 모두 이미 등록되어 있습니다.'
+    })
+    if (ok) {
+      setShowImport(false)
+      if (added < rows.length) setError(`${added}건 추가, ${rows.length - added}건은 이미 있는 고유 ID라 건너뛰었습니다.`)
+    }
+    return ok
+  }
+
   const shown = useMemo(() => {
     if (!list) return []
     return sortEntries(list.entries.filter((e) => !!e.deletedAt === showTrash && matches(e, query)))
@@ -339,6 +364,7 @@ export function BlacklistPanel() {
           <button className="primary" onClick={() => openDraft(draftFrom())} disabled={busy || !!draft}>
             + 추가
           </button>
+          <button onClick={() => setShowImport((v) => !v)} disabled={busy}>📋 붙여넣기</button>
           <button onClick={() => setShowLog((v) => !v)}>{showLog ? '로그 닫기' : '편집 로그'}</button>
           <button onClick={() => setShowRekey((v) => !v)}>코드 변경</button>
           <button onClick={lock} title="운영진 코드 다시 묻기">🔒 잠금</button>
@@ -374,6 +400,10 @@ export function BlacklistPanel() {
       </div>
 
       {error && <p className="gvgError" role="alert">{error}</p>}
+
+      {showImport && (
+        <ImportForm busy={busy} onSubmit={(t) => void importRows(t)} onCancel={() => setShowImport(false)} />
+      )}
 
       {showRekey && <RekeyForm busy={busy} onSubmit={(c) => void rekey(c)} onCancel={() => setShowRekey(false)} />}
 
@@ -520,6 +550,33 @@ function EntryForm(props: {
           {busy ? '저장 중…' : '저장'}
         </button>
         <button onClick={props.onCancel} disabled={busy}>취소</button>
+      </div>
+    </div>
+  )
+}
+
+function ImportForm(props: { busy: boolean; onSubmit: (text: string) => void; onCancel: () => void }) {
+  const [text, setText] = useState('')
+  const lines = text.split(/\r?\n/).filter((l) => l.trim()).length
+  return (
+    <div className="blForm">
+      <p className="muted">
+        엑셀에서 여러 줄을 복사해 그대로 붙여넣으세요. 칸 순서는 <b>고유 ID · 서버 · 닉네임 · 길드 · 사유</b>이고,
+        사유 뒤 칸은 사유에 이어 붙입니다. 서버·길드는 사유 끝 괄호에 남고, 닉네임 확인 날짜는 오늘로 들어갑니다.
+        이미 있는 고유 ID는 건너뜁니다. 칸은 탭 대신 <code>|</code> 로 나눠도 됩니다.
+      </p>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={6}
+        placeholder={'9427630\t70055\t닉네임\t길드\t사유'}
+        aria-label="붙여넣을 줄"
+      />
+      <div className="blFormBtns">
+        <button className="primary" onClick={() => props.onSubmit(text)} disabled={props.busy || lines === 0}>
+          {props.busy ? '저장 중…' : `${lines}줄 추가`}
+        </button>
+        <button onClick={props.onCancel} disabled={props.busy}>취소</button>
       </div>
     </div>
   )
