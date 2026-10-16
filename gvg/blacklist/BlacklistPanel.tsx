@@ -12,6 +12,7 @@ import {
   saveList,
   supabaseEnabled,
 } from './api'
+import { renderBlacklistPng, shareOrDownload } from './image'
 import { cleanNames, emptyList, findByUid, matches, parsePasted, sortEntries } from './list'
 import type { Blacklist, BlacklistAction, BlacklistEntry, BlacklistLog, NameRecord } from './types'
 
@@ -340,6 +341,18 @@ export function BlacklistPanel() {
     return ok
   }
 
+  /** 지금 보이는 목록(검색 적용, 휴지통 제외)을 이 기기에서 PNG 로 만들어 공유/저장. */
+  const saveImage = async () => {
+    setError(null)
+    try {
+      const title = query.trim() ? `블랙리스트 · "${query.trim()}" 검색` : '블랙리스트'
+      const blob = await renderBlacklistPng(shown, title)
+      await shareOrDownload(blob, `blacklist-${today()}.png`)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '이미지 생성 실패')
+    }
+  }
+
   const shown = useMemo(() => {
     if (!list) return []
     return sortEntries(list.entries.filter((e) => !!e.deletedAt === showTrash && matches(e, query)))
@@ -365,6 +378,9 @@ export function BlacklistPanel() {
             + 추가
           </button>
           <button onClick={() => setShowImport((v) => !v)} disabled={busy}>📋 붙여넣기</button>
+          <button onClick={() => void saveImage()} disabled={busy || showTrash} title="지금 보이는 목록(검색 결과)을 PNG로">
+            🖼 이미지로 저장
+          </button>
           <button onClick={() => setShowLog((v) => !v)}>{showLog ? '로그 닫기' : '편집 로그'}</button>
           <button onClick={() => setShowRekey((v) => !v)}>코드 변경</button>
           <button onClick={lock} title="운영진 코드 다시 묻기">🔒 잠금</button>
