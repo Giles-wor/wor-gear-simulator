@@ -5,97 +5,11 @@ export const generatedSchedule: BannerSchedule | null = {
   "source": "wornuts.com",
   "sourceUrl": "https://wornuts.com/en/banners",
   "heroPageUrl": "https://wornuts.com/en/heroes/",
-  "fetchedAt": "2026-10-13T03:34:10.413Z",
-  "sourceModified": "2026-10-12T00:00:00Z",
+  "fetchedAt": "2026-10-19T08:38:32.697Z",
+  "sourceModified": "2026-10-19T00:00:00Z",
   "banners": [
     {
       "status": "active",
-      "type": "Limited · Invocation of Spirits",
-      "durationDays": 5,
-      "startUtc": "2026-10-08T07:00:00.000Z",
-      "endUtc": "2026-10-13T07:00:00.000Z",
-      "heroes": [
-        {
-          "name": "Sun Wukong",
-          "slug": "sun-wukong",
-          "rarity": "legendary",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2290.2ecba1.w934.webp"
-        },
-        {
-          "name": "Greed",
-          "slug": "greed",
-          "rarity": "epic",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2059.f9ea38.w790.webp"
-        }
-      ],
-      "title": "Sage's Invocation",
-      "kind": "x20",
-      "limited": true
-    },
-    {
-      "status": "active",
-      "type": "Invocation of Spirits · Divine Summoning",
-      "durationDays": 4,
-      "startUtc": "2026-10-09T07:00:00.000Z",
-      "endUtc": "2026-10-13T07:00:00.000Z",
-      "heroes": [
-        {
-          "name": "Garroq",
-          "slug": "garroq",
-          "rarity": "legendary",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2439.60d6cb.w925.webp"
-        },
-        {
-          "name": "Rosalia",
-          "slug": "rosalia",
-          "rarity": "legendary",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2344.eb1f4b.w792.webp"
-        },
-        {
-          "name": "Atrox",
-          "slug": "atrox",
-          "rarity": "epic",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2143.42796e.w1009.webp"
-        },
-        {
-          "name": "Laurel",
-          "slug": "laurel",
-          "rarity": "epic",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2120.7f2a4e.w503.webp"
-        },
-        {
-          "name": "Baron",
-          "slug": "baron",
-          "rarity": "epic",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2025.1de24d.w1083.webp"
-        }
-      ],
-      "kind": "x20"
-    },
-    {
-      "status": "active",
-      "type": "Ancient Summoning",
-      "durationDays": 3,
-      "startUtc": "2026-10-10T07:00:00.000Z",
-      "endUtc": "2026-10-13T07:00:00.000Z",
-      "heroes": [
-        {
-          "name": "Amelia Ainsworth",
-          "slug": "amelia-ainsworth",
-          "rarity": "legendary",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2380.944564.w1162.webp"
-        },
-        {
-          "name": "Sergei",
-          "slug": "sergei",
-          "rarity": "legendary",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2286.957d32.w1096.webp"
-        }
-      ],
-      "kind": "x20"
-    },
-    {
-      "status": "upcoming",
       "type": "Invocation of Spirits · Divine Summoning",
       "durationDays": 4,
       "startUtc": "2026-10-16T07:00:00.000Z",
@@ -123,7 +37,7 @@ export const generatedSchedule: BannerSchedule | null = {
       "kind": "x20"
     },
     {
-      "status": "upcoming",
+      "status": "active",
       "type": "Ancient Summoning",
       "durationDays": 3,
       "startUtc": "2026-10-17T07:00:00.000Z",
@@ -140,6 +54,46 @@ export const generatedSchedule: BannerSchedule | null = {
           "slug": "carnelian",
           "rarity": "legendary",
           "icon": "https://cdn.wornuts.com/m/hero_head_card/2201.162cb4.w865.webp"
+        }
+      ],
+      "kind": "x20"
+    },
+    {
+      "status": "upcoming",
+      "type": "Invocation of Spirits · Divine Summoning",
+      "durationDays": 3,
+      "startUtc": "2026-10-23T07:00:00.000Z",
+      "endUtc": "2026-10-26T07:00:00.000Z",
+      "heroes": [
+        {
+          "name": "Lulu",
+          "slug": "lulu",
+          "rarity": "legendary",
+          "icon": "https://cdn.wornuts.com/m/hero_head_card/2289.92bf81.w842.webp"
+        },
+        {
+          "name": "Nerissa",
+          "slug": "nerissa",
+          "rarity": "legendary",
+          "icon": "https://cdn.wornuts.com/m/hero_head_card/2285.db6bd0.w222.webp"
+        },
+        {
+          "name": "Maul",
+          "slug": "maul",
+          "rarity": "epic",
+          "icon": "https://cdn.wornuts.com/m/hero_head_card/2017.92c60c.w887.webp"
+        },
+        {
+          "name": "Nazeem",
+          "slug": "nazeem",
+          "rarity": "epic",
+          "icon": "https://cdn.wornuts.com/m/hero_head_card/2049.cce963.w750.webp"
+        },
+        {
+          "name": "Filippa",
+          "slug": "filippa",
+          "rarity": "epic",
+          "icon": "https://cdn.wornuts.com/m/hero_head_card/2287.fa15fe.w637.webp"
         }
       ],
       "kind": "x20"
