@@ -7679,7 +7679,8 @@ export const heroes: Omit<Hero, 'awakeningAtkBonus' | 'burstAtkBonusPer100Aspd'>
     "heroClass": "Tactician",
     "damageType": "Physical",
     "factions": [
-      "Supreme Arbiter"
+      "Supreme Arbiter",
+      "Watchguard"
     ],
     "heroTags": [],
     "description": "Legendary Tactician / Physical",
@@ -9443,7 +9444,9 @@ export const heroes: Omit<Hero, 'awakeningAtkBonus' | 'burstAtkBonusPer100Aspd'>
     "rarity": "Legendary",
     "heroClass": "Mage",
     "damageType": "Magic",
-    "factions": [],
+    "factions": [
+      "North Throne"
+    ],
     "heroTags": [],
     "description": "Legendary Mage / Magic",
     "hp": 9643,
