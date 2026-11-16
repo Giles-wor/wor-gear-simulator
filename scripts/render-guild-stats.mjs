@@ -128,8 +128,8 @@ const members = main ? main.rows.map((r) => cellOf(r[titleColIndex(main.headers)
 const levels = memberValues(content.tables.find((t) => t.title === SOLDIER_TABLE_TITLE))
 const awakens = memberValues(content.tables.find((t) => t.title === DEFENSE_TABLE_TITLE))
 
-// 길전 투력(진행 현황 표의 '길전 투력1~3', 옛 헤더 '전투력 최고/최저'). 셀 v = 영주 산식 적용 최종값.
-const POWER_HEADERS = ['길전 투력1', '길전 투력2', '길전 투력3']
+// 길전 투력(진행 현황 표의 '길전 투력1~5', 옛 헤더 '전투력 최고/최저'). 셀 v = 영주 산식 적용 최종값.
+const POWER_HEADERS = ['길전 투력1', '길전 투력2', '길전 투력3', '길전 투력4', '길전 투력5']
 const OLD_POWER = { '길전 투력1': '전투력 최고', '길전 투력2': '전투력 최저' }
 const parseNum = (v) => {
   const n = Number(String(v ?? '').replace(/[^\d.-]/g, ''))
@@ -275,16 +275,18 @@ h1{font-size:40px;margin:0}.sub{font-size:20px;color:#9a9ca5;margin:4px 0 16px}
   return `<!doctype html><meta charset="utf-8"><style>${css}</style><div class="og"><h1>${esc(title)}</h1><div class="sub">${esc(stamp)} 기준 · 길드원 ${total}명 중 보유 인원 · 눌러서 전체 표 보기</div><div class="g">${cells}</div></div>`
 }
 
-// 귀속 투력(길전 투력1~3) 순위표 4종: 1귀투·2귀투·3귀투·귀투총합. 카톡 카드가 서로 구분되게 색과 제목을 다르게 함.
+// 귀속 투력(길전 투력1~5) 순위표 6종: 1~5귀투·귀투총합. 카톡 카드가 서로 구분되게 색과 제목을 다르게 함.
 const fmt = (n) => Math.round(n).toLocaleString('ko-KR')
 const POWER_VIEWS = [
   { slug: 'power1', col: 0, title: '1귀투', color: '#ffd27a' },
   { slug: 'power2', col: 1, title: '2귀투', color: '#8fe3a8' },
   { slug: 'power3', col: 2, title: '3귀투', color: '#9cc8ff' },
+  { slug: 'power4', col: 3, title: '4귀투', color: '#e0b0ff' },
+  { slug: 'power5', col: 4, title: '5귀투', color: '#7fe0e0' },
   { slug: 'power-total', col: -1, title: '귀투총합', color: '#ff9f8f' },
 ]
 const powerBase = members.map((m) => {
-  const vals = power.get(m) ?? [null, null, null]
+  const vals = power.get(m) ?? POWER_HEADERS.map(() => null)
   return { m, vals, sum: vals.filter(Boolean).reduce((a, v) => a + v.n, 0) }
 })
 const powerView = (view) => {
@@ -294,7 +296,7 @@ const powerView = (view) => {
     .sort((a, b) => (b.key != null) - (a.key != null) || (b.key ?? 0) - (a.key ?? 0) || b.sum - a.sum)
   return { rows, ranked: rows.filter((r) => r.key != null) }
 }
-const ranked = powerView(POWER_VIEWS[3]).ranked
+const ranked = powerView(POWER_VIEWS.find((v) => v.col < 0)).ranked
 
 function renderPowerHtml(view) {
   const { rows: powerRows, ranked } = powerView(view)
