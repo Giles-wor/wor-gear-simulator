@@ -1,6 +1,6 @@
 {
   "source": "https://worwiki.kr",
-  "fetchedAt": "2026-11-09T11:05:55.865Z",
+  "fetchedAt": "2026-11-16T10:49:32.902Z",
   "pages": {
     "abomination": {
       "ko": "증오",
@@ -478,6 +478,10 @@
       "ko": "셀카스",
       "en": "Selkath"
     },
+    "serenity": {
+      "ko": "세레니티",
+      "en": "Serenity"
+    },
     "setram": {
       "ko": "사트라무",
       "en": "Setram"
@@ -581,6 +585,10 @@
     "xena": {
       "ko": "젠나",
       "en": "Xena"
+    },
+    "ysildra": {
+      "ko": "이실드라",
+      "en": "Ysildra"
     },
     "zelus": {
       "ko": "제로스",
