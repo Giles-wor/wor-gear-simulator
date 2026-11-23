@@ -5,71 +5,9 @@ export const generatedSchedule: BannerSchedule | null = {
   "source": "wornuts.com",
   "sourceUrl": "https://wornuts.com/en/banners",
   "heroPageUrl": "https://wornuts.com/en/heroes/",
-  "fetchedAt": "2026-11-16T10:49:30.645Z",
-  "sourceModified": "2026-11-16T00:00:00Z",
+  "fetchedAt": "2026-11-23T12:01:05.314Z",
+  "sourceModified": "2026-11-23T00:00:00Z",
   "banners": [
-    {
-      "status": "active",
-      "type": "Invocation of Spirits · Divine Summoning",
-      "durationDays": 4,
-      "startUtc": "2026-11-13T07:00:00.000Z",
-      "endUtc": "2026-11-17T07:00:00.000Z",
-      "heroes": [
-        {
-          "name": "Ysildra",
-          "slug": "ysildra",
-          "rarity": "legendary",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2347.669e0e.w1032.webp"
-        },
-        {
-          "name": "Ne Zha",
-          "slug": "ne-zha",
-          "rarity": "legendary",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2292.4d0e57.w820.webp"
-        },
-        {
-          "name": "Deimos",
-          "slug": "deimos",
-          "rarity": "epic",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2069.251ed3.w721.webp"
-        },
-        {
-          "name": "Harpun",
-          "slug": "harpun",
-          "rarity": "epic",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2196.ea4518.w1099.webp"
-        },
-        {
-          "name": "Nissandei",
-          "slug": "nissandei",
-          "rarity": "epic",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2138.eb6cea.w842.webp"
-        }
-      ],
-      "kind": "x20"
-    },
-    {
-      "status": "active",
-      "type": "Ancient Summoning",
-      "durationDays": 3,
-      "startUtc": "2026-11-14T07:00:00.000Z",
-      "endUtc": "2026-11-17T07:00:00.000Z",
-      "heroes": [
-        {
-          "name": "Ingrid",
-          "slug": "ingrid",
-          "rarity": "legendary",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2266.3e6d01.w1064.webp"
-        },
-        {
-          "name": "Serenity",
-          "slug": "serenity",
-          "rarity": "legendary",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2369.21eec6.w821.webp"
-        }
-      ],
-      "kind": "x20"
-    },
     {
       "status": "upcoming",
       "type": "Invocation of Spirits · Divine Summoning",
@@ -161,7 +99,7 @@ export const generatedSchedule: BannerSchedule | null = {
           "name": "Aetherion",
           "slug": "aetherion",
           "rarity": "legendary",
-          "icon": "https://cdn.wornuts.com/m/hero_head_card/2346.6b2640.w122.webp"
+          "icon": "https://cdn.wornuts.com/m/hero_head_card/2346.dfce3a.w887.webp"
         },
         {
           "name": "Ai",
@@ -194,7 +132,8 @@ export const generatedSchedule: BannerSchedule | null = {
         {
           "name": "Melisara",
           "slug": "melisara",
-          "rarity": "legendary"
+          "rarity": "legendary",
+          "icon": "https://cdn.wornuts.com/m/hero_head_card/2371.af5f75.w721.webp"
         },
         {
           "name": "Gretchen",
