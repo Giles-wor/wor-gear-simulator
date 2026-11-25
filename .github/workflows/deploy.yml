@@ -21,7 +21,7 @@ jobs:
   deploy:
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment_retry.outputs.page_url }}
     runs-on: ubuntu-latest
 
     steps:
@@ -89,6 +89,18 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
+      # 가끔 GitHub 쪽에서 방금 올린 artifact 를 바로 못 찾아 "No artifacts named github-pages" 로 실패함.
+      # 첫 시도가 실패하면 잠시 기다렸다가 한 번 더 배포함 (둘 다 실패할 때만 job 실패).
       - name: Deploy
         id: deployment
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+
+      - name: Wait before retry
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 30
+
+      - name: Deploy (retry)
+        id: deployment_retry
+        if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v4
