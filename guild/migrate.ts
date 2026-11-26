@@ -24,13 +24,16 @@ export const MAIN_HEADERS = [
   '지하성1',
   '지하성2',
   '지하성3',
-  '타천한 쌍둥이 유해',
+  '타천한 쌍둥이 유해(일반)',
+  '타천한 쌍둥이 유해(하드)',
 ]
 
 // 새 열 ← 옛 열 값 이전(데이터 보존). 그 외 신규 열은 빈 값.
 const RENAME: Record<string, string> = {
   '길전 투력1': '전투력 최고',
   '길전 투력2': '전투력 최저',
+  // 단일 쌍둥이 열은 일반으로 이전, 하드는 빈 값
+  '타천한 쌍둥이 유해(일반)': '타천한 쌍둥이 유해',
 }
 
 export function migrateMainTable(t: GuildTable): GuildTable {
